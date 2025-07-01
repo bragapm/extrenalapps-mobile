@@ -1,4 +1,4 @@
-current directory: /Users/ramaaa/Documents/WORK/PROJECTS/TempPrototype/vendor/bundle/ruby/3.4.0/gems/ffi-1.17.2/ext/ffi_c
+current directory: /Users/ramaaa/Documents/WORK/PROJECTS/MyProject/vendor/bundle/ruby/3.4.0/gems/ffi-1.17.2/ext/ffi_c
 /opt/homebrew/opt/ruby/bin/ruby extconf.rb
 checking for pkg-config for libffi... not found
 checking for ffi.h... no
@@ -12,11 +12,11 @@ checking for whether -pthread is accepted as LDFLAGS... yes
 creating extconf.h
 creating Makefile
 
-current directory: /Users/ramaaa/Documents/WORK/PROJECTS/TempPrototype/vendor/bundle/ruby/3.4.0/gems/ffi-1.17.2/ext/ffi_c
-make DESTDIR\= sitearchdir\=./.gem.20250615-43833-timtj0 sitelibdir\=./.gem.20250615-43833-timtj0 clean
+current directory: /Users/ramaaa/Documents/WORK/PROJECTS/MyProject/vendor/bundle/ruby/3.4.0/gems/ffi-1.17.2/ext/ffi_c
+make DESTDIR\= sitearchdir\=./.gem.20250701-45997-scczkn sitelibdir\=./.gem.20250701-45997-scczkn clean
 
-current directory: /Users/ramaaa/Documents/WORK/PROJECTS/TempPrototype/vendor/bundle/ruby/3.4.0/gems/ffi-1.17.2/ext/ffi_c
-make DESTDIR\= sitearchdir\=./.gem.20250615-43833-timtj0 sitelibdir\=./.gem.20250615-43833-timtj0
+current directory: /Users/ramaaa/Documents/WORK/PROJECTS/MyProject/vendor/bundle/ruby/3.4.0/gems/ffi-1.17.2/ext/ffi_c
+make DESTDIR\= sitearchdir\=./.gem.20250701-45997-scczkn sitelibdir\=./.gem.20250701-45997-scczkn
 compiling AbstractMemory.c
 compiling ArrayType.c
 compiling Buffer.c
@@ -42,9 +42,9 @@ compiling Variadic.c
 compiling ffi.c
 linking shared-object ffi_c.bundle
 
-current directory: /Users/ramaaa/Documents/WORK/PROJECTS/TempPrototype/vendor/bundle/ruby/3.4.0/gems/ffi-1.17.2/ext/ffi_c
-make DESTDIR\= sitearchdir\=./.gem.20250615-43833-timtj0 sitelibdir\=./.gem.20250615-43833-timtj0 install
-/usr/bin/install -c -m 0755 ffi_c.bundle ./.gem.20250615-43833-timtj0
+current directory: /Users/ramaaa/Documents/WORK/PROJECTS/MyProject/vendor/bundle/ruby/3.4.0/gems/ffi-1.17.2/ext/ffi_c
+make DESTDIR\= sitearchdir\=./.gem.20250701-45997-scczkn sitelibdir\=./.gem.20250701-45997-scczkn install
+/usr/bin/install -c -m 0755 ffi_c.bundle ./.gem.20250701-45997-scczkn
 
-current directory: /Users/ramaaa/Documents/WORK/PROJECTS/TempPrototype/vendor/bundle/ruby/3.4.0/gems/ffi-1.17.2/ext/ffi_c
-make DESTDIR\= sitearchdir\=./.gem.20250615-43833-timtj0 sitelibdir\=./.gem.20250615-43833-timtj0 clean
+current directory: /Users/ramaaa/Documents/WORK/PROJECTS/MyProject/vendor/bundle/ruby/3.4.0/gems/ffi-1.17.2/ext/ffi_c
+make DESTDIR\= sitearchdir\=./.gem.20250701-45997-scczkn sitelibdir\=./.gem.20250701-45997-scczkn clean

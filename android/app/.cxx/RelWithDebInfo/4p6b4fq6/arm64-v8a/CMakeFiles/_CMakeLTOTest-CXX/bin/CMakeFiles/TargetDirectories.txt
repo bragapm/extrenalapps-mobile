@@ -1,4 +1,0 @@
-/Users/ramaaa/Documents/WORK/PROJECTS/Github/React-Native-Template-Prototype/android/app/.cxx/RelWithDebInfo/4p6b4fq6/arm64-v8a/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/foo.dir
-/Users/ramaaa/Documents/WORK/PROJECTS/Github/React-Native-Template-Prototype/android/app/.cxx/RelWithDebInfo/4p6b4fq6/arm64-v8a/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/boo.dir
-/Users/ramaaa/Documents/WORK/PROJECTS/Github/React-Native-Template-Prototype/android/app/.cxx/RelWithDebInfo/4p6b4fq6/arm64-v8a/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/edit_cache.dir
-/Users/ramaaa/Documents/WORK/PROJECTS/Github/React-Native-Template-Prototype/android/app/.cxx/RelWithDebInfo/4p6b4fq6/arm64-v8a/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/rebuild_cache.dir

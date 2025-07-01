@@ -1,6 +1,6 @@
 {
   "name": "RNGestureHandler",
-  "version": "2.26.0",
+  "version": "2.27.1",
   "summary": "Declarative API exposing native platform touch and gesture system to React Native",
   "homepage": "https://github.com/software-mansion/react-native-gesture-handler",
   "license": "MIT",
@@ -9,7 +9,7 @@
   },
   "source": {
     "git": "https://github.com/software-mansion/react-native-gesture-handler",
-    "tag": "2.26.0"
+    "tag": "2.27.1"
   },
   "source_files": "apple/**/*.{h,m,mm}",
   "requires_arc": true,
@@ -22,9 +22,13 @@
   "xcconfig": {
     "OTHER_CFLAGS": "$(inherited) "
   },
-  "compiler_flags": "-DRCT_NEW_ARCH_ENABLED=1",
+  "compiler_flags": "-DRCT_NEW_ARCH_ENABLED=1 -DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -DFOLLY_CFG_NO_COROUTINES=1 -DFOLLY_HAVE_CLOCK_GETTIME=1 -Wno-comma -Wno-shorten-64-to-32",
   "dependencies": {
     "React-Core": [],
+    "RCT-Folly": [
+      "2024.01.01.00"
+    ],
+    "glog": [],
     "React-RCTFabric": [],
     "ReactCodegen": [],
     "RCTRequired": [],
@@ -40,23 +44,12 @@
     "React-debug": [],
     "React-ImageManager": [],
     "React-rendererdebug": [],
-    "React-jsi": [],
-    "React-renderercss": [],
-    "hermes-engine": [],
-    "React-hermes": [],
-    "glog": [],
-    "boost": [],
     "DoubleConversion": [],
-    "fast_float": [],
-    "fmt": [],
-    "RCT-Folly": [],
-    "SocketRocket": [],
-    "RCT-Folly/Fabric": []
+    "hermes-engine": []
   },
   "pod_target_xcconfig": {
-    "HEADER_SEARCH_PATHS": "\"$(PODS_ROOT)/Headers/Private/Yoga\"",
+    "HEADER_SEARCH_PATHS": "\"$(PODS_ROOT)/boost\" \"$(PODS_ROOT)/Headers/Private/Yoga\"",
     "CLANG_CXX_LANGUAGE_STANDARD": "c++20",
-    "OTHER_CPLUSPLUSFLAGS": "$(inherited) -DRCT_NEW_ARCH_ENABLED=1 ",
-    "OTHER_SWIFT_FLAGS": "$(inherited) -DRCT_NEW_ARCH_ENABLED"
+    "OTHER_CPLUSPLUSFLAGS": "$(inherited) -DRCT_NEW_ARCH_ENABLED=1 -DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -DFOLLY_CFG_NO_COROUTINES=1 -DFOLLY_HAVE_CLOCK_GETTIME=1 -Wno-comma -Wno-shorten-64-to-32"
   }
 }

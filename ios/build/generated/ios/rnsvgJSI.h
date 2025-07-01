@@ -219,12 +219,8 @@ public:
 template <typename T>
 class JSI_EXPORT NativeSvgRenderableModuleCxxSpec : public TurboModule {
 public:
-  jsi::Value create(jsi::Runtime &rt, const jsi::PropNameID &propName) override {
-    return delegate_.create(rt, propName);
-  }
-
-  std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime& runtime) override {
-    return delegate_.getPropertyNames(runtime);
+  jsi::Value get(jsi::Runtime &rt, const jsi::PropNameID &propName) override {
+    return delegate_.get(rt, propName);
   }
 
   static constexpr std::string_view kModuleName = "RNSVGRenderableModule";
@@ -329,12 +325,8 @@ public:
 template <typename T>
 class JSI_EXPORT NativeSvgViewModuleCxxSpec : public TurboModule {
 public:
-  jsi::Value create(jsi::Runtime &rt, const jsi::PropNameID &propName) override {
-    return delegate_.create(rt, propName);
-  }
-
-  std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime& runtime) override {
-    return delegate_.getPropertyNames(runtime);
+  jsi::Value get(jsi::Runtime &rt, const jsi::PropNameID &propName) override {
+    return delegate_.get(rt, propName);
   }
 
   static constexpr std::string_view kModuleName = "RNSVGSvgViewModule";

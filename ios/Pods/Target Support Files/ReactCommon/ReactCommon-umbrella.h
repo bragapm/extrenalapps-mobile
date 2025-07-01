@@ -35,7 +35,6 @@
 #import "ReactCommon/TurboModuleBinding.h"
 #import "ReactCommon/TurboModulePerfLogger.h"
 #import "ReactCommon/TurboModuleUtils.h"
-#import "ReactCommon/TurboModuleWithJSIBindings.h"
 
 FOUNDATION_EXPORT double ReactCommonVersionNumber;
 FOUNDATION_EXPORT const unsigned char ReactCommonVersionString[];

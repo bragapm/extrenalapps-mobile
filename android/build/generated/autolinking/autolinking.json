@@ -1,26 +1,83 @@
 {
-  "root": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile",
-  "reactNativePath": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native",
-  "reactNativeVersion": "0.80",
+  "root": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject",
+  "reactNativePath": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/react-native",
+  "reactNativeVersion": "0.76",
   "dependencies": {
     "@react-native-async-storage/async-storage": {
-      "root": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/@react-native-async-storage/async-storage",
+      "root": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/@react-native-async-storage/async-storage",
       "name": "@react-native-async-storage/async-storage",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/@react-native-async-storage/async-storage/RNCAsyncStorage.podspec",
+          "podspecPath": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/@react-native-async-storage/async-storage/RNCAsyncStorage.podspec",
           "version": "2.2.0",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/@react-native-async-storage/async-storage/android",
+          "sourceDir": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/@react-native-async-storage/async-storage/android",
           "packageImportPath": "import com.reactnativecommunity.asyncstorage.AsyncStoragePackage;",
           "packageInstance": "new AsyncStoragePackage()",
           "buildTypes": [],
           "libraryName": "rnasyncstorage",
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cxxModuleCMakeListsModuleName": null,
+          "cxxModuleCMakeListsPath": null,
+          "cxxModuleHeaderName": null,
+          "isPureCxxDependency": false
+        }
+      }
+    },
+    "@rnmapbox/maps": {
+      "root": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/@rnmapbox/maps",
+      "name": "@rnmapbox/maps",
+      "platforms": {
+        "ios": {
+          "podspecPath": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/@rnmapbox/maps/rnmapbox-maps.podspec",
+          "version": "10.1.39",
+          "configurations": [],
+          "scriptPhases": []
+        },
+        "android": {
+          "sourceDir": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/@rnmapbox/maps/android",
+          "packageImportPath": "import com.rnmapbox.rnmbx.RNMBXPackage;",
+          "packageInstance": "new RNMBXPackage()",
+          "buildTypes": [],
+          "libraryName": "rnmapbox_maps_specs",
+          "componentDescriptors": [
+            "RNMBXAtmosphereComponentDescriptor",
+            "RNMBXBackgroundLayerComponentDescriptor",
+            "RNMBXCalloutComponentDescriptor",
+            "RNMBXCameraComponentDescriptor",
+            "RNMBXCircleLayerComponentDescriptor",
+            "RNMBXCustomLocationProviderComponentDescriptor",
+            "RNMBXFillExtrusionLayerComponentDescriptor",
+            "RNMBXFillLayerComponentDescriptor",
+            "RNMBXHeatmapLayerComponentDescriptor",
+            "RNMBXImageComponentDescriptor",
+            "RNMBXImageSourceComponentDescriptor",
+            "RNMBXImagesComponentDescriptor",
+            "RNMBXLightComponentDescriptor",
+            "RNMBXLineLayerComponentDescriptor",
+            "RNMBXMapViewComponentDescriptor",
+            "RNMBXMarkerViewContentComponentDescriptor",
+            "RNMBXMarkerViewComponentDescriptor",
+            "RNMBXModelLayerComponentDescriptor",
+            "RNMBXModelsComponentDescriptor",
+            "RNMBXNativeUserLocationComponentDescriptor",
+            "RNMBXPointAnnotationComponentDescriptor",
+            "RNMBXRasterDemSourceComponentDescriptor",
+            "RNMBXRasterLayerComponentDescriptor",
+            "RNMBXRasterSourceComponentDescriptor",
+            "RNMBXShapeSourceComponentDescriptor",
+            "RNMBXSkyLayerComponentDescriptor",
+            "RNMBXStyleImportComponentDescriptor",
+            "RNMBXSymbolLayerComponentDescriptor",
+            "RNMBXTerrainComponentDescriptor",
+            "RNMBXVectorSourceComponentDescriptor",
+            "RNMBXViewportComponentDescriptor"
+          ],
+          "cmakeListsPath": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/@rnmapbox/maps/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -29,17 +86,17 @@
       }
     },
     "react-native-gesture-handler": {
-      "root": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-gesture-handler",
+      "root": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/react-native-gesture-handler",
       "name": "react-native-gesture-handler",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-gesture-handler/RNGestureHandler.podspec",
-          "version": "2.26.0",
+          "podspecPath": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/react-native-gesture-handler/RNGestureHandler.podspec",
+          "version": "2.27.1",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-gesture-handler/android",
+          "sourceDir": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/react-native-gesture-handler/android",
           "packageImportPath": "import com.swmansion.gesturehandler.RNGestureHandlerPackage;",
           "packageInstance": "new RNGestureHandlerPackage()",
           "buildTypes": [],
@@ -48,7 +105,7 @@
             "RNGestureHandlerButtonComponentDescriptor",
             "RNGestureHandlerRootViewComponentDescriptor"
           ],
-          "cmakeListsPath": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -57,17 +114,17 @@
       }
     },
     "react-native-safe-area-context": {
-      "root": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-safe-area-context",
+      "root": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/react-native-safe-area-context",
       "name": "react-native-safe-area-context",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-safe-area-context/react-native-safe-area-context.podspec",
-          "version": "5.5.0",
+          "podspecPath": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/react-native-safe-area-context/react-native-safe-area-context.podspec",
+          "version": "5.5.1",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-safe-area-context/android",
+          "sourceDir": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/react-native-safe-area-context/android",
           "packageImportPath": "import com.th3rdwave.safeareacontext.SafeAreaContextPackage;",
           "packageInstance": "new SafeAreaContextPackage()",
           "buildTypes": [],
@@ -76,7 +133,7 @@
             "RNCSafeAreaProviderComponentDescriptor",
             "RNCSafeAreaViewComponentDescriptor"
           ],
-          "cmakeListsPath": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -85,17 +142,17 @@
       }
     },
     "react-native-screens": {
-      "root": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-screens",
+      "root": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/react-native-screens",
       "name": "react-native-screens",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-screens/RNScreens.podspec",
+          "podspecPath": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/react-native-screens/RNScreens.podspec",
           "version": "4.11.1",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-screens/android",
+          "sourceDir": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/react-native-screens/android",
           "packageImportPath": "import com.swmansion.rnscreens.RNScreensPackage;",
           "packageInstance": "new RNScreensPackage()",
           "buildTypes": [],
@@ -113,7 +170,7 @@
             "RNSScreenContentWrapperComponentDescriptor",
             "RNSModalScreenComponentDescriptor"
           ],
-          "cmakeListsPath": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -122,17 +179,17 @@
       }
     },
     "react-native-svg": {
-      "root": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-svg",
+      "root": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/react-native-svg",
       "name": "react-native-svg",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-svg/RNSVG.podspec",
+          "podspecPath": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/react-native-svg/RNSVG.podspec",
           "version": "15.12.0",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-svg/android",
+          "sourceDir": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/react-native-svg/android",
           "packageImportPath": "import com.horcrux.svg.SvgPackage;",
           "packageInstance": "new SvgPackage()",
           "buildTypes": [],
@@ -168,7 +225,7 @@
             "RNSVGTSpanComponentDescriptor",
             "RNSVGUseComponentDescriptor"
           ],
-          "cmakeListsPath": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-svg/android/src/main/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/node_modules/react-native-svg/android/src/main/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -325,11 +382,6 @@
         {
           "name": "--no-interactive",
           "description": "Disables interactive mode"
-        },
-        {
-          "name": "--client-logs",
-          "description": "[Deprecated] Enable plain text JavaScript log streaming for all connected apps. This feature is deprecated and will be removed in future.",
-          "default": false
         }
       ]
     },
@@ -339,7 +391,7 @@
         {
           "name": "--path <path>",
           "description": "Path to the React Native project root.",
-          "default": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile"
+          "default": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject"
         },
         {
           "name": "--platform <string>",
@@ -349,11 +401,6 @@
         {
           "name": "--outputPath <path>",
           "description": "Path where generated artifacts will be output to."
-        },
-        {
-          "name": "--source <string>",
-          "description": "Whether the script is invoked from an `app` or a `library`",
-          "default": "app"
         }
       ]
     },
@@ -455,10 +502,6 @@
           "description": "Force CocoaPods installation"
         },
         {
-          "name": "--only-pods",
-          "description": "Only install Cocoapods, do not build the app"
-        },
-        {
           "name": "--device [string]",
           "description": "Explicitly set the device to use by name or by unique device identifier . If the value is not provided,the app will run on the first available physical device."
         }
@@ -513,10 +556,6 @@
         {
           "name": "--force-pods",
           "description": "Force CocoaPods installation"
-        },
-        {
-          "name": "--only-pods",
-          "description": "Only install Cocoapods, do not build the app"
         },
         {
           "name": "--device [string]",
@@ -639,7 +678,7 @@
   "assets": [],
   "project": {
     "ios": {
-      "sourceDir": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/ios",
+      "sourceDir": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/ios",
       "xcodeProject": {
         "name": "ExternalApps.xcworkspace",
         "path": ".",
@@ -648,10 +687,10 @@
       "assets": []
     },
     "android": {
-      "sourceDir": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/android",
+      "sourceDir": "/Users/ramaaa/Documents/WORK/PROJECTS/MyProject/android",
       "appName": "app",
-      "packageName": "com.tempprototype",
-      "applicationId": "com.tempprototype",
+      "packageName": "com.ExternalApps",
+      "applicationId": "com.ExternalApps",
       "mainActivity": ".MainActivity",
       "assets": []
     }

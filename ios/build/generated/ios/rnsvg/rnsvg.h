@@ -31,8 +31,6 @@
 #import <vector>
 
 
-NS_ASSUME_NONNULL_BEGIN
-
 @protocol NativeSvgRenderableModuleSpec <RCTBridgeModule, RCTTurboModule>
 
 - (NSNumber *)isPointInFill:(NSNumber *)tag
@@ -99,5 +97,4 @@ namespace facebook::react {
 } // namespace facebook::react
 
 
-NS_ASSUME_NONNULL_END
 #endif // rnsvg_H

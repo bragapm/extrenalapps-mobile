@@ -1,18 +1,18 @@
-current directory: /Users/ramaaa/Documents/WORK/PROJECTS/TempPrototype/vendor/bundle/ruby/3.4.0/gems/nkf-0.2.0/ext/nkf
+current directory: /Users/ramaaa/Documents/WORK/PROJECTS/MyProject/vendor/bundle/ruby/3.4.0/gems/nkf-0.2.0/ext/nkf
 /opt/homebrew/opt/ruby/bin/ruby extconf.rb
 creating Makefile
 
-current directory: /Users/ramaaa/Documents/WORK/PROJECTS/TempPrototype/vendor/bundle/ruby/3.4.0/gems/nkf-0.2.0/ext/nkf
-make DESTDIR\= sitearchdir\=./.gem.20250615-43833-roq3oj sitelibdir\=./.gem.20250615-43833-roq3oj clean
+current directory: /Users/ramaaa/Documents/WORK/PROJECTS/MyProject/vendor/bundle/ruby/3.4.0/gems/nkf-0.2.0/ext/nkf
+make DESTDIR\= sitearchdir\=./.gem.20250701-45997-xuuev9 sitelibdir\=./.gem.20250701-45997-xuuev9 clean
 
-current directory: /Users/ramaaa/Documents/WORK/PROJECTS/TempPrototype/vendor/bundle/ruby/3.4.0/gems/nkf-0.2.0/ext/nkf
-make DESTDIR\= sitearchdir\=./.gem.20250615-43833-roq3oj sitelibdir\=./.gem.20250615-43833-roq3oj
+current directory: /Users/ramaaa/Documents/WORK/PROJECTS/MyProject/vendor/bundle/ruby/3.4.0/gems/nkf-0.2.0/ext/nkf
+make DESTDIR\= sitearchdir\=./.gem.20250701-45997-xuuev9 sitelibdir\=./.gem.20250701-45997-xuuev9
 compiling nkf.c
 linking shared-object nkf.bundle
 
-current directory: /Users/ramaaa/Documents/WORK/PROJECTS/TempPrototype/vendor/bundle/ruby/3.4.0/gems/nkf-0.2.0/ext/nkf
-make DESTDIR\= sitearchdir\=./.gem.20250615-43833-roq3oj sitelibdir\=./.gem.20250615-43833-roq3oj install
-/usr/bin/install -c -m 0755 nkf.bundle ./.gem.20250615-43833-roq3oj
+current directory: /Users/ramaaa/Documents/WORK/PROJECTS/MyProject/vendor/bundle/ruby/3.4.0/gems/nkf-0.2.0/ext/nkf
+make DESTDIR\= sitearchdir\=./.gem.20250701-45997-xuuev9 sitelibdir\=./.gem.20250701-45997-xuuev9 install
+/usr/bin/install -c -m 0755 nkf.bundle ./.gem.20250701-45997-xuuev9
 
-current directory: /Users/ramaaa/Documents/WORK/PROJECTS/TempPrototype/vendor/bundle/ruby/3.4.0/gems/nkf-0.2.0/ext/nkf
-make DESTDIR\= sitearchdir\=./.gem.20250615-43833-roq3oj sitelibdir\=./.gem.20250615-43833-roq3oj clean
+current directory: /Users/ramaaa/Documents/WORK/PROJECTS/MyProject/vendor/bundle/ruby/3.4.0/gems/nkf-0.2.0/ext/nkf
+make DESTDIR\= sitearchdir\=./.gem.20250701-45997-xuuev9 sitelibdir\=./.gem.20250701-45997-xuuev9 clean

@@ -1,4 +1,5 @@
 ${PODS_ROOT}/Target Support Files/Pods-ExternalApps/Pods-ExternalApps-resources.sh
+${PODS_CONFIGURATION_BUILD_DIR}/MapboxMaps/MapboxMapsResources.bundle
 ${PODS_CONFIGURATION_BUILD_DIR}/RCT-Folly/RCT-Folly_privacy.bundle
 ${PODS_CONFIGURATION_BUILD_DIR}/RNCAsyncStorage/RNCAsyncStorage_resources.bundle
 ${PODS_CONFIGURATION_BUILD_DIR}/RNSVG/RNSVGFilters.bundle

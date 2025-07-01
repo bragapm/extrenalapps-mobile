@@ -14,6 +14,31 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
+		<key>MapboxCommon.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>MapboxCoreMaps.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>MapboxMaps-MapboxMapsResources.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>MapboxMaps.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>MapboxMobileEvents.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>Pods-ExternalApps.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -139,11 +164,6 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
-		<key>React-RCTFBReactNativeSpec.xcscheme</key>
-		<dict>
-			<key>isShown</key>
-			<false/>
-		</dict>
 		<key>React-RCTFabric.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -160,11 +180,6 @@
 			<false/>
 		</dict>
 		<key>React-RCTNetwork.xcscheme</key>
-		<dict>
-			<key>isShown</key>
-			<false/>
-		</dict>
-		<key>React-RCTRuntime.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
@@ -274,26 +289,6 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
-		<key>React-jsinspectorcdp.xcscheme</key>
-		<dict>
-			<key>isShown</key>
-			<false/>
-		</dict>
-		<key>React-jsinspectornetwork.xcscheme</key>
-		<dict>
-			<key>isShown</key>
-			<false/>
-		</dict>
-		<key>React-jsinspectortracing.xcscheme</key>
-		<dict>
-			<key>isShown</key>
-			<false/>
-		</dict>
-		<key>React-jsitooling.xcscheme</key>
-		<dict>
-			<key>isShown</key>
-			<false/>
-		</dict>
 		<key>React-jsitracing.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -309,7 +304,7 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
-		<key>React-oscompat.xcscheme</key>
+		<key>React-nativeconfig.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
@@ -325,11 +320,6 @@
 			<false/>
 		</dict>
 		<key>React-rendererconsistency.xcscheme</key>
-		<dict>
-			<key>isShown</key>
-			<false/>
-		</dict>
-		<key>React-renderercss.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
@@ -369,11 +359,6 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
-		<key>ReactAppDependencyProvider.xcscheme</key>
-		<dict>
-			<key>isShown</key>
-			<false/>
-		</dict>
 		<key>ReactCodegen.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -389,6 +374,11 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
+		<key>Turf.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>Yoga.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -400,11 +390,6 @@
 			<false/>
 		</dict>
 		<key>boost.xcscheme</key>
-		<dict>
-			<key>isShown</key>
-			<false/>
-		</dict>
-		<key>fast_float.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
@@ -429,12 +414,12 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
-		<key>react-native-mmkv.xcscheme</key>
+		<key>react-native-safe-area-context.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
 		</dict>
-		<key>react-native-safe-area-context.xcscheme</key>
+		<key>rnmapbox-maps.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
