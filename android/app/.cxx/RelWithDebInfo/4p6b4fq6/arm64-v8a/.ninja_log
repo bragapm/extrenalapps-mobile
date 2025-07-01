@@ -1,0 +1,10 @@
+# ninja log v5
+10	332	1751217253048306901	build.ninja	fe881902cea04aaf
+0	9	0	/Users/ramaaa/Documents/WORK/PROJECTS/Github/React-Native-Template-Prototype/android/app/.cxx/RelWithDebInfo/4p6b4fq6/arm64-v8a/CMakeFiles/cmake.verify_globs	9a121b521945eea6
+1	1339	1750764124631500095	CMakeFiles/appmodules.dir/OnLoad.cpp.o	9c1b9a98b224e48
+1339	1375	1750764124671481396	/Users/ramaaa/Documents/WORK/PROJECTS/Github/React-Native-Template-Prototype/android/app/build/intermediates/cxx/RelWithDebInfo/4p6b4fq6/obj/arm64-v8a/libappmodules.so	7b48c177fbe285de
+0	1209	1750764124500302673	CMakeFiles/appmodules.dir/Users/ramaaa/Documents/WORK/PROJECTS/Github/React-Native-Template-Prototype/android/app/build/generated/autolinking/src/main/jni/autolinking.cpp.o	b777d4f9e9746941
+0	6	0	clean	4fe50b41a4b92f90
+9	582	1751217253048306901	build.ninja	fe881902cea04aaf
+0	13	0	/Users/ramaaa/Documents/WORK/PROJECTS/Github/React-Native-Template-Prototype/android/app/.cxx/RelWithDebInfo/4p6b4fq6/arm64-v8a/CMakeFiles/cmake.verify_globs	9a121b521945eea6
+0	10	0	clean	4fe50b41a4b92f90

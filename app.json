@@ -1,0 +1,9 @@
+{
+  "name": "ExternalApps",
+  "displayName": "External Apps",
+  "bundleId": "com.external.apps",
+  "androidVersionCode": 1,
+  "iosBuildNumber": "1",
+  "version": "1.0.0",
+  "appIcon": "./src/assets/icons/BIB-ICON.png"
+}
