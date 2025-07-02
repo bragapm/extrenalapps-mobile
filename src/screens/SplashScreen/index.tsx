@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, {useEffect, useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -10,51 +10,79 @@ import {
   ActivityIndicator,
   Image,
   Animated,
-} from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { StackNavigationProp } from "@react-navigation/stack";
-import { useThemeStore } from "../../theme/useThemeStore";
-import { RootStackParamList } from "../../navigation";
+} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {StackNavigationProp} from '@react-navigation/stack';
+import {useThemeStore} from '../../theme/useThemeStore';
+import {RootStackParamList} from '../../navigation';
+import {getLocationPermission, getCurrentLocation} from '../../utils/location';
+import {useUserStore} from '../../store/userStore';
 
 type Props = {
-  navigation: StackNavigationProp<RootStackParamList, "Splash">;
+  navigation: StackNavigationProp<RootStackParamList, 'Splash'>;
 };
 
 const ONBOARDING_STEPS = [
   {
-    title: "Selamat Datang di\nExternal Apps Dashboard",
-    desc: "Masuk untuk mengakses dashboard external apps",
+    title: 'Selamat Datang di\nExternal Apps Dashboard',
+    desc: 'Masuk untuk mengakses dashboard external apps',
   },
   {
-    title: "Selamat Datang di External Apps Dashboard",
-    desc: "Aplikasi dashboard ini bisa kamu pakai untuk monitoring berbagai fitur internal & external.",
+    title: 'Selamat Datang di External Apps Dashboard',
+    desc: 'Aplikasi dashboard ini bisa kamu pakai untuk monitoring berbagai fitur internal & external.',
   },
   {
-    title: "Selamat Datang di External Apps Dashboard",
-    desc: "Selesaikan login untuk mulai akses dashboard.",
+    title: 'Selamat Datang di External Apps Dashboard',
+    desc: 'Selesaikan login untuk mulai akses dashboard.',
   },
 ];
 
-const SplashScreen: React.FC<Props> = ({ navigation }) => {
-  const { colors } = useThemeStore();
+const SplashScreen: React.FC<Props> = ({navigation}) => {
+  const {colors} = useThemeStore();
   const colorScheme = useColorScheme();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(true);
   const progress = useRef(new Animated.Value(0)).current;
   const segmentAnims = useRef(
-    ONBOARDING_STEPS.map(() => new Animated.Value(0))
+    ONBOARDING_STEPS.map(() => new Animated.Value(0)),
   ).current;
   const DURATION = 7000;
+  const setUserLocation = useUserStore(state => state.setLocation);
+  const [locationAsked, setLocationAsked] = useState(false);
+
+  useEffect(() => {
+    const checkLocation = async () => {
+      const isLocationAsked = await AsyncStorage.getItem('isLocationAsked');
+      if (isLocationAsked === 'yes') {
+        setLocationAsked(true);
+        return;
+      }
+      const granted = await getLocationPermission();
+      if (granted) {
+        try {
+          const loc = await getCurrentLocation();
+          setUserLocation(loc); // <-- ini aja cukup
+          await AsyncStorage.setItem('isLocationAsked', 'yes');
+          setLocationAsked(true);
+        } catch (err) {
+          setLocationAsked(false);
+        }
+      } else {
+        setLocationAsked(false);
+      }
+    };
+    checkLocation();
+  }, []);
 
   useEffect(() => {
     // Cek status login dari storage
     const checkLogin = async () => {
       try {
-        const isLoggedIn = await AsyncStorage.getItem("isLoggedIn");
+        const isLoggedIn = await AsyncStorage.getItem('isLoggedIn');
         setTimeout(() => {
-          if (isLoggedIn === "yes") {
-            navigation.replace("Main");
+          if (isLoggedIn === 'yes') {
+            navigation.replace('Main');
           } else {
             setShowOnboarding(true);
             setLoading(false);
@@ -82,6 +110,51 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
     }).start();
   }, [step, showOnboarding]);
 
+  if (!locationAsked) {
+    return (
+      <View style={styles.background}>
+        <StatusBar
+          translucent
+          backgroundColor="transparent"
+          barStyle="light-content"
+        />
+        <View style={styles.overlay} />
+        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+          <Text
+            style={{
+              color: '#fff',
+              fontSize: 20,
+              marginBottom: 20,
+              textAlign: 'center',
+            }}>
+            Aplikasi memerlukan akses lokasi untuk dapat digunakan.
+          </Text>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={async () => {
+              // Ulangi permintaan izin lokasi
+              const granted = await getLocationPermission();
+              if (granted) {
+                try {
+                  const loc = await getCurrentLocation();
+                  await AsyncStorage.setItem(
+                    'userLocation',
+                    JSON.stringify(loc),
+                  );
+                  await AsyncStorage.setItem('isLocationAsked', 'yes');
+                  setLocationAsked(true);
+                } catch (err) {
+                  // Bisa kasih feedback error di sini kalau gagal
+                }
+              }
+            }}>
+            <Text style={styles.buttonText}>Izinkan Lokasi</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   // Jika loading (cek status), tampilkan splash doang
   if (loading) {
     return (
@@ -89,18 +162,17 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
         <StatusBar
           translucent
           backgroundColor="transparent"
-          barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
+          barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
         />
         <ImageBackground
-          source={require("../../assets/images/splashScreen.png")}
+          source={require('../../assets/images/splashScreen.png')}
           style={styles.background}
-          resizeMode="cover"
-        >
+          resizeMode="cover">
           <View style={styles.overlay} />
-          <View style={[styles.logoRow, { marginTop: "10%" }]}>
+          <View style={[styles.logoRow, {marginTop: '10%'}]}>
             <Image
-              source={require("../../assets/images/LogoBIB.png")}
-              style={{ width: 250, height: 54 }}
+              source={require('../../assets/images/LogoBIB.png')}
+              style={{width: 250, height: 54}}
               resizeMode="contain"
             />
           </View>
@@ -137,13 +209,12 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
         <StatusBar
           translucent
           backgroundColor="transparent"
-          barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
+          barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
         />
         <ImageBackground
-          source={require("../../assets/images/splashScreen.png")}
+          source={require('../../assets/images/splashScreen.png')}
           style={styles.background}
-          resizeMode="cover"
-        >
+          resizeMode="cover">
           <View style={styles.overlay} />
 
           {/* Progress Bar */}
@@ -154,10 +225,10 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
                   style={[
                     styles.progressFill,
                     {
-                      backgroundColor: "#D32E36",
+                      backgroundColor: '#D32E36',
                       width: segmentAnims[idx].interpolate({
                         inputRange: [0, 1],
-                        outputRange: ["0%", "100%"],
+                        outputRange: ['0%', '100%'],
                       }),
                     },
                   ]}
@@ -169,8 +240,8 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
           {/* Logo & Judul */}
           <View style={styles.logoRow}>
             <Image
-              source={require("../../assets/images/LogoBIB.png")}
-              style={{ width: 250, height: 54 }}
+              source={require('../../assets/images/LogoBIB.png')}
+              style={{width: 250, height: 54}}
               resizeMode="contain"
             />
           </View>
@@ -187,16 +258,15 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
               onPress={() => {
                 if (step === ONBOARDING_STEPS.length - 1) {
                   // Jangan set login di sini!
-                  navigation.replace("Login");
+                  navigation.replace('Login');
                 } else {
-                  setStep((s) => s + 1);
+                  setStep(s => s + 1);
                 }
-              }}
-            >
+              }}>
               <Text style={styles.buttonText}>
                 {step === ONBOARDING_STEPS.length - 1
-                  ? "Masuk melalui UGEMS"
-                  : "Lanjut"}
+                  ? 'Masuk melalui UGEMS'
+                  : 'Lanjut'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -210,14 +280,14 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  background: { flex: 1, width: "100%", height: "100%" },
+  background: {flex: 1, width: '100%', height: '100%'},
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.35)",
+    backgroundColor: 'rgba(0,0,0,0.35)',
   },
   progressBarContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 64,
     marginHorizontal: 24,
     gap: 8,
@@ -225,51 +295,51 @@ const styles = StyleSheet.create({
   progressBar: {
     flex: 1,
     height: 4,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     opacity: 1,
     borderRadius: 8,
     marginHorizontal: 4,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
   progressFill: {
-    height: "100%",
+    height: '100%',
     borderRadius: 8,
   },
-  progressActive: { backgroundColor: "#D32E36" },
-  progressInactive: { backgroundColor: "#fff", opacity: 0.2 },
+  progressActive: {backgroundColor: '#D32E36'},
+  progressInactive: {backgroundColor: '#fff', opacity: 0.2},
   logoRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 16,
     marginLeft: 24,
   },
-  logoText: { fontWeight: "bold", fontSize: 20, color: "#fff" },
-  textContainer: { marginTop: 32, marginHorizontal: 24 },
-  title: { fontSize: 36, fontWeight: "bold", color: "#fff", lineHeight: 44 },
+  logoText: {fontWeight: 'bold', fontSize: 20, color: '#fff'},
+  textContainer: {marginTop: 32, marginHorizontal: 24},
+  title: {fontSize: 36, fontWeight: 'bold', color: '#fff', lineHeight: 44},
 
-  buttonText: { color: "#fff", fontSize: 18, fontWeight: "500" },
+  buttonText: {color: '#fff', fontSize: 18, fontWeight: '500'},
   bottomArea: {
-    width: "100%",
-    position: "absolute",
+    width: '100%',
+    position: 'absolute',
     left: 0,
     bottom: 0,
     paddingHorizontal: 24,
     paddingBottom: 32,
-    backgroundColor: "rgba(0,0,0,0.35)", // biar tetap kontras di atas gambar
+    backgroundColor: 'rgba(0,0,0,0.35)', // biar tetap kontras di atas gambar
   },
   desc: {
     fontSize: 16,
-    color: "#fff",
+    color: '#fff',
     opacity: 0.9,
     marginBottom: 16, // sedikit jarak ke button
-    textAlign: "left",
+    textAlign: 'left',
   },
   button: {
-    backgroundColor: "#e53935",
+    backgroundColor: '#e53935',
     borderRadius: 6,
-    paddingVertical: "5%",
-    marginBottom: "5%",
-    alignItems: "center",
+    paddingVertical: '5%',
+    marginBottom: '5%',
+    alignItems: 'center',
   },
 });
 
