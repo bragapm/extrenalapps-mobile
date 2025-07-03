@@ -110,50 +110,19 @@ const SplashScreen: React.FC<Props> = ({navigation}) => {
     }).start();
   }, [step, showOnboarding]);
 
-  if (!locationAsked) {
-    return (
-      <View style={styles.background}>
-        <StatusBar
-          translucent
-          backgroundColor="transparent"
-          barStyle="light-content"
-        />
-        <View style={styles.overlay} />
-        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-          <Text
-            style={{
-              color: '#fff',
-              fontSize: 20,
-              marginBottom: 20,
-              textAlign: 'center',
-            }}>
-            Aplikasi memerlukan akses lokasi untuk dapat digunakan.
-          </Text>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={async () => {
-              // Ulangi permintaan izin lokasi
-              const granted = await getLocationPermission();
-              if (granted) {
-                try {
-                  const loc = await getCurrentLocation();
-                  await AsyncStorage.setItem(
-                    'userLocation',
-                    JSON.stringify(loc),
-                  );
-                  await AsyncStorage.setItem('isLocationAsked', 'yes');
-                  setLocationAsked(true);
-                } catch (err) {
-                  // Bisa kasih feedback error di sini kalau gagal
-                }
-              }
-            }}>
-            <Text style={styles.buttonText}>Izinkan Lokasi</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
+  // if (!locationAsked) {
+  //   return (
+  //     <View style={styles.background}>
+  //       <StatusBar
+  //         translucent
+  //         backgroundColor="transparent"
+  //         barStyle="light-content"
+  //       />
+  //       <View style={styles.overlay} />
+       
+  //     </View>
+  //   );
+  // }
 
   // Jika loading (cek status), tampilkan splash doang
   if (loading) {

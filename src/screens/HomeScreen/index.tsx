@@ -18,107 +18,29 @@ import AppHeader from '../../components/AppHeader';
 import {BarChart} from 'react-native-chart-kit';
 import Svg, {Rect, G, Text as SvgText} from 'react-native-svg';
 import {useUserStore} from '../../store/userStore';
-
-const dummyStats = [
-  {
-    title: 'Jumlah Absen',
-    value: '17/31',
-    icon: require('../../assets/images/ic-user.png'),
-  },
-  {
-    title: 'Jumlah Cuti',
-    value: '0/31',
-    icon: require('../../assets/images/ic-envelope.png'),
-  },
-  {
-    title: 'Total Sakit',
-    value: '0/31',
-    icon: require('../../assets/images/hospital-JP.png'),
-  },
-  {
-    title: 'Alpha',
-    value: '0/31',
-    icon: require('../../assets/images/ic-pause.png'),
-  },
-  {
-    title: 'Total Perjadin',
-    value: '0/31',
-    icon: require('../../assets/images/user-helmet-safety.png'),
-  },
-];
-
-const dummyHistory = [
-  {type: 'Hadir', date: '23 Feb 2025', time: '09:00 WITA', status: 'On time'},
-  {type: 'Sakit', date: '24 Feb 2025', time: '09:00 WITA', status: 'On time'},
-  {type: 'Cuti', date: '24 Feb 2025', time: '09:00 WITA', status: 'On time'},
-  {
-    type: 'Perjalanan Dinas',
-    date: '24 Feb 2025',
-    time: '09:00 WITA',
-    status: 'On time',
-  },
-];
-const dummySummary = {
-  chart: [
-    {month: 'Jan', hadir: 6, tidak_hadir: 3},
-    {month: 'Feb', hadir: 8, tidak_hadir: 4},
-    {month: 'Mar', hadir: 7, tidak_hadir: 3},
-    {month: 'Apr', hadir: 8, tidak_hadir: 3},
-    {month: 'Mei', hadir: 5, tidak_hadir: 2},
-    {month: 'Jun', hadir: 8, tidak_hadir: 4},
-    {month: 'Jul', hadir: 8, tidak_hadir: 4},
-    {month: 'Agu', hadir: 8, tidak_hadir: 5},
-    {month: 'Sep', hadir: 8, tidak_hadir: 5},
-    {month: 'Okt', hadir: 8, tidak_hadir: 7},
-    {month: 'Nov', hadir: 0, tidak_hadir: 14},
-    {month: 'Des', hadir: 0, tidak_hadir: 14},
-  ],
-  rekap: [
-    {tanggal: '2025-04-01', status: 'hadir'},
-    {tanggal: '2025-04-09', status: 'tidak_hadir'},
-    {tanggal: '2025-04-15', status: 'tidak_hadir'},
-    {tanggal: '2025-04-18', status: 'tidak_hadir'},
-    {tanggal: '2025-04-20', status: 'tidak_hadir'},
-    {tanggal: '2025-04-24', status: 'tidak_hadir'},
-    {tanggal: '2025-04-26', status: 'tidak_hadir'},
-  ],
-};
-
-const dummyCutiChart = [
-  {month: 'Jan', total_cuti: 6},
-  {month: 'Feb', total_cuti: 8},
-  {month: 'Mar', total_cuti: 8},
-  {month: 'Apr', total_cuti: 9},
-  {month: 'Mei', total_cuti: 5},
-  {month: 'Jun', total_cuti: 8},
-  {month: 'Jul', total_cuti: 8},
-  {month: 'Agu', total_cuti: 8},
-  {month: 'Sept', total_cuti: 8},
-  {month: 'Okt', total_cuti: 8},
-  {month: 'Nov', total_cuti: 8},
-  {month: 'Des', total_cuti: 8},
-];
-
-const dummyCutiRekap = [
-  18,
-  20,
-  24, // Tanggal cuti (hijau)
-];
-
-const dummyPerjadinChart = [
-  {month: 'Jan', total_perjadin: 6},
-  {month: 'Feb', total_perjadin: 8},
-  {month: 'Mar', total_perjadin: 8},
-  {month: 'Apr', total_perjadin: 9},
-  {month: 'Mei', total_perjadin: 5},
-  {month: 'Jun', total_perjadin: 8},
-  {month: 'Jul', total_perjadin: 8},
-  {month: 'Agu', total_perjadin: 8},
-  {month: 'Sept', total_perjadin: 8},
-  {month: 'Okt', total_perjadin: 8},
-  {month: 'Nov', total_perjadin: 8},
-  {month: 'Des', total_perjadin: 8},
-];
+import HistoryAttendance from '../../components/HistoryAttendance';
+import TodayStatistics from '../../components/TodayStatistics';
+import OragnizationalStructure from '../../components/OragnizationalStructure';
+import CustomLineChart from '../../components/CustomLineChart';
+import {
+  dummyStats,
+  dummyHistory,
+  dummySummary,
+  dummyCutiChart,
+  rekapCuti,
+  dummyCutiRekap,
+  dummyPerjadinChart,
+  rekapPerjadin,
+  dummyAdminAbsensiTrend,
+  dummyAdminMonitoringAbsensi,
+  dummyAdminCutiMonitoring,
+  dummyAdminCutiTrend,
+  dummyAdminPerjadinMonitoring,
+  dummyAdminPerjadinTrend,
+  dummyLiveAbsensi,
+  dummyTotalEmployee,
+} from '../../data/dummy.ts';
+import TotalEmployee from '../../components/TotalEmployee.tsx';
 
 type StackedBarChartData = {
   month: string;
@@ -188,14 +110,41 @@ const HomeScreen: React.FC = () => {
   const userLocation = useUserStore(state => state.location);
   console.log('userLocation', userLocation);
 
-  const sections = [
-    {type: 'stat', title: 'Statistik - Hari Ini', data: dummyStats},
-    {type: 'history', title: 'History Absensi', data: dummyHistory},
-    {type: 'org', title: 'Struktur Organisasi'},
-    {type: 'summary', title: 'Summary Absensi', data: summary},
-    {type: 'cuti', title: 'Cuti'},
-    {type: 'perjadin', title: 'Perjalanan Dinas'},
-  ];
+  const sections = React.useMemo(() => {
+    if (role === 'admin' || role === 'BOD') {
+      return [
+        {type: 'stat', title: 'Statistik - Hari Ini', data: dummyStats},
+        {
+          type: 'total-employee',
+          title: 'Total Employee',
+          data: dummyTotalEmployee,
+        },
+        {type: 'live-absensi-admin'},
+        {type: 'org', title: 'Struktur Organisasi'},
+        {
+          type: 'summary-admin',
+          title: 'Summary Absensi',
+          trendData: dummyAdminAbsensiTrend,
+          monitoringData: dummyAdminMonitoringAbsensi,
+        },
+        {
+          type: 'cuti-admin',
+        },
+        {
+          type: 'perjadin-admin',
+        },
+      ];
+    } else {
+      return [
+        {type: 'stat', title: 'Statistik - Hari Ini', data: dummyStats},
+        {type: 'history', title: 'History Absensi', data: dummyHistory},
+        {type: 'org', title: 'Struktur Organisasi'},
+        {type: 'summary', title: 'Summary Absensi', data: dummySummary},
+        {type: 'cuti', title: 'Cuti'},
+        {type: 'perjadin', title: 'Perjalanan Dinas'},
+      ];
+    }
+  }, [role]);
   useEffect(() => {
     const getRole = async () => {
       const r = await AsyncStorage.getItem('userRole');
@@ -464,200 +413,544 @@ const HomeScreen: React.FC = () => {
       </Svg>
     );
   };
+
+  const CustomUserBarChartPerjadin = ({
+    data = '',
+    height = 220,
+    maxY = 12,
+    barColor = '#EEB82E', // Kuning
+    labelColor = '#888',
+    paddingLeft = 36,
+    paddingRight = 16,
+    paddingTop = 18,
+    paddingBottom = 30,
+  }) => {
+    const screenWidth = Dimensions.get('window').width * 0.85;
+    const chartWidth = screenWidth - paddingLeft - paddingRight;
+    const barCount = data.length;
+    const gapCount = barCount - 1;
+    const barWidth = 22;
+    const totalBarWidth = barWidth * barCount;
+    const gapWidth = (chartWidth - totalBarWidth) / gapCount;
+    const CHART_HEIGHT = height - paddingTop - paddingBottom;
+    const yStep = maxY / 6;
+
+    return (
+      <Svg width={screenWidth} height={height}>
+        {[...Array(7)].map((_, i) => {
+          const y = paddingTop + (CHART_HEIGHT * i) / 6;
+          return (
+            <G key={i}>
+              <Rect
+                x={paddingLeft}
+                y={y}
+                width={chartWidth}
+                height={1}
+                fill="#eee"
+              />
+              <SvgText
+                x={paddingLeft - 8}
+                y={y + 6}
+                fontSize={12}
+                fill={labelColor}
+                textAnchor="end"
+                fontWeight="400">
+                {Math.round(maxY - i * yStep)}
+              </SvgText>
+            </G>
+          );
+        })}
+        {data.map((d, i) => {
+          const x = paddingLeft + i * (barWidth + gapWidth);
+          const h = (d.total_perjadin / maxY) * CHART_HEIGHT;
+          const y = paddingTop + CHART_HEIGHT - h;
+          return (
+            <G key={i}>
+              <Rect
+                x={x}
+                y={y}
+                width={barWidth}
+                height={h}
+                fill={barColor}
+                rx={3}
+              />
+              <SvgText
+                x={x + barWidth / 2}
+                y={paddingTop + CHART_HEIGHT + 18}
+                fontSize={12}
+                fill={labelColor}
+                textAnchor="middle">
+                {d.name}
+              </SvgText>
+            </G>
+          );
+        })}
+      </Svg>
+    );
+  };
+
+  const CustomUserBarChart = ({
+    data = '',
+    height = 220,
+    maxY = 12,
+    barColor = '#21C067',
+    labelColor = '#888',
+    paddingLeft = 36,
+    paddingRight = 16,
+    paddingTop = 18,
+    paddingBottom = 30,
+  }) => {
+    const screenWidth = Dimensions.get('window').width * 0.85;
+    const chartWidth = screenWidth - paddingLeft - paddingRight;
+    const barCount = data.length;
+    const gapCount = barCount - 1;
+    const barWidth = 22;
+    const totalBarWidth = barWidth * barCount;
+    const gapWidth = (chartWidth - totalBarWidth) / gapCount;
+    const CHART_HEIGHT = height - paddingTop - paddingBottom;
+    const yStep = maxY / 6;
+
+    return (
+      <Svg width={screenWidth} height={height}>
+        {[...Array(7)].map((_, i) => {
+          const y = paddingTop + (CHART_HEIGHT * i) / 6;
+          return (
+            <G key={i}>
+              <Rect
+                x={paddingLeft}
+                y={y}
+                width={chartWidth}
+                height={1}
+                fill="#eee"
+              />
+              <SvgText
+                x={paddingLeft - 8}
+                y={y + 6}
+                fontSize={12}
+                fill={labelColor}
+                textAnchor="end"
+                fontWeight="400">
+                {Math.round(maxY - i * yStep)}
+              </SvgText>
+            </G>
+          );
+        })}
+        {data.map((d, i) => {
+          const x = paddingLeft + i * (barWidth + gapWidth);
+          const h = (d.total_cuti / maxY) * CHART_HEIGHT;
+          const y = paddingTop + CHART_HEIGHT - h;
+          return (
+            <G key={i}>
+              <Rect
+                x={x}
+                y={y}
+                width={barWidth}
+                height={h}
+                fill={barColor}
+                rx={3}
+              />
+              <SvgText
+                x={x + barWidth / 2}
+                y={paddingTop + CHART_HEIGHT + 18}
+                fontSize={12}
+                fill={labelColor}
+                textAnchor="middle">
+                {d.name}
+              </SvgText>
+            </G>
+          );
+        })}
+      </Svg>
+    );
+  };
+
   const renderSection = ({item}: {item: any}) => {
+    if (item.type === 'summary-admin') {
+      return (
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryHeader}>
+            <Text style={styles.summaryTitle}>Summary Absensi</Text>
+            <TouchableOpacity>
+              <Text style={styles.summaryDetail}>Lihat detail &gt;</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Tren Absensi */}
+          <View style={styles.barChartBox}>
+            <Text style={styles.chartTitle}>Tren Absensi</Text>
+            <TouchableOpacity style={styles.dropdownBox}>
+              <Text style={styles.dropdownText}>Tahunan ▼</Text>
+            </TouchableOpacity>
+            <View style={{marginTop: '10%'}}>
+              <CustomLineChart
+                labels={[
+                  'Jan',
+                  'Feb',
+                  'Mar',
+                  'Apr',
+                  'Mei',
+                  'Jun',
+                  'Jul',
+                  'Agu',
+                  'Sep',
+                  'Okt',
+                  'Nov',
+                  'Des',
+                ]}
+                datasets={item.trendData.map((user: any) => ({
+                  data: user.data,
+                  color: () => user.color,
+                  name: user.name,
+                }))}
+                dotSize={5}
+                showLegend={false} // Legend custom di bawah!
+              />
+            </View>
+            {/* Legend otomatis dari data */}
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                marginTop: 10,
+                justifyContent: 'flex-start',
+              }}>
+              {item.trendData.map((user: any, idx: number) => (
+                <View
+                  key={user.name}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    marginRight: 16,
+                    marginBottom: 6,
+                  }}>
+                  <View
+                    style={{
+                      width: 14,
+                      height: 14,
+                      borderRadius: 7,
+                      backgroundColor: user.color,
+                      marginRight: 5,
+                    }}
+                  />
+                  <Text style={{fontSize: 13, color: '#333'}}>{user.name}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Monitoring Absensi */}
+          <View style={styles.barChartBox}>
+            <Text style={styles.chartTitle}>Monitoring Absensi</Text>
+            <TouchableOpacity style={styles.dropdownBox}>
+              <Text style={styles.dropdownText}>Tahunan ▼</Text>
+            </TouchableOpacity>
+            <View style={{marginTop: '10%'}}>
+              <CustomStackedBarChart
+                data={item.monitoringData}
+                height={250}
+                maxY={14}
+              />
+            </View>
+            {/* Legend manual */}
+            <View style={styles.legendRow}>
+              <View style={styles.legendItem}>
+                <View
+                  style={[styles.legendDot, {backgroundColor: '#2996F5'}]}
+                />
+                <Text style={styles.legendText}>Hadir</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View
+                  style={[styles.legendDot, {backgroundColor: '#E24B3B'}]}
+                />
+                <Text style={styles.legendText}>Tidak Hadir</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      );
+    }
+    if (item.type === 'live-absensi-admin') {
+      const badgeColors = {
+        perjadin: {border: '#545454', text: '#545454', bg: '#fff'},
+        sakit: {border: '#FDB813', text: '#FDB813', bg: '#fff'},
+        cuti: {border: '#21C067', text: '#21C067', bg: '#fff'},
+        hadir: {border: '#2996F5', text: '#2996F5', bg: '#fff'},
+      };
+      return (
+        <View style={styles.card}>
+          <View style={styles.headerRow}>
+            <Text style={styles.headerText}>Live Absensi</Text>
+            <TouchableOpacity>
+              <Text style={styles.detailLink}>Lihat detail &gt;</Text>
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={dummyLiveAbsensi}
+            keyExtractor={(item, idx) => item.name + idx}
+            renderItem={({item}) => {
+              const color =
+                badgeColors[item.statusType] || badgeColors['hadir'];
+              return (
+                <View style={styles.itemRow}>
+                  <View>
+                    <Text style={styles.nameText}>{item.name}</Text>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        marginTop: 3,
+                      }}>
+                      <Image
+                        source={require('../../assets/icons/ic-stackeHolder-disable.png')}
+                        style={{
+                          height: 20,
+                          width: 20,
+                        }}
+                        resizeMode="contain"
+                      />
+                      <Text style={styles.jabatanText}>{item.jabatan}</Text>
+                    </View>
+                  </View>
+                  {item.status ? (
+                    <View
+                      style={[
+                        styles.badge,
+                        {
+                          borderColor: color.border,
+                          backgroundColor: color.bg,
+                        },
+                      ]}>
+                      <Text style={[styles.badgeText, {color: color.text}]}>
+                        {item.status}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              );
+            }}
+            ItemSeparatorComponent={() => <View style={{height: 12}} />}
+          />
+        </View>
+      );
+    }
+    if (item.type === 'cuti-admin') {
+      return (
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryHeader}>
+            <Text style={styles.summaryTitle}>Cuti</Text>
+            <TouchableOpacity>
+              <Text style={styles.summaryDetail}>Lihat detail &gt;</Text>
+            </TouchableOpacity>
+          </View>
+          {/* Tren Cuti */}
+          <View style={styles.barChartBox}>
+            <Text style={styles.chartTitle}>Tren Cuti</Text>
+            <TouchableOpacity style={styles.dropdownBox}>
+              <Text style={styles.dropdownText}>Tahunan ▼</Text>
+            </TouchableOpacity>
+            <View style={{marginTop: '10%'}}>
+              <CustomLineChart
+                labels={[
+                  'Jan',
+                  'Feb',
+                  'Mar',
+                  'Apr',
+                  'Mei',
+                  'Jun',
+                  'Jul',
+                  'Agu',
+                  'Sep',
+                  'Okt',
+                  'Nov',
+                  'Des',
+                ]}
+                datasets={dummyAdminCutiTrend.map(user => ({
+                  data: user.data,
+                  color: () => user.color,
+                  name: user.name,
+                }))}
+                dotSize={5}
+                showLegend={false}
+              />
+            </View>
+            {/* Legend */}
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                marginTop: 10,
+                justifyContent: 'flex-start',
+              }}>
+              {dummyAdminCutiTrend.map((user, idx) => (
+                <View
+                  key={user.name}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    marginRight: 16,
+                    marginBottom: 6,
+                  }}>
+                  <View
+                    style={{
+                      width: 14,
+                      height: 14,
+                      borderRadius: 7,
+                      backgroundColor: user.color,
+                      marginRight: 5,
+                    }}
+                  />
+                  <Text style={{fontSize: 13, color: '#333'}}>{user.name}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Monitoring Cuti */}
+          <View style={styles.barChartBox}>
+            <Text style={styles.chartTitle}>Monitoring Cuti</Text>
+            <TouchableOpacity style={styles.dropdownBox}>
+              <Text style={styles.dropdownText}>Bulan ▼</Text>
+            </TouchableOpacity>
+            <View style={{marginTop: '10%'}}>
+              <CustomUserBarChart
+                data={dummyAdminCutiMonitoring}
+                height={250}
+                maxY={12}
+              />
+            </View>
+            <View style={styles.legendRow}>
+              <View style={styles.legendItem}>
+                <View
+                  style={[styles.legendDot, {backgroundColor: '#21C067'}]}
+                />
+                <Text style={styles.legendText}>Total Cuti</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      );
+    }
+    if (item.type === 'total-employee') {
+      const row1 = item.data.slice(0, 2); // 2 card besar
+      const row2 = item.data.slice(2, 5);
+      return <TotalEmployee item={item} row1={row1} row2={row2} />;
+    }
+
+    if (item.type === 'perjadin-admin') {
+      return (
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryHeader}>
+            <Text style={styles.summaryTitle}>Perjalanan Dinas</Text>
+            <TouchableOpacity>
+              <Text style={styles.summaryDetail}>Lihat detail &gt;</Text>
+            </TouchableOpacity>
+          </View>
+          {/* Tren Perjalanan Dinas */}
+          <View style={styles.barChartBox}>
+            <Text style={styles.chartTitle}>Tren Perjalanan Dinas</Text>
+            <TouchableOpacity style={styles.dropdownBox}>
+              <Text style={styles.dropdownText}>Tahunan ▼</Text>
+            </TouchableOpacity>
+            <View style={{marginTop: '10%'}}>
+              <CustomLineChart
+                labels={[
+                  'Jan',
+                  'Feb',
+                  'Mar',
+                  'Apr',
+                  'Mei',
+                  'Jun',
+                  'Jul',
+                  'Agu',
+                  'Sep',
+                  'Okt',
+                  'Nov',
+                  'Des',
+                ]}
+                datasets={dummyAdminPerjadinTrend.map(user => ({
+                  data: user.data,
+                  color: () => user.color,
+                  name: user.name,
+                }))}
+                dotSize={5}
+                showLegend={false}
+              />
+            </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                marginTop: 10,
+                justifyContent: 'flex-start',
+              }}>
+              {dummyAdminPerjadinTrend.map((user, idx) => (
+                <View
+                  key={user.name}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    marginRight: 16,
+                    marginBottom: 6,
+                  }}>
+                  <View
+                    style={{
+                      width: 14,
+                      height: 14,
+                      borderRadius: 7,
+                      backgroundColor: user.color,
+                      marginRight: 5,
+                    }}
+                  />
+                  <Text style={{fontSize: 13, color: '#333'}}>{user.name}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Monitoring Perjalanan Dinas */}
+          <View style={styles.barChartBox}>
+            <Text style={styles.chartTitle}>Monitoring Perjalanan Dinas</Text>
+            <TouchableOpacity style={styles.dropdownBox}>
+              <Text style={styles.dropdownText}>Bulan ▼</Text>
+            </TouchableOpacity>
+            <View style={{marginTop: '10%'}}>
+              <CustomUserBarChartPerjadin
+                data={dummyAdminPerjadinMonitoring}
+                height={250}
+                maxY={12}
+              />
+            </View>
+            <View style={styles.legendRow}>
+              <View style={styles.legendItem}>
+                <View
+                  style={[styles.legendDot, {backgroundColor: '#EEB82E'}]}
+                />
+                <Text style={styles.legendText}>Total Perjalanan Dinas</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      );
+    }
+
     if (item.type === 'stat') {
       // Statistik grid
       const row1 = item.data.slice(0, 2); // 2 card besar
       const row2 = item.data.slice(2, 5);
-      return (
-        <View style={styles.statsCard}>
-          <View style={styles.statsCardHeader}>
-            <Text style={styles.statsCardTitle}>{item.title}</Text>
-          </View>
-          <View>
-            {/* Row 1: 3 item */}
-            <View style={styles.statsRow}>
-              {row1.map((stat: any, i: any) => (
-                <View
-                  style={[
-                    styles.statsItemLarge,
-                    {marginRight: i === 0 ? 12 : 0},
-                  ]}
-                  key={i}>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}>
-                    <View
-                      style={{
-                        alignItems: 'flex-start',
-                        justifyContent: 'center',
-                        paddingHorizontal: '5%',
-                        paddingTop: '5%',
-                      }}>
-                      <Text style={styles.statsValue}>{stat.value}</Text>
-                      <Text style={styles.statsLabel}>{stat.title}</Text>
-                    </View>
-                    <View
-                      style={{
-                        alignItems: 'flex-start',
-                        marginTop: '-10%',
-                      }}>
-                      <Image
-                        source={stat.icon}
-                        style={{width: 35, height: 35, alignSelf: 'flex-end'}}
-                        resizeMode="contain"
-                      />
-                    </View>
-                  </View>
-                </View>
-              ))}
-            </View>
-            {/* Row 2: 2 item */}
-            <View style={[styles.statsRow, {marginTop: 12}]}>
-              {row2.map((stat: any, i: any) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.statsItemSmall,
-                    {marginRight: i < 2 ? 12 : 0},
-                  ]}>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}>
-                    <View
-                      style={{
-                        alignItems: 'flex-start',
-                        justifyContent: 'center',
-
-                        paddingTop: '10%',
-                      }}>
-                      <Text
-                        style={[
-                          styles.statsValue,
-                          {marginLeft: '5%', fontSize: 13},
-                        ]}>
-                        {stat.value}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.statsLabel,
-                          {marginLeft: '5%', fontSize: 11},
-                        ]}>
-                        {stat.title}
-                      </Text>
-                    </View>
-                    <View
-                      style={{
-                        alignItems: 'flex-start',
-                        marginTop: '-15%',
-                      }}>
-                      <Image
-                        source={stat.icon}
-                        style={{width: 32, height: 32}}
-                        resizeMode="contain"
-                      />
-                    </View>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-        </View>
-      );
+      return <TodayStatistics item={item} row1={row1} row2={row2} />;
     }
     if (item.type === 'history') {
       // History list
-      return (
-        <>
-          <View style={styles.historyHeader}>
-            <Text style={styles.historyTitle}>{item.title}</Text>
-            <TouchableOpacity>
-              <Text style={styles.historyDetailLink}>Lihat Semuanya &gt;</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.historyCard}>
-            <FlatList
-              data={item.data}
-              keyExtractor={(_, i) => i.toString()}
-              renderItem={({item}) => (
-                <View
-                  style={{
-                    backgroundColor: '#FFFF',
-                    paddingHorizontal: '3%',
-                    paddingVertical: '2%',
-                    borderRadius: 10,
-                    marginBottom: '3%',
-                    width: '100%',
-                    shadowColor: '#000',
-                    shadowOpacity: 0.05,
-                    shadowOffset: {width: 0, height: 2},
-                    elevation: 2,
-                  }}>
-                  <View>
-                    <Text style={styles.historyType}>{item.type}</Text>
-                    <Text style={styles.historyDate}>{item.date}</Text>
-                  </View>
-                  <View style={{alignItems: 'flex-end'}}>
-                    <Text style={styles.historyTime}>{item.time}</Text>
-                    <Text style={styles.historyStatus}>{item.status}</Text>
-                  </View>
-                </View>
-              )}
-              scrollEnabled={false}
-            />
-          </View>
-        </>
-      );
+      return <HistoryAttendance item={item} />;
     }
     if (item.type === 'org') {
       // Struktur organisasi
-      return (
-        <View style={styles.orgCard}>
-          <View style={styles.orgHeader}>
-            <Text style={styles.orgTitle}>{item.title}</Text>
-            <TouchableOpacity>
-              <Text style={styles.orgDetailLink}>Lihat detail &gt;</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.orgChart}>
-            <Image
-              source={require('../../assets/images/dummy-orgchart.png')}
-              style={{
-                width: '100%',
-                height: imageHeight * 2,
-                borderRadius: 10,
-                paddingVertical: '3%',
-              }}
-              resizeMode="cover"
-            />
-          </View>
-        </View>
-      );
+      return <OragnizationalStructure item={item} />;
     }
     if (item.type === 'summary') {
-      function generateCalendar(month: any, year: any, rekap: any) {
-        const daysInMonth = new Date(year, month, 0).getDate();
-        const calendar = [];
-        for (let i = 1; i <= daysInMonth; i++) {
-          const tanggal = `${year}-${String(month).padStart(2, '0')}-${String(
-            i,
-          ).padStart(2, '0')}`;
-          const found = rekap.find((x: any) => x.tanggal === tanggal);
-          calendar.push({
-            day: i,
-            status: found ? found.status : 'hadir', // default hadir
-          });
-        }
-        return calendar;
-      }
       const chartData = item.data.chart;
-      const calendarData = generateCalendar(4, 2025, item.data.rekap);
+
       return (
         <View style={styles.summaryCard}>
           <View style={styles.summaryHeader}>
@@ -710,21 +1003,20 @@ const HomeScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
             {/* Kalender grid */}
-            <View style={styles.calendarGrid}>
-              {calendarData.map((item, idx) => (
-                <View
-                  key={idx}
-                  style={[
-                    styles.dayBox,
-                    {
-                      backgroundColor:
-                        item.status === 'hadir' ? '#2996F5' : '#E24B3B',
-                    },
-                  ]}>
-                  <Text style={styles.dayText}>{item.day}</Text>
-                </View>
-              ))}
-            </View>
+            <CustomLineChart
+              labels={item.data.rekap.map((x: any) => x.minggu)}
+              datasets={[
+                {
+                  data: item.data.rekap.map((x: any) => x.hadir),
+                  color: () => '#2996F5',
+                },
+                {
+                  data: item.data.rekap.map((x: any) => x.tidak_hadir),
+                  color: () => '#E24B3B',
+                },
+              ]}
+              dotSize={6}
+            />
             {/* Legend */}
             <View style={styles.legendRow}>
               <View style={styles.legendItem}>
@@ -746,23 +1038,7 @@ const HomeScreen: React.FC = () => {
     }
 
     if (item.type === 'cuti') {
-      const generateCutiCalendar = (
-        month = 4,
-        year = 2025,
-        cutiDays: number[] = [],
-      ): {day: number; status: string}[] => {
-        const daysInMonth = new Date(year, month, 0).getDate();
-        return Array.from({length: daysInMonth}, (_, i) => {
-          const day = i + 1;
-          return {
-            day,
-            status: cutiDays.includes(day) ? 'cuti' : 'hadir',
-          };
-        });
-      };
-      // Data
       const chartData = dummyCutiChart;
-      const rekapDays = generateCutiCalendar(4, 2025, dummyCutiRekap);
 
       return (
         <View style={styles.summaryCard}>
@@ -793,62 +1069,25 @@ const HomeScreen: React.FC = () => {
               </View>
             </View>
           </View>
-          <View
-            style={{backgroundColor: '#fff', borderRadius: 14, padding: 18}}>
-            {/* Judul dan dropdown */}
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 6,
-              }}>
-              <Text style={{fontWeight: 'bold', fontSize: 18, color: '#222'}}>
-                Rekap Cuti
-              </Text>
-              <TouchableOpacity
-                style={{
-                  backgroundColor: '#f3f3f3',
-                  borderRadius: 8,
-                  paddingHorizontal: 10,
-                  paddingVertical: 3,
-                }}>
-                <Text style={{color: '#232323', fontWeight: 'bold'}}>
-                  Bulan April ▼
-                </Text>
+          <View style={styles.rekapBox}>
+            <View style={styles.rekapHeader}>
+              <Text style={styles.chartTitle}>Rekap Cuti</Text>
+              <TouchableOpacity style={styles.dropdownBox}>
+                <Text style={styles.dropdownText}>Bulan April ▼</Text>
               </TouchableOpacity>
             </View>
-            {/* Kalender GRID */}
-            <View
-              style={{flexDirection: 'row', flexWrap: 'wrap', marginTop: 6}}>
-              {rekapDays.map((item, idx) => (
-                <View
-                  key={idx}
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 12,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    backgroundColor:
-                      item.status === 'cuti' ? '#21C067' : '#2996F5',
-                    margin: 4,
-                  }}>
-                  <Text
-                    style={{color: '#FFF', fontWeight: 'bold', fontSize: 17}}>
-                    {item.day}
-                  </Text>
-                </View>
-              ))}
-            </View>
-            {/* Legend bawah */}
+
+            <CustomLineChart
+              labels={rekapCuti.map(x => x.minggu)}
+              datasets={[
+                {
+                  data: rekapCuti.map(x => x.total_cuti),
+                  color: () => '#21C067', // hijau!
+                },
+              ]}
+              dotSize={6}
+            />
             <View style={styles.legendRow}>
-              <View style={styles.legendItem}>
-                <View
-                  style={[styles.legendDot, {backgroundColor: '#2996F5'}]}
-                />
-                <Text style={styles.legendText}>Hadir</Text>
-              </View>
               <View style={styles.legendItem}>
                 <View
                   style={[styles.legendDot, {backgroundColor: '#21C067'}]}
@@ -861,22 +1100,7 @@ const HomeScreen: React.FC = () => {
       );
     }
     if (item.type === 'perjadin') {
-      const generatePerjadinCalendar = (
-        month: number = 4,
-        year: number = 2025,
-        perjadinDays: number[] = [],
-      ): {day: number; status: string}[] => {
-        const daysInMonth = new Date(year, month, 0).getDate();
-        return Array.from({length: daysInMonth}, (_, i) => {
-          const day = i + 1;
-          return {
-            day,
-            status: perjadinDays.includes(day) ? 'perjadin' : 'hadir',
-          };
-        });
-      };
       const chartData = dummyPerjadinChart;
-      const rekapDays = generatePerjadinCalendar(4, 2025, dummyPerjadinRekap);
 
       return (
         <View style={styles.summaryCard}>
@@ -907,62 +1131,24 @@ const HomeScreen: React.FC = () => {
               </View>
             </View>
           </View>
-          <View
-            style={{backgroundColor: '#fff', borderRadius: 14, padding: 18}}>
-            {/* Judul dan dropdown */}
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 6,
-              }}>
-              <Text style={{fontWeight: 'bold', fontSize: 18, color: '#222'}}>
-                Rekap Perjalanan Dinas
-              </Text>
-              <TouchableOpacity
-                style={{
-                  backgroundColor: '#f3f3f3',
-                  borderRadius: 8,
-                  paddingHorizontal: 10,
-                  paddingVertical: 3,
-                }}>
-                <Text style={{color: '#232323', fontWeight: 'bold'}}>
-                  Bulan April ▼
-                </Text>
+          <View style={styles.rekapBox}>
+            <View style={styles.rekapHeader}>
+              <Text style={styles.chartTitle}>Rekap Cuti</Text>
+              <TouchableOpacity style={styles.dropdownBox}>
+                <Text style={styles.dropdownText}>Bulan April ▼</Text>
               </TouchableOpacity>
             </View>
-            {/* Kalender GRID */}
-            <View
-              style={{flexDirection: 'row', flexWrap: 'wrap', marginTop: 6}}>
-              {rekapDays.map((item, idx) => (
-                <View
-                  key={idx}
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 12,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    backgroundColor:
-                      item.status === 'perjadin' ? '#EEB82E' : '#2996F5',
-                    margin: 4,
-                  }}>
-                  <Text
-                    style={{color: '#FFF', fontWeight: 'bold', fontSize: 17}}>
-                    {item.day}
-                  </Text>
-                </View>
-              ))}
-            </View>
-            {/* Legend bawah */}
+            <CustomLineChart
+              labels={rekapPerjadin.map(x => x.minggu)}
+              datasets={[
+                {
+                  data: rekapPerjadin.map(x => x.total_perjadin),
+                  color: () => '#EEB82E', // kuning
+                },
+              ]}
+              dotSize={6}
+            />
             <View style={styles.legendRow}>
-              <View style={styles.legendItem}>
-                <View
-                  style={[styles.legendDot, {backgroundColor: '#2996F5'}]}
-                />
-                <Text style={styles.legendText}>Hadir</Text>
-              </View>
               <View style={styles.legendItem}>
                 <View
                   style={[styles.legendDot, {backgroundColor: '#EEB82E'}]}
@@ -1226,7 +1412,7 @@ const styles = StyleSheet.create({
   },
   dropdownText: {color: '#666', fontSize: 13},
   legendRow: {flexDirection: 'row', alignItems: 'center', marginTop: 8},
-  legendItem: {flexDirection: 'row', alignItems: 'center', marginRight: 14},
+  legendItem: {flexDirection: 'row', alignItems: 'center', marginLeft: 25},
   legendDot: {width: 16, height: 16, borderRadius: 6, marginRight: 5},
   legendText: {color: '#666', fontSize: 13},
   rekapBox: {
@@ -1255,6 +1441,46 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dayText: {color: '#FFF', fontWeight: 'bold', fontSize: 17},
+  card: {
+    width: '94%',
+    alignSelf: 'center',
+    // backgroundColor: '#FFF',
+    borderRadius: 18,
+    padding: 16,
+    marginTop: 22,
+    marginBottom: 8,
+    shadowColor: '#000',
+    // shadowOpacity: 0.04,
+    // shadowOffset: {width: 0, height: 1},
+    // elevation: 1,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  headerText: {fontSize: 18, fontWeight: 'bold', color: '#222'},
+  detailLink: {color: '#161414', fontSize: 15, fontWeight: '500'},
+  itemRow: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  nameText: {fontSize: 18, fontWeight: '600', color: '#161414'},
+  jabatanText: {color: '#888', fontSize: 15, marginLeft: 5, fontWeight: '500'},
+  badge: {
+    borderWidth: 2,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {fontWeight: '600', fontSize: 15, textTransform: 'capitalize'},
 });
 
 export default HomeScreen;

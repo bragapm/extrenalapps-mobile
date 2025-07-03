@@ -110,6 +110,30 @@
         }
       }
     },
+    "react-native-fast-image": {
+      "root": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-fast-image",
+      "name": "react-native-fast-image",
+      "platforms": {
+        "ios": {
+          "podspecPath": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-fast-image/RNFastImage.podspec",
+          "version": "8.6.3",
+          "configurations": [],
+          "scriptPhases": []
+        },
+        "android": {
+          "sourceDir": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-fast-image/android",
+          "packageImportPath": "import com.dylanvann.fastimage.FastImageViewPackage;",
+          "packageInstance": "new FastImageViewPackage()",
+          "buildTypes": [],
+          "componentDescriptors": [],
+          "cmakeListsPath": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-fast-image/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cxxModuleCMakeListsModuleName": null,
+          "cxxModuleCMakeListsPath": null,
+          "cxxModuleHeaderName": null,
+          "isPureCxxDependency": false
+        }
+      }
+    },
     "react-native-gesture-handler": {
       "root": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-gesture-handler",
       "name": "react-native-gesture-handler",
