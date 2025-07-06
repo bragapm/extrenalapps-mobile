@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     paddingTop: 24,
-    paddingHorizontal: 18,
+    paddingHorizontal: 0,
     paddingBottom: 32,
     minHeight: 240,
     elevation: 4,
@@ -174,6 +174,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 4,
+    paddingHorizontal: 18,
   },
   iconLabel: {
     flexDirection: 'row',
@@ -199,12 +200,14 @@ const styles = StyleSheet.create({
   },
   menuItem: {
     paddingVertical: 14,
-    borderRadius: 16,
-    paddingHorizontal: 14,
+    borderRadius: 10,
+    paddingHorizontal: 25,
     marginBottom: 6,
+    width: '100%',
   },
   menuItemActive: {
     backgroundColor: '#FFEDEE',
+    width: '100%',
   },
   menuText: {fontSize: 17, color: '#232323', fontWeight: '400'},
   menuTextActive: {color: '#E24B3B', fontWeight: '500'},

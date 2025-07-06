@@ -339,6 +339,39 @@ export const dummyLiveAbsensi = [
   },
 ];
 
+export const dummyWorkPlanner = [
+  {
+    name: 'Buat Jalan Anyer ke Panarukan',
+    jabatan: 'Dept.Head',
+    status: 'Perjalanan Dinas',
+    statusType: 'perjadin', // custom buat mapping badge
+  },
+  {
+    name: 'Pengerjaan Jalur Whoosh fase Bali-Bekasi',
+    jabatan: 'Admin',
+    status: 'sakit',
+    statusType: 'sakit',
+  },
+  {
+    name: 'Bangun Server di Bogor',
+    jabatan: 'Organic',
+    status: 'Cuti',
+    statusType: 'cuti',
+  },
+  {
+    name: 'Pergi Ke Mars Naik Whoosh',
+    jabatan: 'Non-Organic',
+    status: 'Cuti',
+    statusType: 'cuti',
+  },
+  {
+    name: 'Bangun Pulau Pribadi di Puncak',
+    jabatan: 'Non-Organic',
+    status: 'Hadir',
+    statusType: 'hadir',
+  },
+];
+
 export const dummyReportAdmin = {
   performance: {
     labels: [
@@ -437,7 +470,43 @@ export const dummyActivityReports = [
     type: 'Jenis Report',
   },
 ];
-
+export const dummyReport = [
+  {
+    id: 1,
+    status: 'Open',
+    date: '12/02/2025',
+    title: 'Validasi Data Laporan Lapangan Taman Nasional',
+    type: 'Jenis Report',
+  },
+  {
+    id: 2,
+    status: 'Close',
+    date: '12/02/2025',
+    title: 'Validasi Data Laporan Lapangan Taman Nasional',
+    type: 'Jenis Report',
+  },
+  {
+    id: 3,
+    status: 'Close',
+    date: '12/02/2025',
+    title: 'Validasi Data Laporan Lapangan Taman Nasional',
+    type: 'Jenis Report',
+  },
+  {
+    id: 4,
+    status: 'Open',
+    date: '12/02/2025',
+    title: 'Validasi Data Laporan Lapangan Taman Nasional',
+    type: 'Jenis Report',
+  },
+  {
+    id: 5,
+    status: 'Close',
+    date: '12/02/2025',
+    title: 'Validasi Data Laporan Lapangan Taman Nasional',
+    type: 'Jenis Report',
+  },
+];
 export const dummyWeeklyActivityData = [
   {label: 'Laporan', open: 28, close: 14},
   {label: 'Laporan', open: 19, close: 7},

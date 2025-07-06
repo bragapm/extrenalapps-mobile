@@ -486,7 +486,7 @@ const AbsensiBarChart = ({type = 'Absensi'}) => {
 
 const Attendance: React.FC = () => {
   const activeMenu = useFeatureStore(state => state.activeMenu);
-  console.log('Cek Active menu', activeMenu);
+
   const {colors} = useThemeStore();
   const colorScheme = useColorScheme();
   const [type, setType] = useState('Cuti');
