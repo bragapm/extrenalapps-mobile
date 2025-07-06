@@ -20,6 +20,7 @@ import Svg, {
   Path,
   Circle,
 } from 'react-native-svg';
+import {useFeatureStore} from '../../store/featureStore';
 
 // Dummy data tren absensi (Line Chart)
 const DUMMY_ABSENSI_TREND = [
@@ -194,11 +195,11 @@ const AbsensiLineChart = ({type = 'Absensi'}) => {
             marginBottom: 5,
           }}>
           Tren{' '}
-          {type === 'Absensi'
+          {type === 'absens'
             ? 'Absensi'
-            : type === 'Cuti'
+            : type === 'cuti'
             ? 'Cuti'
-            : type === 'Perdin'
+            : type === 'perdin'
             ? 'Perjalanan Dinas'
             : ''}
         </Text>
@@ -352,11 +353,11 @@ const AbsensiBarChart = ({type = 'Absensi'}) => {
           marginBottom: 4,
         }}>
         Total{' '}
-        {type === 'Absensi'
+        {type === 'absen'
           ? 'Absensi'
-          : type === 'Cuti'
+          : type === 'cuti'
           ? 'Cuti'
-          : type === 'Perdin'
+          : type === 'perdin'
           ? 'Perjalanan Dinas'
           : ''}
       </Text>
@@ -484,6 +485,8 @@ const AbsensiBarChart = ({type = 'Absensi'}) => {
 };
 
 const Attendance: React.FC = () => {
+  const activeMenu = useFeatureStore(state => state.activeMenu);
+  console.log('Cek Active menu', activeMenu);
   const {colors} = useThemeStore();
   const colorScheme = useColorScheme();
   const [type, setType] = useState('Cuti');
@@ -499,11 +502,11 @@ const Attendance: React.FC = () => {
           menu={true}
           home={false}
           label={
-            type === 'Absensi'
+            activeMenu === 'absen'
               ? 'Absensi'
-              : type === 'Cuti'
+              : activeMenu === 'cuti'
               ? 'Cuti'
-              : type === 'Perdin'
+              : activeMenu === 'perdin'
               ? 'Perjalanan Dinas'
               : ''
           }
@@ -521,11 +524,11 @@ const Attendance: React.FC = () => {
                 marginTop: 15,
               }}>
               <Text style={{color: '#181818', fontSize: 27, fontWeight: '700'}}>
-                {type === 'Absensi'
+                {activeMenu === 'absen'
                   ? 'Absensi'
-                  : type === 'Cuti'
+                  : activeMenu === 'cuti'
                   ? 'Cuti'
-                  : type === 'Perdin'
+                  : activeMenu === 'perdin'
                   ? 'Perjalanan Dinas'
                   : ''}
               </Text>
@@ -551,11 +554,11 @@ const Attendance: React.FC = () => {
                 <Text
                   style={{fontWeight: '700', fontSize: 15, color: '#181818'}}>
                   Summary{' '}
-                  {type === 'Absensi'
+                  {activeMenu === 'absen'
                     ? 'Absensi'
-                    : type === 'Cuti'
+                    : activeMenu === 'cuti'
                     ? 'Cuti'
-                    : type === 'Perdin'
+                    : activeMenu === 'perdin'
                     ? 'Perjalanan Dinas'
                     : ''}
                 </Text>
@@ -567,8 +570,8 @@ const Attendance: React.FC = () => {
                   <Text style={{fontSize: 14, color: '#989898'}}>›</Text>
                 </TouchableOpacity>
               </View>
-              <AbsensiLineChart type={type} />
-              <AbsensiBarChart type={type} />
+              <AbsensiLineChart type={activeMenu} />
+              <AbsensiBarChart type={activeMenu} />
             </View>
             {/* Filter Row */}
             <View style={styles.filterRow}>
@@ -607,11 +610,11 @@ const Attendance: React.FC = () => {
         <View style={styles.bottomBtnWrap}>
           <TouchableOpacity style={styles.absenButton}>
             <Text style={styles.absenButtonText}>
-              {type === 'Absensi'
+              {activeMenu === 'absen'
                 ? 'Absensi'
-                : type === 'Cuti'
+                : activeMenu === 'cuti'
                 ? 'Cuti'
-                : type === 'Perdin'
+                : activeMenu === 'perdin'
                 ? 'Perjalanan Dinas'
                 : ''}
             </Text>

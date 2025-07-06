@@ -19,6 +19,7 @@ import {
   dummyWeeklyReports,
   dummyActivityReports,
 } from '../../data/dummy';
+import {useFeatureStore} from '../../store/featureStore';
 
 const COLOR_WEEKLY_M1 = '#FFE2BB';
 const COLOR_WEEKLY_M2 = '#FF832A';
@@ -404,17 +405,21 @@ const activityData = [
   {label: 'issue e', open: 7, close: 18},
 ];
 
-const Activity = ({
-  initial = 'daily',
-  //  initial = 'weekly'
-}) => {
+const Activity = () => {
+  const activeMenu = useFeatureStore(state => state.activeMenu);
   const {colors} = useThemeStore();
   const colorScheme = useColorScheme();
   const [filter, setFilter] = React.useState('all');
   const [sort, setSort] = React.useState('latest');
 
+  console.log('activeMenu', activeMenu);
   // Pakai data & UI sesuai initial
-  const isWeekly = initial === 'weekly';
+  let mode = 'daily'; // default
+  if (activeMenu === 'harian') mode = 'daily';
+  else if (activeMenu === 'mingguan') mode = 'weekly';
+  else if (activeMenu === 'laporan') mode = 'laporan';
+  const isWeekly = mode === 'weekly';
+  console.log('mode', mode);
   const reports = isWeekly
     ? [...dummyWeeklyReports]
     : [...dummyActivityReports];
@@ -468,7 +473,7 @@ const Activity = ({
               </Text>
             </View>
             {/* RANGE/DATE DAN CHART */}
-            {isWeekly ? (
+            {mode === 'weekly' && (
               <>
                 {/* TANGGAL FILTER WEEKLY */}
                 <View style={styles.weeklyHeaderWrap}>
@@ -504,7 +509,8 @@ const Activity = ({
                   <WeeklyBarChart data={dummyWeeklyActivityData} />
                 </View>
               </>
-            ) : (
+            )}
+            {mode === 'daily' && (
               <>
                 <View
                   style={{

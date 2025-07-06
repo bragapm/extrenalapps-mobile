@@ -35,6 +35,7 @@ import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/Login';
 import Attendance from '../screens/Attendance';
 import Activity from '../screens/Activity';
+import MenuDrawer from '../components/MenuDrawer';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -53,6 +54,20 @@ function MainTabs() {
   const [showMenu, setShowMenu] = useState(false);
   const [openAktifitas, setOpenAktifitas] = useState(false);
   const [openMasterData, setOpenMasterData] = useState(false);
+  const [activeTab, setActiveTab] = useState('home');
+  const [openedDrawer, setOpenedDrawer] = useState(null);
+  const handleTabPress = (type: any, navigation: any) => {
+    if (activeTab === type) {
+      // Sudah di tab ini, buka drawer
+      setOpenedDrawer(type);
+    } else {
+      // Pindah tab, reset drawer
+      setActiveTab(type);
+      setOpenedDrawer(null);
+      // Jangan preventDefault, biar bisa navigasi ke tab lain
+      // navigation.navigate(type);
+    }
+  };
 
   const icons: any = {
     home: {
@@ -124,9 +139,15 @@ function MainTabs() {
           name="home"
           component={HomeScreen}
           options={{
-            tabBarLabel: 'Home',
+            tabBarLabel: 'Dashboard',
             tabBarIcon: ({focused}) => getTabIcon(focused, 'home'),
           }}
+          listeners={({navigation}) => ({
+            tabPress: e => {
+              handleTabPress('home', navigation);
+            },
+            focus: () => setActiveTab('home'),
+          })}
         />
         <Tab.Screen
           name="attendance"
@@ -137,9 +158,9 @@ function MainTabs() {
           }}
           listeners={({navigation}) => ({
             tabPress: e => {
-              e.preventDefault();
-              navigation.navigate('attendance');
+              handleTabPress('attendance', navigation);
             },
+            focus: () => setActiveTab('attendance'),
           })}
         />
         <Tab.Screen
@@ -149,12 +170,9 @@ function MainTabs() {
             tabBarLabel: 'Live Team',
             tabBarIcon: ({focused}) => getTabIcon(focused, 'liveTeam'),
           }}
-          listeners={({navigation}) => ({
-            tabPress: e => {
-              e.preventDefault();
-              navigation.navigate('liveTeam');
-            },
-          })}
+          listeners={{
+            focus: () => setActiveTab('liveTeam'),
+          }}
         />
         <Tab.Screen
           name="activity"
@@ -165,25 +183,25 @@ function MainTabs() {
           }}
           listeners={({navigation}) => ({
             tabPress: e => {
-              e.preventDefault();
-              navigation.navigate('activity');
+              handleTabPress('activity', navigation);
             },
+            focus: () => setActiveTab('activity'),
           })}
         />
 
         <Tab.Screen
           name="menuTabs"
-          component={MenuScreen} // Komponen tetap kasih, tapi jangan render apapun
+          component={MenuScreen}
           options={{
-            tabBarLabel: 'Menu',
+            tabBarLabel: 'More',
             tabBarIcon: ({focused}) => getTabIcon(focused, 'menuTabs'),
           }}
-          listeners={{
+          listeners={({navigation}) => ({
             tabPress: e => {
-              e.preventDefault();
-              setShowMenu(true);
+              handleTabPress('menu', navigation);
             },
-          }}
+            focus: () => setActiveTab('menu'),
+          })}
         />
 
         {/* {isAuthenticated && (
@@ -197,6 +215,13 @@ function MainTabs() {
         />
       )} */}
       </Tab.Navigator>
+
+      <MenuDrawer
+        visible={!!openedDrawer}
+        type={openedDrawer !== null ? openedDrawer : undefined}
+        onClose={() => setOpenedDrawer(null)}
+      />
+
       <Modal
         isVisible={showMenu}
         onBackdropPress={() => setShowMenu(false)}
