@@ -36,6 +36,7 @@ import LoginScreen from '../screens/Login';
 import Attendance from '../screens/Attendance';
 import Activity from '../screens/Activity';
 import MenuDrawer from '../components/MenuDrawer';
+import {useFeatureStore} from '../store/featureStore';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -56,6 +57,7 @@ function MainTabs() {
   const [openMasterData, setOpenMasterData] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
   const [openedDrawer, setOpenedDrawer] = useState(null);
+  const {activeMenu, setActiveMenu} = useFeatureStore();
   const handleTabPress = (type: any, navigation: any) => {
     if (activeTab === type) {
       // Sudah di tab ini, buka drawer
@@ -64,6 +66,15 @@ function MainTabs() {
       // Pindah tab, reset drawer
       setActiveTab(type);
       setOpenedDrawer(null);
+      if (type === 'attendance') {
+        setActiveMenu('absen');
+      } else if (type === 'home') {
+        setActiveMenu('absensi');
+      } else if (type === 'activity') {
+        setActiveMenu('harian'); // misal
+      } else if (type === 'menu') {
+        setActiveMenu('stakeholder'); // atau apa aja sesuai menu pertama drawer tab menu
+      }
       // Jangan preventDefault, biar bisa navigasi ke tab lain
       // navigation.navigate(type);
     }
