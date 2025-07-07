@@ -49,6 +49,7 @@ const menuData: MenuData = {
     items: [
       {key: 'absensi', label: 'Absensi'},
       {key: 'laporan', label: 'Laporan'},
+      {key: 'plan', label: 'Rencana Kerja'},
     ],
   },
   activity: {

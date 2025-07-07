@@ -44,6 +44,8 @@ import TotalEmployee from '../../components/TotalEmployee.tsx';
 import {useFeatureStore} from '../../store/featureStore.ts';
 import DashboardAbsensi from '../DashboardAbsensi/index.tsx';
 import DashboardReport from '../DashboardReport/index.tsx';
+import {Calendar, LocaleConfig} from 'react-native-calendars';import PlanCalendar from '../DashboardPlanWorker/index.tsx';
+;
 
 type StackedBarChartData = {
   month: string;
@@ -180,7 +182,7 @@ const HomeScreen: React.FC = () => {
 
   return (
     <>
-      {activeMenu === 'absensi' ? (
+      {activeMenu === 'absensi' && (
         <DashboardAbsensi
           sections={sections}
           role={role}
@@ -202,11 +204,33 @@ const HomeScreen: React.FC = () => {
           // tambahkan jika ada data lain
           // ListHeaderComponent={ListHeaderComponent}
         />
-      ) : (
+      )}
+
+      {activeMenu === 'laporan' && (
         <DashboardReport role={role} sections={sectionsDashboardReport} />
+      )}
+      {activeMenu === 'plan' && (
+        <>
+          <StatusBar
+            translucent
+            backgroundColor="transparent"
+            barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
+          />
+          <View style={[styles.container, {backgroundColor: colors.bgHome}]}>
+            <AppHeader />
+            <PlanCalendar />
+          </View>
+        </>
       )}
     </>
   );
 };
 
 export default HomeScreen;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    // justifyContent: "center",
+    alignItems: 'center',
+  },
+});
