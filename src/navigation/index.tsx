@@ -35,6 +35,10 @@ import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/Login';
 import Attendance from '../screens/Attendance';
 import Activity from '../screens/Activity';
+import DetailAttendance from '../screens/DetailAttendance';
+import DetailCuti from '../screens/DetailCuti';
+import DetailPerdin from '../screens/DetailPerdin';
+import DetailDailyActivity from '../screens/DetailDailyActivity';
 import MenuDrawer from '../components/MenuDrawer';
 import {useFeatureStore} from '../store/featureStore';
 
@@ -44,6 +48,10 @@ export type RootStackParamList = {
   Login: undefined;
   Attendance: undefined;
   Activity: undefined;
+  DetailAttendance: undefined;
+  DetailCuti: undefined;
+  DetailPerdin: undefined;
+  DetailDailyActivity: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -434,6 +442,13 @@ export default function AppNavigation() {
         <Stack.Screen name="Splash" component={SplashScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Main" component={MainTabs} />
+        <Stack.Screen name="DetailAttendance" component={DetailAttendance} />
+        <Stack.Screen name="DetailCuti" component={DetailCuti} />
+        <Stack.Screen name="DetailPerdin" component={DetailPerdin} />
+        <Stack.Screen
+          name="DetailDailyActivity"
+          component={DetailDailyActivity}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

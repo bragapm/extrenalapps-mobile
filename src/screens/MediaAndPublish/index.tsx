@@ -472,7 +472,11 @@ const MediaAndPublish: React.FC<MediaAndPublishProps> = ({}) => {
         barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
       />
       <View style={[styles.container, {backgroundColor: colors.bgHome}]}>
-        <AppHeader menu={true} home={false} label={'Publikasi dan Media'} />
+        <AppHeader 
+        // menu={true} 
+        home={true} 
+        // label={'Publikasi dan Media'} 
+        />
         <ScrollView
           style={{flex: 1, width: '100%'}}
           contentContainerStyle={{alignItems: 'center', paddingBottom: 40}}

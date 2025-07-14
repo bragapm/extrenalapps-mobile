@@ -26,6 +26,7 @@ import OragnizationalStructure from '../../components/OragnizationalStructure';
 import Svg, {Rect, G, Text as SvgText} from 'react-native-svg';
 import {useThemeStore} from '../../theme/useThemeStore.ts';
 import AppHeader from '../../components/AppHeader.tsx';
+import StackedBarChart from '../../components/StackedBarChart.tsx';
 
 type StackedBarChartData = {
   month: string;
@@ -80,417 +81,6 @@ type CustomStackedBarPerdinChartProps = {
   paddingRight?: number;
   paddingTop?: number;
   paddingBottom?: number;
-};
-
-const CustomStackedBarChart: React.FC<CustomStackedBarChartProps> = ({
-  data,
-  height = 220,
-  maxY = 16,
-  barColor1 = '#2996F5',
-  barColor2 = '#E24B3B',
-  labelColor = '#888',
-  paddingLeft = 36,
-  paddingRight = 16,
-  paddingTop = 18,
-  paddingBottom = 30,
-}) => {
-  const screenWidth = Dimensions.get('window').width * 0.85;
-  const chartWidth = screenWidth - paddingLeft - paddingRight;
-  const barCount = data.length;
-  const gapCount = barCount - 1;
-  const barWidth = 22;
-  const totalBarWidth = barWidth * barCount;
-  const gapWidth = (chartWidth - totalBarWidth) / gapCount;
-
-  const CHART_HEIGHT = height - 40; // lebihin jarak buat label bawah
-  const yStep = maxY / 6;
-
-  return (
-    <Svg width={screenWidth} height={height}>
-      {/* Grid Y */}
-      {[...Array(7)].map((_, i) => {
-        const y = paddingTop + (CHART_HEIGHT * i) / 6;
-        return (
-          <G key={i}>
-            <Rect
-              x={paddingLeft}
-              y={y}
-              width={chartWidth}
-              height={1}
-              fill="#eee"
-            />
-            <SvgText
-              x={paddingLeft - 8}
-              y={y + 6}
-              fontSize={12}
-              fill={labelColor}
-              textAnchor="end"
-              fontWeight="400">
-              {Math.round(maxY - i * yStep)}
-            </SvgText>
-          </G>
-        );
-      })}
-      {/* Bars */}
-      {data.map((d: any, i: any) => {
-        const x = paddingLeft + i * (barWidth + gapWidth);
-        const totalValue = (d.tidak_hadir || 0) + (d.hadir || 0);
-        // Handling biar bar gak lebih tinggi dari maxY
-        const valueTidakHadir = d.tidak_hadir || 0;
-        const valueHadir = d.hadir || 0;
-
-        const hTidakHadir = (valueTidakHadir / maxY) * CHART_HEIGHT;
-        const hHadir = (valueHadir / maxY) * CHART_HEIGHT;
-        const yTidakHadir = paddingTop + CHART_HEIGHT - hTidakHadir;
-        const yHadir = yTidakHadir - hHadir;
-
-        return (
-          <G key={i}>
-            {/* Tidak Hadir (MERAH, bawah) */}
-            <Rect
-              x={x}
-              y={yTidakHadir}
-              width={barWidth}
-              height={hTidakHadir}
-              fill={barColor2}
-              rx={4}
-            />
-            {/* Hadir (BIRU, atas) */}
-            {valueHadir > 0 && (
-              <Rect
-                x={x}
-                y={yHadir}
-                width={barWidth}
-                height={hHadir}
-                fill={barColor1}
-                rx={4}
-              />
-            )}
-            {/* Label bulan */}
-            <SvgText
-              x={x + barWidth / 2}
-              y={CHART_HEIGHT + 35}
-              fontSize={12}
-              fill={labelColor}
-              textAnchor="middle">
-              {d.month}
-            </SvgText>
-          </G>
-        );
-      })}
-    </Svg>
-  );
-};
-
-const CustomCutiBarChart: React.FC<CustomStackedBarCutiChartProps> = ({
-  data,
-  height = 220,
-  maxY = 12,
-  barColor = '#21C067', // Green!
-  labelColor = '#888',
-  paddingLeft = 36,
-  paddingRight = 16,
-  paddingTop = 18,
-  paddingBottom = 30,
-}) => {
-  const screenWidth = Dimensions.get('window').width * 0.85; // biar ga full
-  const chartWidth = screenWidth - paddingLeft - paddingRight;
-  const barCount = data.length;
-  const gapCount = barCount - 1;
-  const barWidth = 15;
-  const totalBarWidth = barWidth * barCount;
-  const gapWidth = (chartWidth - totalBarWidth) / gapCount;
-  const CHART_HEIGHT = height - paddingTop - paddingBottom;
-  const yStep = maxY / 6;
-
-  return (
-    <Svg width={screenWidth} height={height}>
-      {/* Grid Y */}
-      {[...Array(7)].map((_, i) => {
-        const y = paddingTop + (CHART_HEIGHT * i) / 6;
-        return (
-          <G key={i}>
-            <Rect
-              x={paddingLeft}
-              y={y}
-              width={chartWidth}
-              height={1}
-              fill="#eee"
-            />
-            <SvgText
-              x={paddingLeft - 8}
-              y={y + 6}
-              fontSize={12}
-              fill={labelColor}
-              textAnchor="end"
-              fontWeight="400">
-              {Math.round(maxY - i * yStep)}
-            </SvgText>
-          </G>
-        );
-      })}
-      {/* Bars */}
-      {data.map((d: any, i: any) => {
-        const x = paddingLeft + i * (barWidth + gapWidth);
-        const value = d.total_cuti || 0;
-        const h = (value / maxY) * CHART_HEIGHT;
-        const y = paddingTop + CHART_HEIGHT - h;
-
-        return (
-          <G key={i}>
-            <Rect
-              x={x}
-              y={y}
-              width={barWidth}
-              height={h}
-              fill={barColor}
-              rx={3}
-            />
-
-            {/* Label bulan */}
-            <SvgText
-              x={x + barWidth / 2}
-              y={paddingTop + CHART_HEIGHT + 18}
-              fontSize={12}
-              fill={labelColor}
-              textAnchor="middle">
-              {d.month}
-            </SvgText>
-          </G>
-        );
-      })}
-    </Svg>
-  );
-};
-
-const CustomPerjadinBarChart: React.FC<CustomStackedBarPerdinChartProps> = ({
-  data,
-  height = 220,
-  maxY = 12,
-  barColor = '#EEB82E', // warna kuning
-  labelColor = '#888',
-  paddingLeft = 36,
-  paddingRight = 16,
-  paddingTop = 18,
-  paddingBottom = 30,
-}) => {
-  const screenWidth = Dimensions.get('window').width * 0.85;
-  const chartWidth = screenWidth - paddingLeft - paddingRight;
-  const barCount = data.length;
-  const gapCount = barCount - 1;
-  const barWidth = 15;
-  const totalBarWidth = barWidth * barCount;
-  const gapWidth = (chartWidth - totalBarWidth) / gapCount;
-  const CHART_HEIGHT = height - paddingTop - paddingBottom;
-  const yStep = maxY / 6;
-
-  return (
-    <Svg width={screenWidth} height={height}>
-      {/* Grid Y */}
-      {[...Array(7)].map((_, i) => {
-        const y = paddingTop + (CHART_HEIGHT * i) / 6;
-        return (
-          <G key={i}>
-            <Rect
-              x={paddingLeft}
-              y={y}
-              width={chartWidth}
-              height={1}
-              fill="#eee"
-            />
-            <SvgText
-              x={paddingLeft - 8}
-              y={y + 6}
-              fontSize={12}
-              fill={labelColor}
-              textAnchor="end"
-              fontWeight="400">
-              {Math.round(maxY - i * yStep)}
-            </SvgText>
-          </G>
-        );
-      })}
-      {/* Bars */}
-      {data.map((d: any, i: any) => {
-        const x = paddingLeft + i * (barWidth + gapWidth);
-        const value = d.total_perjadin || 0;
-        const h = (value / maxY) * CHART_HEIGHT;
-        const y = paddingTop + CHART_HEIGHT - h;
-
-        return (
-          <G key={i}>
-            <Rect
-              x={x}
-              y={y}
-              width={barWidth}
-              height={h}
-              fill={barColor}
-              rx={3}
-            />
-            {/* Label bulan */}
-            <SvgText
-              x={x + barWidth / 2}
-              y={paddingTop + CHART_HEIGHT + 18}
-              fontSize={12}
-              fill={labelColor}
-              textAnchor="middle">
-              {d.month}
-            </SvgText>
-          </G>
-        );
-      })}
-    </Svg>
-  );
-};
-
-const CustomUserBarChartPerjadin = ({
-  data = '',
-  height = 220,
-  maxY = 12,
-  barColor = '#EEB82E', // Kuning
-  labelColor = '#888',
-  paddingLeft = 36,
-  paddingRight = 16,
-  paddingTop = 18,
-  paddingBottom = 30,
-}) => {
-  const screenWidth = Dimensions.get('window').width * 0.85;
-  const chartWidth = screenWidth - paddingLeft - paddingRight;
-  const barCount = data.length;
-  const gapCount = barCount - 1;
-  const barWidth = 22;
-  const totalBarWidth = barWidth * barCount;
-  const gapWidth = (chartWidth - totalBarWidth) / gapCount;
-  const CHART_HEIGHT = height - paddingTop - paddingBottom;
-  const yStep = maxY / 6;
-
-  return (
-    <Svg width={screenWidth} height={height}>
-      {[...Array(7)].map((_, i) => {
-        const y = paddingTop + (CHART_HEIGHT * i) / 6;
-        return (
-          <G key={i}>
-            <Rect
-              x={paddingLeft}
-              y={y}
-              width={chartWidth}
-              height={1}
-              fill="#eee"
-            />
-            <SvgText
-              x={paddingLeft - 8}
-              y={y + 6}
-              fontSize={12}
-              fill={labelColor}
-              textAnchor="end"
-              fontWeight="400">
-              {Math.round(maxY - i * yStep)}
-            </SvgText>
-          </G>
-        );
-      })}
-      {data.map((d, i) => {
-        const x = paddingLeft + i * (barWidth + gapWidth);
-        const h = (d.total_perjadin / maxY) * CHART_HEIGHT;
-        const y = paddingTop + CHART_HEIGHT - h;
-        return (
-          <G key={i}>
-            <Rect
-              x={x}
-              y={y}
-              width={barWidth}
-              height={h}
-              fill={barColor}
-              rx={3}
-            />
-            <SvgText
-              x={x + barWidth / 2}
-              y={paddingTop + CHART_HEIGHT + 18}
-              fontSize={12}
-              fill={labelColor}
-              textAnchor="middle">
-              {d.name}
-            </SvgText>
-          </G>
-        );
-      })}
-    </Svg>
-  );
-};
-
-const CustomUserBarChart = ({
-  data = '',
-  height = 220,
-  maxY = 12,
-  barColor = '#21C067',
-  labelColor = '#888',
-  paddingLeft = 36,
-  paddingRight = 16,
-  paddingTop = 18,
-  paddingBottom = 30,
-}) => {
-  const screenWidth = Dimensions.get('window').width * 0.85;
-  const chartWidth = screenWidth - paddingLeft - paddingRight;
-  const barCount = data.length;
-  const gapCount = barCount - 1;
-  const barWidth = 22;
-  const totalBarWidth = barWidth * barCount;
-  const gapWidth = (chartWidth - totalBarWidth) / gapCount;
-  const CHART_HEIGHT = height - paddingTop - paddingBottom;
-  const yStep = maxY / 6;
-
-  return (
-    <Svg width={screenWidth} height={height}>
-      {[...Array(7)].map((_, i) => {
-        const y = paddingTop + (CHART_HEIGHT * i) / 6;
-        return (
-          <G key={i}>
-            <Rect
-              x={paddingLeft}
-              y={y}
-              width={chartWidth}
-              height={1}
-              fill="#eee"
-            />
-            <SvgText
-              x={paddingLeft - 8}
-              y={y + 6}
-              fontSize={12}
-              fill={labelColor}
-              textAnchor="end"
-              fontWeight="400">
-              {Math.round(maxY - i * yStep)}
-            </SvgText>
-          </G>
-        );
-      })}
-      {data.map((d, i) => {
-        const x = paddingLeft + i * (barWidth + gapWidth);
-        const h = (d.total_cuti / maxY) * CHART_HEIGHT;
-        const y = paddingTop + CHART_HEIGHT - h;
-        return (
-          <G key={i}>
-            <Rect
-              x={x}
-              y={y}
-              width={barWidth}
-              height={h}
-              fill={barColor}
-              rx={3}
-            />
-            <SvgText
-              x={x + barWidth / 2}
-              y={paddingTop + CHART_HEIGHT + 18}
-              fontSize={12}
-              fill={labelColor}
-              textAnchor="middle">
-              {d.name}
-            </SvgText>
-          </G>
-        );
-      })}
-    </Svg>
-  );
 };
 
 const DashboardAbsensi = ({
@@ -576,10 +166,13 @@ const DashboardAbsensi = ({
               <Text style={styles.dropdownText}>Tahunan ▼</Text>
             </TouchableOpacity>
             <View style={{marginTop: '10%'}}>
-              <CustomStackedBarChart
+              <StackedBarChart
                 data={dummyAdminMonitoringAbsensi}
-                height={250}
                 maxY={14}
+                height={250}
+                // barWidth={24}        // Opsional, lebar bar
+                // chartWidthPerBar={42} // Opsional, jarak antar bar
+                // labelColor="#333"     // Opsional, warna label bawah
               />
             </View>
             <View style={styles.legendRow}>
@@ -709,10 +302,13 @@ const DashboardAbsensi = ({
               <Text style={styles.dropdownText}>Bulan ▼</Text>
             </TouchableOpacity>
             <View style={{marginTop: '10%'}}>
-              <CustomUserBarChart
+              <StackedBarChart
                 data={dummyAdminCutiMonitoring}
+                maxY={14}
                 height={250}
-                maxY={12}
+                // barWidth={24}        // Opsional, lebar bar
+                // chartWidthPerBar={42} // Opsional, jarak antar bar
+                // labelColor="#333"     // Opsional, warna label bawah
               />
             </View>
             <View style={styles.legendRow}>
@@ -788,10 +384,13 @@ const DashboardAbsensi = ({
               <Text style={styles.dropdownText}>Bulan ▼</Text>
             </TouchableOpacity>
             <View style={{marginTop: '10%'}}>
-              <CustomUserBarChartPerjadin
+              <StackedBarChart
                 data={dummyAdminPerjadinMonitoring}
+                maxY={14}
                 height={250}
-                maxY={12}
+                // barWidth={24}        // Opsional, lebar bar
+                // chartWidthPerBar={42} // Opsional, jarak antar bar
+                // labelColor="#333"     // Opsional, warna label bawah
               />
             </View>
             <View style={styles.legendRow}>
@@ -838,42 +437,24 @@ const DashboardAbsensi = ({
       />
       <View style={[styles.container, {backgroundColor: colors.bgHome}]}>
         <AppHeader />
-        <ImageBackground
-          source={require('../../assets/images/widget-header.png')}
+
+        <View
           style={{
-            // flex: 1,
             width: '100%',
-            height: imageHeight * 1.7,
-            borderRadius: 10,
-          }}
-          resizeMode="contain">
-          <View
+            alignItems: 'flex-start',
+            paddingHorizontal: '5%',
+            paddingVertical: '2%',
+          }}>
+          <Text
             style={{
-              width: '100%',
-              alignItems: 'flex-start',
-              paddingHorizontal: '5%',
-              paddingVertical: '2%',
+              color: '#161414',
+              fontSize: 20,
+              marginTop: 12,
+              fontWeight: '500',
             }}>
-            <Text
-              style={{
-                color: colors.red,
-                fontSize: 20,
-                marginTop: 12,
-                fontWeight: '600',
-              }}>
-              Selamat datang, {role}
-            </Text>
-            <Text
-              style={{
-                color: colors.red,
-                fontSize: 20,
-                marginTop: 12,
-                fontWeight: '600',
-              }}>
-              Anda belum absen hari ini
-            </Text>
-          </View>
-        </ImageBackground>
+            Dashboard Absensi
+          </Text>
+        </View>
       </View>
     </>
   );

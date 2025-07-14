@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   Image,
   Animated,
+  Platform,
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {StackNavigationProp} from '@react-navigation/stack';
@@ -17,6 +19,8 @@ import {useThemeStore} from '../../theme/useThemeStore';
 import {RootStackParamList} from '../../navigation';
 import {getLocationPermission, getCurrentLocation} from '../../utils/location';
 import {useUserStore} from '../../store/userStore';
+import {request, PERMISSIONS, RESULTS} from 'react-native-permissions';
+import {useFeatureStore} from '../../store/featureStore';
 
 type Props = {
   navigation: StackNavigationProp<RootStackParamList, 'Splash'>;
@@ -37,6 +41,16 @@ const ONBOARDING_STEPS = [
   },
 ];
 
+const requestCameraPermission = async () => {
+  let result;
+  if (Platform.OS === 'ios') {
+    result = await request(PERMISSIONS.IOS.CAMERA);
+  } else {
+    result = await request(PERMISSIONS.ANDROID.CAMERA);
+  }
+  return result;
+};
+
 const SplashScreen: React.FC<Props> = ({navigation}) => {
   const {colors} = useThemeStore();
   const colorScheme = useColorScheme();
@@ -51,6 +65,10 @@ const SplashScreen: React.FC<Props> = ({navigation}) => {
   const setUserLocation = useUserStore(state => state.setLocation);
   const [locationAsked, setLocationAsked] = useState(false);
 
+  useEffect(() => {
+    // Saat SplashScreen dibuka (atau App mount pertama)
+    useFeatureStore.getState().clear();
+  }, []);
   useEffect(() => {
     const checkLocation = async () => {
       const isLocationAsked = await AsyncStorage.getItem('isLocationAsked');
@@ -119,7 +137,7 @@ const SplashScreen: React.FC<Props> = ({navigation}) => {
   //         barStyle="light-content"
   //       />
   //       <View style={styles.overlay} />
-       
+
   //     </View>
   //   );
   // }
@@ -224,10 +242,19 @@ const SplashScreen: React.FC<Props> = ({navigation}) => {
             <Text style={styles.desc}>{ONBOARDING_STEPS[step].desc}</Text>
             <TouchableOpacity
               style={styles.button}
-              onPress={() => {
+              onPress={async () => {
                 if (step === ONBOARDING_STEPS.length - 1) {
-                  // Jangan set login di sini!
-                  navigation.replace('Login');
+                  // Request permission kamera dulu sebelum Login
+                  const cameraStatus = await requestCameraPermission();
+                  if (cameraStatus === RESULTS.GRANTED) {
+                    navigation.replace('Login');
+                  } else {
+                    // Gagal / ditolak, munculkan alert/info ke user
+                    Alert.alert(
+                      'Akses Kamera Diperlukan',
+                      'Aplikasi membutuhkan akses kamera untuk fitur tertentu.\nSilakan aktifkan izin kamera di pengaturan perangkat.',
+                    );
+                  }
                 } else {
                   setStep(s => s + 1);
                 }

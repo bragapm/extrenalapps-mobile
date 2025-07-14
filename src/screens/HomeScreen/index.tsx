@@ -44,9 +44,8 @@ import TotalEmployee from '../../components/TotalEmployee.tsx';
 import {useFeatureStore} from '../../store/featureStore.ts';
 import DashboardAbsensi from '../DashboardAbsensi/index.tsx';
 import DashboardReport from '../DashboardReport/index.tsx';
-import {Calendar, LocaleConfig} from 'react-native-calendars';import PlanCalendar from '../DashboardPlanWorker/index.tsx';
-;
-
+import {Calendar, LocaleConfig} from 'react-native-calendars';
+import PlanCalendar from '../DashboardPlanWorker/index.tsx';
 type StackedBarChartData = {
   month: string;
   hadir?: number;
@@ -103,7 +102,7 @@ type CustomStackedBarPerdinChartProps = {
 };
 
 const HomeScreen: React.FC = () => {
-  const activeMenu = useFeatureStore(state => state.activeMenu);
+  const {activeMenu, setActiveMenu} = useFeatureStore();
   const {colors} = useThemeStore();
   const colorScheme = useColorScheme();
   const screenWidth = Dimensions.get('window').width;
@@ -113,12 +112,35 @@ const HomeScreen: React.FC = () => {
   const [role, setRole] = useState('');
   const [summary, setSummary] = useState(dummySummary);
   const userLocation = useUserStore(state => state.location);
-  console.log('userLocation', userLocation);
+  console.log('activeMenu', activeMenu);
+
+  function formatTodayDate() {
+    const now = new Date();
+    const bulan = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ];
+    return `${now.getDate()} ${bulan[now.getMonth()]} ${now.getFullYear()}`;
+  }
 
   const sections = React.useMemo(() => {
     if (role === 'admin' || role === 'BOD') {
       return [
-        {type: 'stat', title: 'Statistik - Hari Ini', data: dummyStats},
+        {
+          type: 'stat',
+          title: `Statistik - ${formatTodayDate()}`,
+          data: dummyStats,
+        },
         {
           type: 'total-employee',
           title: 'Total Employee',
@@ -141,7 +163,11 @@ const HomeScreen: React.FC = () => {
       ];
     } else {
       return [
-        {type: 'stat', title: 'Statistik - Hari Ini', data: dummyStats},
+        {
+          type: 'stat',
+          title: `Statistik -  ${formatTodayDate()}`,
+          data: dummyStats,
+        },
         {type: 'history', title: 'History Absensi', data: dummyHistory},
         {type: 'org', title: 'Struktur Organisasi'},
         {type: 'summary', title: 'Summary Absensi', data: dummySummary},
@@ -157,7 +183,7 @@ const HomeScreen: React.FC = () => {
         {type: 'report-admin', title: 'Laporan', data: dummyStats},
         {
           type: 'work-planner-admin',
-          title: 'Rencana Kerja - Hari Ini',
+          title: `Rencana Kerja -  ${formatTodayDate()}`,
           data: dummyTotalEmployee,
         },
       ];
@@ -166,7 +192,7 @@ const HomeScreen: React.FC = () => {
         {type: 'report', title: 'Laporan', data: dummyStats},
         {
           type: 'work-planner',
-          title: 'Rencana Kerja - Hari Ini',
+          title: `Rencana Kerja -  ${formatTodayDate()}`,
           data: dummyTotalEmployee,
         },
       ];

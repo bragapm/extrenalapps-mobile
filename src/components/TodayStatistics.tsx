@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     backgroundColor: '#FFF',
     borderRadius: 18,
-    marginTop: -40,
+    marginTop: 10,
     padding: 16,
     shadowColor: '#000',
     shadowOpacity: 0.05,

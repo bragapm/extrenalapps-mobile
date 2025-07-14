@@ -182,18 +182,18 @@ export const dummyAdminAbsensiTrend = [
 
 // Monitoring absensi (bisa sama dengan dummySummary.chart)
 export const dummyAdminMonitoringAbsensi = [
-  {month: 'Jan', hadir: 6, tidak_hadir: 3},
-  {month: 'Feb', hadir: 8, tidak_hadir: 4},
-  {month: 'Mar', hadir: 7, tidak_hadir: 3},
-  {month: 'Apr', hadir: 8, tidak_hadir: 3},
-  {month: 'Mei', hadir: 5, tidak_hadir: 2},
-  {month: 'Jun', hadir: 8, tidak_hadir: 4},
-  {month: 'Jul', hadir: 8, tidak_hadir: 4},
-  {month: 'Agu', hadir: 8, tidak_hadir: 5},
-  {month: 'Sep', hadir: 8, tidak_hadir: 5},
-  {month: 'Okt', hadir: 8, tidak_hadir: 7},
-  {month: 'Nov', hadir: 0, tidak_hadir: 14},
-  {month: 'Des', hadir: 0, tidak_hadir: 14},
+  {label: 'Jan', values: [6, 3], colors: ['#D32E36', '#1F93FF']}, // [hadir, tidak hadir]
+  {label: 'Feb', values: [12, 5], colors: ['#D32E36', '#1F93FF']},
+  {label: 'Mar', values: [9, 3], colors: ['#D32E36', '#1F93FF']},
+  {label: 'Apr', values: [8, 3], colors: ['#D32E36', '#1F93FF']},
+  {label: 'Mei', values: [9, 3], colors: ['#D32E36', '#1F93FF']},
+  {label: 'Jun', values: [9, 3], colors: ['#D32E36', '#1F93FF']},
+  {label: 'Jul', values: [9, 3], colors: ['#D32E36', '#1F93FF']},
+  {label: 'Aug', values: [10, 2], colors: ['#D32E36', '#1F93FF']},
+  {label: 'Sep', values: [7, 5], colors: ['#D32E36', '#1F93FF']},
+  {label: 'Oct', values: [6, 8], colors: ['#D32E36', '#1F93FF']},
+  {label: 'Nov', values: [0, 14], colors: ['#1F93FF', '#D32E36']},
+  {label: 'Dec', values: [0, 14], colors: ['#1F93FF', '#D32E36']},
 ];
 
 export const dummyAdminCutiTrend = [
@@ -240,15 +240,16 @@ export const dummyAdminCutiTrend = [
 ];
 
 // Untuk Monitoring Cuti (Bar Chart)
+
 export const dummyAdminCutiMonitoring = [
-  {name: 'Priya', total_cuti: 6},
-  {name: 'Angel', total_cuti: 8},
-  {name: 'Ilam', total_cuti: 8},
-  {name: 'David', total_cuti: 9},
-  {name: 'Nirina', total_cuti: 5},
-  {name: 'Alma', total_cuti: 9},
-  {name: 'Noah', total_cuti: 9},
-  {name: 'Olivia', total_cuti: 9},
+  {label: 'Priya', values: [0, 6], colors: ['#D32E36', '#20D372']}, // [hadir, tidak hadir]
+  {label: 'Angel', values: [0, 8], colors: ['#D32E36', '#20D372']},
+  {label: 'Ilam', values: [0, 8], colors: ['#D32E36', '#20D372']},
+  {label: 'David', values: [0, 9], colors: ['#D32E36', '#20D372']},
+  {label: 'Nirina', values: [0, 5], colors: ['#D32E36', '#20D372']},
+  {label: 'Alma', values: [0, 9], colors: ['#D32E36', '#20D372']},
+  {label: 'Noah', values: [0, 9], colors: ['#D32E36', '#20D372']},
+  {label: 'Olivia', values: [0, 9], colors: ['#D32E36', '#20D372']},
 ];
 
 export const dummyAdminPerjadinTrend = [
@@ -295,15 +296,39 @@ export const dummyAdminPerjadinTrend = [
 ];
 
 // Monitoring Perjalanan Dinas (Bar Chart)
+
 export const dummyAdminPerjadinMonitoring = [
-  {name: 'Priya', total_perjadin: 6},
-  {name: 'Angel', total_perjadin: 8},
-  {name: 'Ilam', total_perjadin: 8},
-  {name: 'David', total_perjadin: 9},
-  {name: 'Nirina', total_perjadin: 5},
-  {name: 'Alma', total_perjadin: 9},
-  {name: 'Noah', total_perjadin: 9},
-  {name: 'Olivia', total_perjadin: 9},
+  {label: 'Priya', values: [0, 6], colors: ['#D32E36', '#EEB82E']}, // [hadir, tidak hadir]
+  {label: 'Angel', values: [0, 8], colors: ['#D32E36', '#EEB82E']},
+  {label: 'Ilam', values: [0, 8], colors: ['#D32E36', '#EEB82E']},
+  {label: 'David', values: [0, 9], colors: ['#D32E36', '#EEB82E']},
+  {label: 'Nirina', values: [0, 5], colors: ['#D32E36', '#EEB82E']},
+  {label: 'Alma', values: [0, 9], colors: ['#D32E36', '#EEB82E']},
+  {label: 'Noah', values: [0, 9], colors: ['#D32E36', '#EEB82E']},
+  {label: 'Olivia', values: [0, 9], colors: ['#D32E36', '#EEB82E']},
+];
+
+// export const activityData = [
+//   {label: 'Jan', values: [6, 3], colors: ['#D32E36', '#1F93FF']}, // [hadir, tidak hadir]
+//   {label: 'Feb', values: [12, 5], colors: ['#D32E36', '#1F93FF']},
+//   {label: 'Mar', values: [9, 3], colors: ['#D32E36', '#1F93FF']},
+//   {label: 'Apr', values: [8, 3], colors: ['#D32E36', '#1F93FF']},
+//   {label: 'Mei', values: [9, 3], colors: ['#D32E36', '#1F93FF']},
+//   {label: 'Jun', values: [9, 3], colors: ['#D32E36', '#1F93FF']},
+//   {label: 'Jul', values: [9, 3], colors: ['#D32E36', '#1F93FF']},
+//   {label: 'Aug', values: [10, 2], colors: ['#D32E36', '#1F93FF']},
+//   {label: 'Sep', values: [7, 5], colors: ['#D32E36', '#1F93FF']},
+//   {label: 'Oct', values: [6, 8], colors: ['#D32E36', '#1F93FF']},
+//   {label: 'Nov', values: [0, 14], colors: ['#1F93FF', '#D32E36']},
+//   {label: 'Dec', values: [0, 14], colors: ['#1F93FF', '#D32E36']},
+// ];
+
+export const activityData = [
+  {label: 'issue a', open: 17, close: 12},
+  {label: 'issue b', open: 14, close: 8},
+  {label: 'issue c', open: 7, close: 18},
+  {label: 'issue d', open: 7, close: 18},
+  {label: 'issue e', open: 7, close: 18},
 ];
 
 export const dummyLiveAbsensi = [
@@ -437,37 +462,44 @@ export const dummyActivityReports = [
   {
     id: 1,
     status: 'Waiting',
-    date: '12/02/2025',
+    date: '12 Feb 2025',
     title: 'Validasi Data Laporan Lapangan Taman Nasional',
-    type: 'Jenis Report',
+    pic: 'Angelica, Ilam Nugroho',
   },
   {
     id: 2,
     status: 'Waiting',
-    date: '12/02/2025',
+    date: '15 Jul 2025',
     title: 'Validasi Data Laporan Lapangan Taman Nasional',
-    type: 'Jenis Report',
+    pic: 'Angelica, Ilam Nugroho',
   },
   {
     id: 3,
     status: 'Approved',
-    date: '12/02/2025',
+    date: '12 Jul 2025',
     title: 'Validasi Data Laporan Lapangan Taman Nasional',
-    type: 'Jenis Report',
+    pic: 'Angelica, Ilam Nugroho',
   },
   {
     id: 4,
     status: 'Open',
-    date: '12/02/2025',
+    date: '12 Jul 2025',
     title: 'Validasi Data Laporan Lapangan Taman Nasional',
-    type: 'Jenis Report',
+    pic: 'Angelica, Ilam Nugroho',
   },
   {
     id: 5,
     status: 'Close',
+    date: '12 Jul 2025',
+    title: 'Validasi Data Laporan Lapangan Taman Nasional',
+    pic: 'Angelica, Ilam Nugroho',
+  },
+  {
+    id: 6,
+    status: 'Reject',
     date: '12/02/2025',
     title: 'Validasi Data Laporan Lapangan Taman Nasional',
-    type: 'Jenis Report',
+    pic: 'Angelica, Ilam Nugroho',
   },
 ];
 export const dummyReport = [

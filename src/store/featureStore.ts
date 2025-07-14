@@ -13,18 +13,10 @@ type FeatureStoreType = {
   clear: () => void;
 };
 
-export const useFeatureStore = create<FeatureStoreType>()(
-  persist(
-    set => ({
-      activeTab: 'home',
-      setActiveTab: tab => set({activeTab: tab}),
-      activeMenu: null,
-      setActiveMenu: key => set({activeMenu: key}),
-      clear: () => set({activeTab: 'home', activeMenu: null}),
-    }),
-    {
-      name: 'feature-store',
-      storage: createJSONStorage(() => AsyncStorage),
-    },
-  ),
-);
+export const useFeatureStore = create<FeatureStoreType>()(set => ({
+  activeTab: 'home',
+  setActiveTab: tab => set({activeTab: tab}),
+  activeMenu: 'absensi',
+  setActiveMenu: key => set({activeMenu: key}),
+  clear: () => set({activeTab: 'home', activeMenu: 'absensi'}),
+}));

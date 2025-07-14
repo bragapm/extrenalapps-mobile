@@ -24,6 +24,7 @@ type AppHeaderProps = {
   home?: boolean;
   liveTeam?: boolean;
   menu?: boolean;
+  detail?: boolean;
   location?: string;
   label?: string;
 };
@@ -32,6 +33,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   home = true,
   liveTeam = false,
   menu = false,
+  detail = false,
   location = '',
   label = '',
 }) => {
@@ -57,8 +59,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             width: '100%',
             flexDirection: 'row',
             justifyContent: 'space-between',
-            marginTop: '12%',
-            paddingHorizontal: '5%',
+            marginTop: '10%',
+            paddingHorizontal: '3%',
             backgroundColor: '#FFF',
             paddingVertical: '3%',
           }}>
@@ -77,39 +79,12 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           </View>
           <View
             style={{
-              width: '50%',
+              width: '60%',
               alignItems: 'flex-end',
               // paddingHorizontal: "2%",
               flexDirection: 'row',
               justifyContent: 'center',
             }}>
-            <TouchableOpacity
-              style={{
-                backgroundColor: colors.red,
-                borderRadius: 10,
-                flexDirection: 'row',
-                justifyContent: 'center',
-                alignItems: 'center',
-                paddingHorizontal: '5%',
-                paddingVertical: '5%',
-                marginHorizontal: '2%',
-              }}
-              onPress={() => setShowConfirm(true)}>
-              <Image
-                source={require('../assets/icons/logoutIcon.png')}
-                style={{width: 15, height: 30}}
-                resizeMode="contain"
-              />
-              <Text
-                style={{
-                  color: colors.background,
-                  fontWeight: '400',
-                  fontSize: 16,
-                  marginLeft: '5%',
-                }}>
-                Logout
-              </Text>
-            </TouchableOpacity>
             <View
               style={{
                 backgroundColor: colors.background,
@@ -137,6 +112,24 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                 Online
               </Text>
             </View>
+            <TouchableOpacity
+              style={{
+                // backgroundColor: colors.red,
+                // borderRadius: 10,
+                // flexDirection: 'row',
+                justifyContent: 'center',
+                alignItems: 'center',
+                paddingHorizontal: '5%',
+                // paddingVertical: '5%',
+                marginHorizontal: '2%',
+              }}
+              onPress={() => setShowConfirm(true)}>
+              <Image
+                source={require('../assets/icons/avatar.png')}
+                style={{width: 45, height: 45}}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -147,7 +140,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             width: '95%',
             flexDirection: 'row',
             justifyContent: 'space-between',
-            marginTop: '12%',
+            marginTop: '10%',
             paddingHorizontal: '5%',
             backgroundColor: '#FFF',
             paddingVertical: '3%',
@@ -213,7 +206,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               }}>
               <Image
                 source={require('../assets/images/dot.png')}
-                style={{width: 15, height: 30}}
+                style={{width: 15, height: 20}}
                 resizeMode="contain"
               />
               <Text
@@ -236,7 +229,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             width: '100%',
             flexDirection: 'row',
             justifyContent: 'space-between',
-            marginTop: '12%',
+            marginTop: '0%',
             paddingHorizontal: '5%',
             backgroundColor: '#FFF',
             paddingVertical: '3%',
@@ -296,6 +289,94 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           </View>
         </View>
       )}
+
+      {detail === true &&
+        menu === false &&
+        liveTeam === false &&
+        home === false && (
+          <View
+            style={{
+              width: '100%',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              marginTop: '10%',
+              paddingHorizontal: '5%',
+              backgroundColor: '#FFF',
+              paddingVertical: '3%',
+            }}>
+            <View
+              style={{
+                width: '60%',
+                alignItems: 'flex-start',
+                // paddingHorizontal: "2%",
+                justifyContent: 'center',
+              }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                <TouchableOpacity
+                  onPress={() => navigation.goBack()}
+                  style={{
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}>
+                  <Image
+                    source={require('../assets/icons/ic-back.png')}
+                    style={{width: 20, height: 20, tintColor: '#222'}}
+                  />
+                </TouchableOpacity>
+                <Text
+                  style={{
+                    color: '#161414',
+                    fontWeight: '600',
+                    fontSize: 18,
+                    marginLeft: '5%',
+                  }}>
+                  {label}
+                </Text>
+              </View>
+            </View>
+            <View
+              style={{
+                width: '50%',
+                alignItems: 'flex-end',
+                // paddingHorizontal: "2%",
+                flexDirection: 'row',
+                justifyContent: 'center',
+              }}>
+              <View
+                style={{
+                  backgroundColor: colors.background,
+                  borderRadius: 10,
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  paddingHorizontal: '5%',
+                  paddingVertical: '5%',
+                  borderWidth: 2,
+                  borderColor: colors.green,
+                }}>
+                <Image
+                  source={require('../assets/icons/iconSignal.png')}
+                  style={{width: 15, height: 20}}
+                  resizeMode="contain"
+                />
+                <Text
+                  style={{
+                    color: colors.green,
+                    fontWeight: '400',
+                    fontSize: 16,
+                    marginLeft: '5%',
+                  }}>
+                  Online
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
       <Modal
         transparent
         visible={showConfirm}

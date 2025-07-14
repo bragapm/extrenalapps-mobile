@@ -11,6 +11,8 @@ import {
   StyleSheet,
   useColorScheme,
 } from 'react-native';
+import {Picker} from '@react-native-picker/picker';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import Svg, {
   Rect,
   G,
@@ -26,9 +28,28 @@ import {
   dummyWeeklyReports,
   dummyActivityReports,
   dummyReport,
+  activityData,
 } from '../../data/dummy';
 import {useFeatureStore} from '../../store/featureStore';
+import StackedBarChart from '../../components/StackedBarChart';
+import GroupedBarChart from '../../components/GroupedBarChart';
+import {RootStackParamList} from '../../navigation';
+import {StackNavigationProp} from '@react-navigation/stack';
+import {useNavigation} from '@react-navigation/native';
 
+const JENIS_REPORT = [
+  {label: 'Semua', value: ''},
+  {label: 'Activity', value: 'activity'},
+  {label: 'Weekly', value: 'weekly'},
+  {label: 'Laporan', value: 'laporan'},
+];
+
+const STATUS = [
+  {label: 'Semua', value: ''},
+  {label: 'Open', value: 'open'},
+  {label: 'Close', value: 'close'},
+  {label: 'Approved', value: 'approved'},
+];
 const COLOR_WEEKLY_M1 = '#FFE2BB';
 const COLOR_WEEKLY_M2 = '#FF832A';
 const COLOR_DAILY_OPEN = '#1F93FF';
@@ -36,8 +57,9 @@ const COLOR_DAILY_CLOSE = '#20D372';
 
 const STATUS_STYLE = {
   Waiting: {bg: '#F7F7F7', color: '#868686', border: '#B0B0B0'},
-  Approved: {bg: '#EAF3FF', color: '#2196F3', border: '#2196F3'},
-  Open: {bg: '#FFF9E6', color: '#C9A927', border: '#C9A927'},
+  Approved: {bg: '#FBE41D66', color: '#161414', border: '#FBE41D'},
+  Reject: {bg: '#E9745685', color: '#161414', border: '#E35131'},
+  Open: {bg: '#CDF1F7', color: '#1F93FF', border: '#1F93FF'},
   Close: {bg: '#E6FFF1', color: '#21B573', border: '#21B573'},
 };
 
@@ -79,8 +101,11 @@ const pieChartData = [
 const StatusBadge = ({status}) => {
   const style = STATUS_STYLE[status] || STATUS_STYLE.Waiting;
   let icon = require('../../assets/icons/ic-time.png');
-  if (status === 'Approved') icon = require('../../assets/icons/ic-check.png');
-  if (status === 'Close') icon = require('../../assets/icons/ic-check2.png');
+  if (status === 'Approved')
+    icon = require('../../assets/icons/ic-check-black.png');
+  if (status === 'Open') icon = require('../../assets/icons/ic-edit.png');
+  if (status === 'Reject') icon = require('../../assets/icons/ic-close.png');
+  if (status === 'Close') icon = require('../../assets/icons/ic-time.png');
   return (
     <View
       style={{
@@ -193,89 +218,6 @@ const WeeklyBarChart = ({data}) => {
 };
 
 // --- DAILY BAR CHART ---
-const ActivityBarChart = ({data}) => {
-  const chartWidth = 300,
-    chartHeight = 170,
-    padding = 33,
-    maxY = 30,
-    barWidth = 13,
-    gap = 28;
-  return (
-    <View style={styles.chartCard}>
-      <Text style={styles.chartTitle}>Distribusi Aktivitas</Text>
-      <Svg width={chartWidth} height={chartHeight}>
-        {[0, 1, 2, 3, 4].map(i => {
-          const y = padding + (i * (chartHeight - padding * 1.5)) / 4;
-          return (
-            <G key={i}>
-              <Rect
-                x={padding}
-                y={y}
-                width={chartWidth - padding * 1.2}
-                height={1}
-                fill="#E5E5E5"
-              />
-              <SvgText
-                x={padding - 14}
-                y={y + 5}
-                fontSize={11}
-                fill="#000"
-                textAnchor="end">
-                {maxY - Math.round((i * maxY) / 4)}
-              </SvgText>
-            </G>
-          );
-        })}
-        {data.map((item, i) => {
-          const x0 = padding + i * (barWidth * 2 + gap);
-          const openH = (item.open / maxY) * (chartHeight - padding * 1.5);
-          const closeH = (item.close / maxY) * (chartHeight - padding * 1.5);
-          const yBase = chartHeight - padding * 0.55;
-          return (
-            <G key={item.label}>
-              <Rect
-                x={x0}
-                y={yBase - openH}
-                width={barWidth}
-                height={openH}
-                fill={COLOR_DAILY_OPEN}
-                rx={2}
-              />
-              <Rect
-                x={x0 + barWidth + 4}
-                y={yBase - closeH}
-                width={barWidth}
-                height={closeH}
-                fill={COLOR_DAILY_CLOSE}
-                rx={2}
-              />
-              <SvgText
-                x={x0 + barWidth + 2}
-                y={yBase + 18}
-                fontSize={13}
-                fill="#7C7672"
-                textAnchor="middle"
-                fontWeight="500">
-                {item.label}
-              </SvgText>
-            </G>
-          );
-        })}
-      </Svg>
-      <View style={styles.legendWrap}>
-        <View style={[styles.legendDot, {backgroundColor: COLOR_DAILY_OPEN}]} />
-        <Text style={[styles.legendLabel, {color: '#A17F4D'}]}>Open</Text>
-        <View
-          style={[
-            styles.legendDot,
-            {backgroundColor: COLOR_DAILY_CLOSE, marginLeft: 24},
-          ]}
-        />
-        <Text style={[styles.legendLabel, {color: '#6C3A1E'}]}>Close</Text>
-      </View>
-    </View>
-  );
-};
 
 const COLOR_CLOSE = '#FFE936'; // Kuning
 const COLOR_OPEN = '#20D372'; // Hijau
@@ -732,34 +674,101 @@ const PieChartSummary = ({data}) => {
 };
 
 // --- FILTER & SORT HEADER ---
-const FilterSortHeader = ({filter, setFilter, sort, setSort}) => (
-  <View style={styles.headerFilterSort}>
-    <TouchableOpacity
-      style={styles.filterBtn}
-      onPress={() => setFilter(filter === 'all' ? 'mine' : 'all')}>
-      <Image
-        source={require('../../assets/icons/ic-lihatSemua.png')}
-        style={{width: 16, height: 16, marginRight: 6}}
-        resizeMode="contain"
-      />
-      <Text style={styles.filterText}>Lihat Semua</Text>
-      <Text style={styles.arrowDown}>▼</Text>
-    </TouchableOpacity>
-    <TouchableOpacity
-      style={styles.filterBtn}
-      onPress={() => setSort(sort === 'latest' ? 'oldest' : 'latest')}>
-      <Image
-        source={require('../../assets/icons/ic-time.png')}
-        style={{width: 16, height: 16, marginRight: 6}}
-        resizeMode="contain"
-      />
-      <Text style={styles.filterText}>
-        Sort By: {sort === 'latest' ? 'Latest' : 'Oldest'}
-      </Text>
-      <Text style={styles.arrowDown}>▼</Text>
-    </TouchableOpacity>
-  </View>
-);
+const FilterSortHeader = ({
+  filter,
+  setFilter,
+  sort,
+  setSort,
+  jenisReport,
+  setJenisReport,
+  status,
+  setStatus,
+  tanggal,
+  setTanggal,
+  onDownload,
+  setShowDate,
+  showDate,
+}) => {
+  return (
+    <View style={stylesFSH.container}>
+      {/* Jenis Report */}
+      <View style={stylesFSH.inputBox}>
+        <Picker
+          selectedValue={jenisReport}
+          style={{
+            height: 52, // tinggi yang lebih besar
+            width: '100%',
+          }}
+          onValueChange={setJenisReport}>
+          {JENIS_REPORT.map(item => (
+            <Picker.Item
+              key={item.value}
+              label={item.label}
+              value={item.value}
+            />
+          ))}
+        </Picker>
+      </View>
+      {/* Status */}
+      <View style={stylesFSH.inputBox}>
+        <Picker
+          selectedValue={status}
+          style={{
+            height: 52, // tinggi yang lebih besar
+            width: '100%',
+          }}
+          onValueChange={setStatus}>
+          {STATUS.map(item => (
+            <Picker.Item
+              key={item.value}
+              label={item.label}
+              value={item.value}
+            />
+          ))}
+        </Picker>
+      </View>
+      {/* Tanggal */}
+      <TouchableOpacity
+        style={stylesFSH.inputBox}
+        onPress={() => setShowDate(true)}>
+        <View style={stylesFSH.dateContent}>
+          <Image
+            source={require('../../assets/icons/ic-calendar.png')}
+            style={{width: 18, height: 18, marginRight: 8}}
+            resizeMode="contain"
+          />
+          <Text style={stylesFSH.inputText}>
+            {tanggal ? formatDate(tanggal) : 'Pilih Tanggal'}
+          </Text>
+        </View>
+      </TouchableOpacity>
+
+      {/* Download */}
+      <TouchableOpacity
+        style={stylesFSH.iconBtn}
+        onPress={onDownload}
+        activeOpacity={0.7}>
+        {/* Pakai SVG atau PNG icon, contoh: */}
+        {/* <IconDownload width={22} height={22} /> */}
+        <Image
+          source={require('../../assets/icons/ic-download.png')}
+          style={{width: 22, height: 22}}
+          resizeMode="contain"
+        />
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+// --- FORMAT TANGGAL ---
+function formatDate(date) {
+  if (!date) return '';
+  const d = new Date(date);
+  return `${d.getDate().toString().padStart(2, '0')} ${d.toLocaleString(
+    'id-ID',
+    {month: 'long'},
+  )} ${d.getFullYear()}`;
+}
 
 // --- CARD WEEKLY LIST ---
 const WeeklyReportCard = ({item}) => (
@@ -808,91 +817,7 @@ const WeeklyReportCard = ({item}) => (
 );
 
 // --- CARD DAILY LIST ---
-const ActivityCard = ({item}) => (
-  <View
-    style={{
-      backgroundColor: '#FFF',
-      borderRadius: 12,
-      padding: 14,
-      marginBottom: 14,
-      elevation: 1,
-      borderWidth: 1,
-      borderColor: '#F2F2F2',
-      shadowColor: '#000',
-      shadowOpacity: 0.04,
-      shadowRadius: 6,
-    }}>
-    <StatusBadge status={item.status} />
-    <Text style={{fontSize: 12, color: '#888'}}>{item.date}</Text>
-    <Text
-      numberOfLines={2}
-      style={{
-        fontSize: 15,
-        fontWeight: '700',
-        marginVertical: 3,
-        color: '#232323',
-      }}>
-      {item.title}
-    </Text>
-    <Text style={{fontSize: 13, color: '#6D6B6A'}}>{item.type}</Text>
-    <View
-      style={{
-        width: '100%',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: '2%',
-      }}>
-      <View style={{alignItems: 'center', flexDirection: 'row'}}>
-        <Image
-          source={require('../../assets/icons/ic-stackeHolder-disable.png')}
-          style={{width: 16, height: 16}}
-          resizeMode="contain"
-        />
-        <Text
-          style={{
-            fontSize: 13,
-            fontWeight: '500',
-            color: '#4F4D4A',
-            marginLeft: 4,
-          }}>
-          Nama PIC
-        </Text>
-        <Text
-          style={{
-            fontSize: 13,
-            fontWeight: '500',
-            color: '#4F4D4A',
-            marginLeft: 4,
-          }}>
-          -
-        </Text>
-        <Text
-          style={{
-            fontSize: 13,
-            fontWeight: '500',
-            color: '#4F4D4A',
-            marginLeft: 4,
-          }}>
-          iSafe Number
-        </Text>
-      </View>
-      <TouchableOpacity style={{flexDirection: 'row', alignItems: 'center'}}>
-        <Text style={{fontSize: 13, fontWeight: '500', color: '#4F4D4A'}}>
-          Lihat
-        </Text>
-        <Image
-          source={require('../../assets/icons/chevRed.png')}
-          style={{width: 10, height: 10, marginLeft: 4}}
-          resizeMode="contain"
-        />
-      </TouchableOpacity>
-    </View>
-    <TouchableOpacity
-      style={{position: 'absolute', top: 12, right: 12, padding: 6}}>
-      <Text style={{fontSize: 18, color: '#AAA'}}>⋮</Text>
-    </TouchableOpacity>
-  </View>
-);
+
 const ReportCard = ({item}) => (
   <View
     style={{
@@ -928,13 +853,13 @@ const ReportCard = ({item}) => (
   </View>
 );
 
-const activityData = [
-  {label: 'issue a', open: 17, close: 12},
-  {label: 'issue b', open: 14, close: 8},
-  {label: 'issue c', open: 7, close: 18},
-  {label: 'issue d', open: 7, close: 18},
-  {label: 'issue e', open: 7, close: 18},
-];
+// const activityData = [
+//   {label: 'issue a', open: 17, close: 12},
+//   {label: 'issue b', open: 14, close: 8},
+//   {label: 'issue c', open: 7, close: 18},
+//   {label: 'issue d', open: 7, close: 18},
+//   {label: 'issue e', open: 7, close: 18},
+// ];
 
 // Komponen Bar Chart "Employee Performance"
 
@@ -943,9 +868,12 @@ const Activity = () => {
   const activeMenu = useFeatureStore(state => state.activeMenu);
   const {colors} = useThemeStore();
   const colorScheme = useColorScheme();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [filter, setFilter] = React.useState('all');
   const [sort, setSort] = React.useState('latest');
-
+  const [jenisReport, setJenisReport] = React.useState('');
+  const [status, setStatus] = React.useState('');
+  const [tanggal, setTanggal] = React.useState(null);
   console.log('activeMenu', activeMenu);
   // Pakai data & UI sesuai initial
   let mode = 'daily'; // default
@@ -960,6 +888,91 @@ const Activity = () => {
     ? [...dummyActivityReports]
     : [...dummyReport];
   if (sort === 'oldest') reports.reverse();
+  const [showDate, setShowDate] = React.useState(false);
+
+  const ActivityCard = ({item}) => (
+    <TouchableOpacity
+      onPress={() =>
+        navigation.navigate('DetailDailyActivity', {
+          showForm: false,
+          data: item,
+        })
+      }
+      style={{
+        backgroundColor: '#FFF',
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 14,
+        elevation: 1,
+        borderWidth: 1,
+        borderColor: '#F2F2F2',
+        shadowColor: '#000',
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
+      }}>
+      <StatusBadge status={item.status} />
+      <Text style={{fontSize: 12, color: '#888'}}>{item.date}</Text>
+      <Text
+        numberOfLines={2}
+        style={{
+          fontSize: 15,
+          fontWeight: '700',
+          marginVertical: 3,
+          color: '#232323',
+        }}>
+        {item.title}
+      </Text>
+      {/* <Text style={{fontSize: 13, color: '#6D6B6A'}}>{item.type}</Text> */}
+      <View
+        style={{
+          width: '100%',
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          marginTop: '2%',
+        }}>
+        <View style={{alignItems: 'center', flexDirection: 'row'}}>
+          <Image
+            source={require('../../assets/icons/ic-stackeHolder-disable.png')}
+            style={{width: 16, height: 16}}
+            resizeMode="contain"
+          />
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: '500',
+              color: '#4F4D4A',
+              marginLeft: 4,
+            }}>
+            PIC:
+          </Text>
+
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: '500',
+              color: '#4F4D4A',
+              marginLeft: 4,
+            }}>
+            {item?.pic}
+          </Text>
+        </View>
+        <TouchableOpacity style={{flexDirection: 'row', alignItems: 'center'}}>
+          <Text style={{fontSize: 13, fontWeight: '500', color: '#4F4D4A'}}>
+            Lihat
+          </Text>
+          <Image
+            source={require('../../assets/icons/chevRed.png')}
+            style={{width: 10, height: 10, marginLeft: 4}}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      </View>
+      <TouchableOpacity
+        style={{position: 'absolute', top: 12, right: 12, padding: 6}}>
+        <Text style={{fontSize: 18, color: '#AAA'}}>⋮</Text>
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
 
   return (
     <>
@@ -969,7 +982,11 @@ const Activity = () => {
         barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
       />
       <View style={[styles.container, {backgroundColor: colors.bgHome}]}>
-        <AppHeader menu={true} home={false} label="Activity" />
+        <AppHeader
+          //  menu={true}
+          home={true}
+          //  label="Activity"
+        />
         <ScrollView
           style={{flex: 1, width: '100%'}}
           contentContainerStyle={{alignItems: 'center'}}
@@ -1080,7 +1097,27 @@ const Activity = () => {
                     }}>
                     Summery Activity
                   </Text>
-                  <ActivityBarChart data={activityData} />
+
+                  <GroupedBarChart
+                    data={activityData}
+                    maxY={30} // set maxY biar sesuai nilai maksimal
+                    height={300} // bisa diubah sesuai kebutuhan, biasanya 120-150
+                  />
+
+                  <View style={styles.legendRow}>
+                    <View style={styles.legendItem}>
+                      <View
+                        style={[styles.legendDot, {backgroundColor: '#2996F5'}]}
+                      />
+                      <Text style={styles.legendText}>Open</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                      <View
+                        style={[styles.legendDot, {backgroundColor: '#20D372'}]}
+                      />
+                      <Text style={styles.legendText}>Close</Text>
+                    </View>
+                  </View>
                 </View>
               </>
             )}
@@ -1139,6 +1176,17 @@ const Activity = () => {
                 setFilter={setFilter}
                 sort={sort}
                 setSort={setSort}
+                jenisReport={jenisReport}
+                setJenisReport={setJenisReport}
+                status={status}
+                setStatus={setStatus}
+                tanggal={tanggal}
+                setTanggal={setTanggal}
+                showDate={showDate}
+                setShowDate={setShowDate}
+                onDownload={() => {
+                  /* aksi download data sesuai filter */
+                }}
               />
             )}
 
@@ -1161,15 +1209,39 @@ const Activity = () => {
             </View>
           </View>
         </ScrollView>
+
         {mode === 'laporan' ? null : (
           <View style={styles.bottomBtnWrap}>
-            <TouchableOpacity style={styles.fabButton}>
+            <TouchableOpacity
+              style={styles.fabButton}
+              onPress={
+                isWeekly !== true
+                  ? () =>
+                      navigation.navigate('DetailDailyActivity', {
+                        showForm: true,
+                      })
+                  : () =>
+                      navigation.navigate('DetailDailyActivity', {
+                        showForm: true,
+                      })
+              }>
               <Text style={styles.fabButtonText}>
                 {isWeekly ? 'Buat Weekly' : 'Buat Daily Activity'}
               </Text>
             </TouchableOpacity>
           </View>
         )}
+
+        <DateTimePickerModal
+          isVisible={showDate}
+          mode="date"
+          date={tanggal ? new Date(tanggal) : new Date()}
+          onConfirm={date => {
+            setShowDate(false);
+            setTanggal(date);
+          }}
+          onCancel={() => setShowDate(false)}
+        />
       </View>
     </>
   );
@@ -1305,6 +1377,76 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     letterSpacing: 0.2,
+  },
+  legendRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap', // Biar auto wrap!
+    alignItems: 'center',
+    marginTop: 8,
+    width: '100%',
+    paddingHorizontal: '5%',
+    // justifyContent: 'flex-start', // optional
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16, // Ganti marginLeft → marginRight biar rapih
+    marginBottom: 4, // Jarak antar row saat wrap
+  },
+  legendText: {color: '#666', fontSize: 13, paddingHorizontal: '2%'},
+});
+
+const stylesFSH = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10, // spacing antar box
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '90%',
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  inputBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderColor: '#B4B4B4',
+    borderWidth: 1.2,
+    borderRadius: 10,
+    backgroundColor: '#FFF',
+    width: 175, // <== width fix, jangan flex
+    height: 44,
+    marginRight: 0,
+    marginBottom: 10, // biar rapih kalau wrap
+    overflow: 'hidden',
+  },
+  picker: {
+    flex: 1,
+    width: '100%', // penting! biar picker isi parent
+    color: '#333',
+    height: 44,
+    backgroundColor: 'transparent',
+  },
+  inputText: {
+    fontSize: 16,
+    color: '#353535',
+  },
+  dateContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: '5%',
+  },
+  iconBtn: {
+    height: 44,
+    width: 44,
+    borderRadius: 10,
+    borderWidth: 1.2,
+    borderColor: '#B4B4B4',
+    backgroundColor: '#FFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 0,
   },
 });
 

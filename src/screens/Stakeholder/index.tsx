@@ -473,7 +473,11 @@ const Stakeholder: React.FC<StakeholderProps> = ({}) => {
         barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
       />
       <View style={[styles.container, {backgroundColor: colors.bgHome}]}>
-        <AppHeader menu={true} home={false} label={'Stakeholder'} />
+        <AppHeader 
+        // menu={true} 
+        home={true} 
+        // label={'Stakeholder'}
+        />
         <ScrollView
           style={{flex: 1, width: '100%'}}
           contentContainerStyle={{alignItems: 'center', paddingBottom: 40}}

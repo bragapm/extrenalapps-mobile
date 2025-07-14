@@ -454,42 +454,24 @@ const DashboardReport = ({role, sections}) => {
       />
       <View style={[styles.container, {backgroundColor: colors.bgHome}]}>
         <AppHeader />
-        <ImageBackground
-          source={require('../../assets/images/widget-header.png')}
+
+        <View
           style={{
-            // flex: 1,
             width: '100%',
-            height: imageHeight * 1.7,
-            borderRadius: 10,
-          }}
-          resizeMode="contain">
-          <View
+            alignItems: 'flex-start',
+            paddingHorizontal: '5%',
+            paddingVertical: '2%',
+          }}>
+          <Text
             style={{
-              width: '100%',
-              alignItems: 'flex-start',
-              paddingHorizontal: '5%',
-              paddingVertical: '2%',
+              color: '#161414',
+              fontSize: 20,
+              marginTop: 12,
+              fontWeight: '500',
             }}>
-            <Text
-              style={{
-                color: colors.red,
-                fontSize: 20,
-                marginTop: 12,
-                fontWeight: '600',
-              }}>
-              Selamat datang, {role}
-            </Text>
-            <Text
-              style={{
-                color: colors.red,
-                fontSize: 20,
-                marginTop: 12,
-                fontWeight: '600',
-              }}>
-              Anda belum absen hari ini
-            </Text>
-          </View>
-        </ImageBackground>
+            Dashboard Laporan
+          </Text>
+        </View>
       </View>
     </>
   );
@@ -920,7 +902,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     backgroundColor: '#FFF',
     borderRadius: 18,
-    marginTop: -40,
+    marginTop: 20,
     padding: 16,
     shadowColor: '#000',
     shadowOpacity: 0.05,
