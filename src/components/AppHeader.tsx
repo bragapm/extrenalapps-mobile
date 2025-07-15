@@ -99,7 +99,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               }}>
               <Image
                 source={require('../assets/icons/iconSignal.png')}
-                style={{width: 15, height: 30}}
+                style={{width: 15, height: 20}}
                 resizeMode="contain"
               />
               <Text
@@ -273,7 +273,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               }}>
               <Image
                 source={require('../assets/icons/iconSignal.png')}
-                style={{width: 15, height: 30}}
+                style={{width: 15, height: 20}}
                 resizeMode="contain"
               />
               <Text
@@ -325,7 +325,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                   }}>
                   <Image
                     source={require('../assets/icons/ic-back.png')}
-                    style={{width: 20, height: 20, tintColor: '#222'}}
+                    style={{width: 15, height: 20, tintColor: '#222'}}
                   />
                 </TouchableOpacity>
                 <Text

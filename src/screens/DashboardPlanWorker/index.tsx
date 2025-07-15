@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Platform,
   ScrollView,
   ImageBackground,
+  PanResponder,
 } from 'react-native';
 import Modal from 'react-native-modal';
 import {Calendar, LocaleConfig} from 'react-native-calendars';
@@ -16,79 +17,135 @@ import {Calendar, LocaleConfig} from 'react-native-calendars';
 // Calendar Locale
 LocaleConfig.locales['id'] = {
   monthNames: [
-    'Januari',
-    'Februari',
-    'Maret',
-    'April',
-    'Mei',
-    'Juni',
-    'Juli',
-    'Agustus',
-    'September',
-    'Oktober',
-    'November',
-    'Desember',
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli',
+    'Agustus', 'September', 'Oktober', 'November', 'Desember',
   ],
   monthNamesShort: [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'Mei',
-    'Jun',
-    'Jul',
-    'Agu',
-    'Sep',
-    'Okt',
-    'Nov',
-    'Des',
+    'Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des',
   ],
-  dayNames: ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'],
-  dayNamesShort: ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'],
+  dayNames: ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'],
+  dayNamesShort: ['Min','Sen','Sel','Rab','Kam','Jum','Sab'],
   today: 'Hari ini',
 };
 LocaleConfig.defaultLocale = 'id';
 
-// Data Notes
 const notesData = {
-  '2025-01-02': [
-    {
-      title: 'Business Development Discussion',
-      desc: 'A discussion on business development strategies with the team. The app has seamlessly adjusted the time for all members.',
-      user: 'Priya',
-    },
-    {
-      title: 'Business Development Discussion',
-      desc: 'A discussion on business development strategies with the team. The app has seamlessly adjusted the time for all members.',
-      user: 'Priya',
-    },
+  '2025-07-02': [
+    { title: 'Business Development Discussion', desc: 'A discussion on business development strategies with the team. The app has seamlessly adjusted the time for all members.', user: 'Priya', },
+    { title: 'Business Development Discussion', desc: 'A discussion on business development strategies with the team. The app has seamlessly adjusted the time for all members.', user: 'Priya', },
   ],
-  '2025-01-09': [
-    {title: 'POC : Angel | Juli'},
-    {title: 'POC : Angel | Juli 2'},
+  '2025-07-09': [
+    { title: 'POC : Angel | Juli' },
+    { title: 'POC : Angel | Juli 2' },
   ],
-  '2025-01-16': [
-    {title: 'POC : Angel | Juli'},
-    {title: 'POC : Angel | Juli 2'},
+  '2025-07-16': [
+    { title: 'POC : Angel | Juli' },
+    { title: 'POC : Angel | Juli 2' },
   ],
-  '2025-01-23': [
-    {title: 'POC : Angel | Juli'},
-    {title: 'POC : Angel | Juli 2'},
+  '2025-07-23': [
+    { title: 'POC : Angel | Juli' },
+    { title: 'POC : Angel | Juli 2' },
   ],
-  '2025-01-30': [
-    {title: 'POC : Angel | Juli'},
-    {title: 'POC : Angel | Juli 2'},
+  '2025-07-30': [
+    { title: 'POC : Angel | Juli' },
+    { title: 'POC : Angel | Juli 2' },
   ],
 };
 
 const eventDates = Object.keys(notesData);
+const today = new Date();
+const yyyy = today.getFullYear();
+const mm = String(today.getMonth() + 1).padStart(2, '0');
+const dd = String(today.getDate()).padStart(2, '0');
+const todayStr = `${yyyy}-${mm}-${dd}`;
+
+function pad2(n) {
+  return n < 10 ? `0${n}` : n;
+}
 
 export default function PlanCalendar() {
-  const [current, setCurrent] = useState('2025-01-01');
-  const [selected, setSelected] = useState('');
+  // Controlled month & year (always sync header & Calendar)
+  const [year, setYear] = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth()); // 0-based
+  const [selected, setSelected] = useState(todayStr);
   const [modalVisible, setModalVisible] = useState(false);
 
-  // Custom day rendering
+  // Generate "YYYY-MM-01"
+  const getMonthDateString = (y, m) => `${y}-${pad2(m + 1)}-01`;
+
+  // Forcing Calendar to re-render on month change (with key)
+  const [calendarKey, setCalendarKey] = useState(0);
+
+  // PanResponder for swipe gesture di seluruh screen
+  const screenPanResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dx) > 24,
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dx > 50) {
+          changeMonth(-1); // swipe right (bulan sebelumnya)
+        } else if (gestureState.dx < -50) {
+          changeMonth(1);  // swipe left (bulan berikutnya)
+        }
+      },
+    })
+  ).current;
+
+  // Next/Prev bulan (sync header & Calendar)
+  const changeMonth = diff => {
+    let newMonth = month + diff;
+    let newYear = year;
+    if (newMonth > 11) {
+      newMonth = 0;
+      newYear += 1;
+    } else if (newMonth < 0) {
+      newMonth = 11;
+      newYear -= 1;
+    }
+    setMonth(newMonth);
+    setYear(newYear);
+    setCalendarKey(k => k + 1);
+  };
+
+  // Custom header, always reflect state
+  const renderHeader = () => {
+    const monthNames = LocaleConfig.locales['id'].monthNames;
+    return (
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => changeMonth(-1)}
+          style={styles.arrowButton}>
+          <Image
+            source={require('../../assets/images/chevron-back.png')}
+            style={styles.arrowIcon}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+        <View>
+          <Text style={styles.monthText}>{monthNames[month]}</Text>
+          <Text style={styles.yearText}>{year}</Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => changeMonth(1)}
+          style={styles.arrowButton}>
+          <Image
+            source={require('../../assets/images/chevron-forward.png')}
+            style={styles.arrowIcon}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  // Sync header kalau user swipe di calendar bawaan
+  const handleMonthChange = dateObj => {
+    const [y, m] = dateObj.dateString.split('-');
+    setYear(Number(y));
+    setMonth(Number(m) - 1);
+    setCalendarKey(k => k + 1);
+  };
+
+  // Custom day cell
   const renderDay = ({date, state}) => {
     const dateStr = date.dateString;
     const isEvent = eventDates.includes(dateStr);
@@ -121,7 +178,6 @@ export default function PlanCalendar() {
             {date.day}
           </Text>
         </View>
-        {/* Notes kecil biru */}
         {isEvent && notesData[dateStr] && (
           <View style={{width: '100%', alignItems: 'flex-start'}}>
             {notesData[dateStr].map((note, idx) => (
@@ -141,79 +197,20 @@ export default function PlanCalendar() {
       </TouchableOpacity>
     );
   };
-  // Custom Header with image arrow
-  const renderHeader = dateObj => {
-    // dateObj bentuknya bisa Date atau {dateString, day, month, year, ...}
-    // Pakai dateString kalau ada, fallback ke Date JS
-    let year, monthNum;
-    if (dateObj.dateString) {
-      // Format "2025-01-01"
-      [year, monthNum] = dateObj.dateString.split('-');
-      monthNum = parseInt(monthNum, 10) - 1; // 0-indexed
-    } else if (dateObj.getMonth) {
-      year = dateObj.getFullYear();
-      monthNum = dateObj.getMonth();
-    }
-
-    // Pilih nama bulan sesuai kebutuhan (en/indo)
-    const monthNames = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-
-    return (
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => changeMonth(-1)}
-          style={styles.arrowButton}>
-          <Image
-            source={require('../../assets/images/chevron-back.png')}
-            style={styles.arrowIcon}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-        <View>
-          <Text style={styles.monthText}>{monthNames[monthNum]}</Text>
-          <Text style={styles.yearText}>{year}</Text>
-        </View>
-        <TouchableOpacity
-          onPress={() => changeMonth(1)}
-          style={styles.arrowButton}>
-          <Image
-            source={require('../../assets/images/chevron-forward.png')}
-            style={styles.arrowIcon}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-      </View>
-    );
-  };
-
-  // Ganti bulan
-  const changeMonth = direction => {
-    const date = new Date(current);
-    date.setMonth(date.getMonth() + direction);
-    setCurrent(date.toISOString().split('T')[0].slice(0, 7) + '-01');
-  };
 
   return (
-    <View style={styles.wrapper}>
+    <View
+      style={styles.wrapper}
+      {...screenPanResponder.panHandlers} // <-- GESTURE DI SINI
+    >
       <ScrollView
         style={{flex: 1}}
         contentContainerStyle={{paddingBottom: 120}}>
         <Calendar
-          current={current}
-          onMonthChange={m => setCurrent(m.dateString)}
+          key={calendarKey}
+          current={getMonthDateString(year, month)}
+          onDayPress={d => setSelected(d.dateString)}
+          onMonthChange={handleMonthChange}
           markingType={'custom'}
           renderHeader={renderHeader}
           dayComponent={renderDay}
@@ -247,15 +244,14 @@ export default function PlanCalendar() {
           firstDay={1}
         />
       </ScrollView>
-      {/* Modal detail notes */}
+      {/* Modal detail notes & FAB button */}
       <Modal
         isVisible={modalVisible}
-        onBackdropPress={() => setModalVisible(false)} // Tap luar modal
-        onSwipeComplete={() => setModalVisible(false)} // Swipe down
-        swipeDirection={['down']} // Swipe ke bawah
+        onBackdropPress={() => setModalVisible(false)}
+        onSwipeComplete={() => setModalVisible(false)}
+        swipeDirection={['down']}
         style={{margin: 0, justifyContent: 'flex-end'}}
-        onBackButtonPress={() => setModalVisible(false)} // Android back button
-      >
+        onBackButtonPress={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
             <TouchableOpacity
@@ -282,7 +278,6 @@ export default function PlanCalendar() {
                   })}
               </Text>
             </View>
-
             <View
               style={{
                 backgroundColor: '#FFFFFF',
@@ -343,11 +338,6 @@ export default function PlanCalendar() {
                 borderTopLeftRadius: 20,
                 borderTopRightRadius: 20,
               }}></ScrollView>
-            {/* <TouchableOpacity
-              style={styles.modalClose}
-              onPress={() => setModalVisible(false)}>
-              <Text style={{color: '#fff', fontWeight: 'bold'}}>Tutup</Text>
-            </TouchableOpacity> */}
           </View>
         </View>
         <View
@@ -366,8 +356,6 @@ export default function PlanCalendar() {
           </TouchableOpacity>
         </View>
       </Modal>
-
-      {/* Tombol buat rencana */}
       <View
         style={{
           position: 'absolute',
@@ -444,17 +432,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
   },
-  noteTag: {
-    // backgroundColor: '#E8F3FF',
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginTop: 2,
-    marginBottom: 1,
-    minWidth: 36,
-    maxWidth: 110,
-    alignSelf: 'flex-start',
-  },
   noteTagBG: {
     minWidth: 48,
     maxWidth: 120,
@@ -472,7 +449,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   noteTagBGImage: {
-    borderRadius: 8, // samakan dengan shape png kamu
+    borderRadius: 8,
     width: '100%',
     height: '100%',
   },
@@ -482,7 +459,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     maxWidth: 90,
   },
-
   fabButton: {
     backgroundColor: '#D33838',
     borderRadius: 9,
@@ -501,8 +477,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.2,
   },
-
-  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: '#0007',
@@ -523,25 +497,6 @@ const styles = StyleSheet.create({
   modalDate: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 17,
-    backgroundColor: 'transparent',
-    padding: 8,
-    textAlign: 'left',
-    alignSelf: 'flex-start',
-    marginLeft: 24,
-    marginBottom: 6,
-  },
-  modalBar: {
-    width: 60,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: '#eee',
-    alignSelf: 'center',
-    marginBottom: 8,
-  },
-  modalDate: {
-    color: '#fff',
-    fontWeight: 'bold',
     fontSize: 15,
     backgroundColor: '#D33838',
     padding: 6,
@@ -551,24 +506,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     marginTop: 4,
     overflow: 'hidden',
-  },
-  modalNoteCard: {
-    backgroundColor: '#E8F3FF',
-    marginVertical: 8,
-    borderRadius: 10,
-    padding: 12,
-  },
-  modalNoteTitle: {
-    color: '#0A67FE',
-    fontWeight: 'bold',
-    fontSize: 17,
-  },
-  modalClose: {
-    backgroundColor: '#D33838',
-    alignItems: 'center',
-    paddingVertical: 11,
-    borderRadius: 9,
-    marginTop: 16,
   },
   notesCardBG: {
     width: '95%',
@@ -583,7 +520,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.09,
     shadowRadius: 6,
     elevation: 2,
-    backgroundColor: '#F7FDFF', // fallback jika image transparent
+    backgroundColor: '#F7FDFF',
     marginHorizontal: '2%',
     alignSelf: 'center',
     marginVertical: '2%',
@@ -597,7 +534,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#181818',
     marginBottom: 5,
-    marginRight: 32, // space for the more button
+    marginRight: 32,
   },
   cardDesc: {
     fontSize: 14,
@@ -631,14 +568,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     color: '#888',
     fontWeight: 'bold',
-  },
-  modalDateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    marginLeft: 24,
-    marginBottom: 6,
-    marginTop: 4,
   },
   redDot: {
     width: 13,

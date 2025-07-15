@@ -17,190 +17,17 @@ import HistoryAttendance from '../../components/HistoryAttendance';
 import {dummyLiveAbsensi, dummyWorkPlanner} from '../../data/dummy';
 import Svg, {G, Rect, Text as SvgText, TSpan, Path} from 'react-native-svg';
 import {constants} from 'crypto';
+import StackedBarChart from '../../components/StackedBarChart';
+import GroupedBarChart from '../../components/GroupedBarChart';
+import PieChart from '../../components/PieChart';
 
-const CHART_COLORS = {
-  close: '#DF3B32', // Warna merah tua untuk Close
-  open: '#F8C8C4', // Warna pink muda untuk Open
-};
-
-const employeePerformanceDummy = {
-  labels: [
-    'Land\nDispute',
-    'Land\nDispute',
-    'Land\nDispute',
-    'Land\nDispute',
-    'Land\nDispute',
-  ],
-  open: [4, 5, 5, 4, 6], // Tinggi bar HIJAU
-  close: [2, 3, 3, 2, 3], // Tinggi bar KUNING
-};
-
-const COLOR_OPEN = '#DF3B32'; // Kuning
-const COLOR_CLOSE = '#F8C8C4';
-
-const StackedBarChart = ({data}) => {
-  const chartWidth = 300;
-  const chartHeight = 200;
-  const paddingLeft = 48;
-  const paddingBottom = 38;
-  const paddingTop = 18;
-  const maxY = 12;
-  const barWidth = 15;
-  const gap = 55; // Perbesar supaya ga tabrakan label
-
-  return (
-    <View
-      style={{
-        backgroundColor: '#F4F3F1',
-        borderRadius: 16,
-        padding: 18,
-        marginVertical: 10,
-        borderWidth: 1,
-        borderColor: '#E8E8E8',
-        width: '100%',
-        alignSelf: 'center',
-        elevation: 2,
-      }}>
-      <Text
-        style={{
-          color: '#161414',
-          fontSize: 16,
-          marginTop: 5,
-          fontWeight: '600',
-          paddingBottom: '5%',
-        }}>
-        Employee Performance
-      </Text>
-
-      <Svg width={chartWidth} height={chartHeight}>
-        {/* Garis grid dan Y-axis */}
-        {[0, 1, 2, 3, 4].map(i => {
-          const y =
-            paddingTop + (i * (chartHeight - paddingTop - paddingBottom)) / 4;
-          return (
-            <G key={i}>
-              <Rect
-                x={paddingLeft}
-                y={y}
-                width={chartWidth - paddingLeft - 14}
-                height={1.2}
-                fill="#E4E4E4"
-              />
-              <SvgText
-                x={paddingLeft - 13}
-                y={y + 6}
-                fontSize={12}
-                fill="#A5A5A5"
-                textAnchor="end"
-                fontWeight="400">
-                {maxY - Math.round((i * maxY) / 4)}
-              </SvgText>
-            </G>
-          );
-        })}
-        {/* BAR */}
-        {data.labels.map((label, i) => {
-          const baseY = chartHeight - paddingBottom;
-          const closeH =
-            (data.close[i] / maxY) * (chartHeight - paddingTop - paddingBottom);
-          const openH =
-            (data.open[i] / maxY) * (chartHeight - paddingTop - paddingBottom);
-
-          // Titik X bar
-          const x = paddingLeft + i * gap + 6;
-
-          // Pisah text label menjadi dua baris dengan TSpan
-          const [labelLine1, labelLine2] = label.split('\n');
-
-          return (
-            <G key={i}>
-              {/* CLOSE (kuning, bawah) */}
-              <Rect
-                x={x}
-                y={baseY - closeH}
-                width={barWidth}
-                height={closeH}
-                fill={COLOR_CLOSE}
-                rx={3}
-              />
-              {/* OPEN (hijau, atas) */}
-              <Rect
-                x={x}
-                y={baseY - closeH - openH}
-                width={barWidth}
-                height={openH}
-                fill={COLOR_OPEN}
-                rx={3}
-              />
-              {/* Label: 2 line, tetap center */}
-              <SvgText
-                x={x + barWidth / 2}
-                y={baseY + 20}
-                fontSize={11}
-                fill="#888"
-                textAnchor="middle"
-                fontWeight="400">
-                <TSpan x={x + barWidth / 2} dy={0}>
-                  {labelLine1}
-                </TSpan>
-                <TSpan x={x + barWidth / 2} dy={16}>
-                  {labelLine2}
-                </TSpan>
-              </SvgText>
-            </G>
-          );
-        })}
-      </Svg>
-      {/* LEGEND */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          marginTop: 13,
-          marginLeft: '10%',
-        }}>
-        <View
-          style={{
-            width: 18,
-            height: 18,
-            backgroundColor: COLOR_CLOSE,
-            borderRadius: 5,
-            marginRight: '2%',
-          }}
-        />
-        <Text
-          style={{
-            color: '#777674',
-            fontSize: 13,
-            marginTop: 5,
-            fontWeight: '400',
-            marginRight: '5%',
-          }}>
-          Close
-        </Text>
-
-        <View
-          style={{
-            width: 18,
-            height: 18,
-            backgroundColor: COLOR_OPEN,
-            borderRadius: 5,
-            marginRight: 8,
-          }}
-        />
-        <Text
-          style={{
-            color: '#777674',
-            fontSize: 13,
-            marginTop: 5,
-            fontWeight: '500',
-          }}>
-          Open
-        </Text>
-      </View>
-    </View>
-  );
-};
+const employeePerformanceDummy = [
+  {label: 'Land\nDispute', open: 4, close: 2},
+  {label: 'Land\nDispute', open: 5, close: 3},
+  {label: 'Land\nDispute', open: 5, close: 3},
+  {label: 'Land\nDispute', open: 4, close: 2},
+  {label: 'Land\nDispute', open: 6, close: 3},
+];
 
 const PIE_COLORS = [
   '#94DB26', // Land Dispute (hijau terang)
@@ -215,60 +42,19 @@ const pieDataDummy = [
   {key: 'Land Use', value: 40, color: PIE_COLORS[2]},
   {key: 'Land Tenure', value: 20, color: PIE_COLORS[3]},
 ];
-
-function describeArc(cx, cy, r, startAngle, endAngle) {
-  // Helper buat pie slice (SVG path)
-  const start = {
-    x: cx + r * Math.cos((Math.PI * startAngle) / 180),
-    y: cy + r * Math.sin((Math.PI * startAngle) / 180),
-  };
-  const end = {
-    x: cx + r * Math.cos((Math.PI * endAngle) / 180),
-    y: cy + r * Math.sin((Math.PI * endAngle) / 180),
-  };
-  const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0;
-  return [
-    `M ${cx} ${cy}`,
-    `L ${start.x} ${start.y}`,
-    `A ${r} ${r} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`,
-    'Z',
-  ].join(' ');
-}
-
-const PieChart = ({data, size = 145, innerRadius = 0}) => {
-  const cx = size / 2;
-  const cy = size / 2;
-  const r = size / 2 - 2;
-  const total = data.reduce((sum, item) => sum + item.value, 0);
-  let startAngle = -90; // start dari atas
-
-  return (
-    <Svg width={size} height={size}>
-      {data.map((slice, idx) => {
-        const angle = (slice.value / total) * 360;
-        const endAngle = startAngle + angle;
-        const path = describeArc(cx, cy, r, startAngle, endAngle);
-        startAngle += angle;
-        return (
-          <Path
-            key={idx}
-            d={path}
-            fill={slice.color}
-            stroke="#fff"
-            strokeWidth={2}
-          />
-        );
-      })}
-    </Svg>
-  );
-};
+const pieData = [
+  {value: 20, color: PIE_COLORS[0], label: 'Land Dispute'},
+  {value: 10, color: PIE_COLORS[1], label: 'Land Compensation'},
+  {value: 60, color: PIE_COLORS[2], label: 'Land Use'},
+  {value: 10, color: PIE_COLORS[3], label: 'Land Tenure'},
+];
 
 const barChartData = [
-  {label: 'Land Dispute', selesai: 27, ongoing: 29},
-  {label: 'Land Compensation', selesai: 22, ongoing: 15},
-  {label: 'Land Compensation', selesai: 13, ongoing: 23},
-  {label: 'Land Compensation', selesai: 22, ongoing: 29},
-  {label: 'Land Compensation', selesai: 22, ongoing: 29},
+  {label: 'Priya', values: [6, 3], colors: ['#1B7EDF', '#20D372']}, // [hadir, tidak hadir]
+  {label: 'Nair', values: [12, 5], colors: ['#1B7EDF', '#20D372']},
+  {label: 'Ilam', values: [9, 3], colors: ['#1B7EDF', '#20D372']},
+  {label: 'Aprilia', values: [8, 3], colors: ['#1B7EDF', '#20D372']},
+  {label: 'Tintin', values: [9, 3], colors: ['#1B7EDF', '#20D372']},
 ];
 
 const BAR_CHART_COLORS = {
@@ -304,7 +90,7 @@ const BarChart = ({data}) => {
           marginBottom: 10,
         }}>
         <Text style={{fontSize: 19, fontWeight: 'bold', color: '#1A1919'}}>
-          Report Issue Summary
+          Report Status
         </Text>
         <TouchableOpacity
           style={{
@@ -486,7 +272,55 @@ const DashboardReport = ({role, sections}) => {
               <Text style={styles.summaryDetail}>Lihat detail &gt;</Text>
             </TouchableOpacity>
           </View>
-          <StackedBarChart data={employeePerformanceDummy} />
+          {/* <StackedBarChart
+            data={employeePerformanceDummy}
+            maxY={14}
+            height={250}
+          /> */}
+
+          <View
+            style={{
+              backgroundColor: '#F9F8F6',
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: '#ECECEC',
+              marginTop: 22,
+              padding: 20,
+            }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                marginBottom: 10,
+              }}>
+              <Text
+                style={{fontSize: 19, fontWeight: 'bold', color: '#1A1919'}}>
+                Report Issue Summary
+              </Text>
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 2,
+                  paddingHorizontal: 10,
+                  paddingVertical: 3,
+                  backgroundColor: '#F8F8F8',
+                  borderRadius: 7,
+                  borderWidth: 1,
+                  borderColor: '#ECECEC',
+                }}>
+                <Text style={{color: '#989898', fontWeight: '500'}}>
+                  Filter
+                </Text>
+                <Text style={{color: '#BDBDBD', fontSize: 13}}>▼</Text>
+              </TouchableOpacity>
+            </View>
+            <GroupedBarChart
+              data={employeePerformanceDummy}
+              maxY={10} // set maxY biar sesuai nilai maksimal
+              height={250} // bisa diubah sesuai kebutuhan, biasanya 120-150
+            />
+          </View>
 
           <View
             style={{
@@ -541,7 +375,7 @@ const DashboardReport = ({role, sections}) => {
                 justifyContent: 'space-between',
                 width: '100%',
               }}>
-              <PieChart data={pieDataDummy} size={100} />
+              <PieChart data={pieData} size={140} />
               <View
                 style={{
                   flex: 1,
@@ -805,8 +639,53 @@ const DashboardReport = ({role, sections}) => {
               </View>
             </View>
           </View>
-
-          <BarChart data={barChartData} />
+          <View
+            style={{
+              backgroundColor: '#F9F8F6',
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: '#ECECEC',
+              marginTop: 22,
+              padding: 20,
+            }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                marginBottom: 10,
+              }}>
+              <Text
+                style={{fontSize: 19, fontWeight: 'bold', color: '#1A1919'}}>
+                Report Status
+              </Text>
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 2,
+                  paddingHorizontal: 10,
+                  paddingVertical: 3,
+                  backgroundColor: '#F8F8F8',
+                  borderRadius: 7,
+                  borderWidth: 1,
+                  borderColor: '#ECECEC',
+                }}>
+                <Text style={{color: '#989898', fontWeight: '500'}}>
+                  Filter
+                </Text>
+                <Text style={{color: '#BDBDBD', fontSize: 13}}>▼</Text>
+              </TouchableOpacity>
+            </View>
+            <StackedBarChart
+              data={barChartData}
+              maxY={14}
+              height={250}
+              chartWidthPerBar={80}
+              // barWidth={24}        // Opsional, lebar bar
+              // chartWidthPerBar={42} // Opsional, jarak antar bar
+              // labelColor="#333"     // Opsional, warna label bawah
+            />
+          </View>
         </View>
       );
     }

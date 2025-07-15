@@ -254,7 +254,7 @@ const DetailDailyActivity = () => {
             <AppHeader
               detail={true}
               home={false}
-              label="Plan Perjalanan Dinas"
+              label="Buat Daily Activity"
             />
             // ---------- FORM INPUT (EDIT/CREATE) ----------
             <ScrollView
@@ -458,7 +458,7 @@ const DetailDailyActivity = () => {
             <AppHeader
               detail={true}
               home={false}
-              label="Review Perjalanan Dinas"
+              label="Review Daily Activity"
             />
             <ScrollView
               style={{flex: 1}}
