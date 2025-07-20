@@ -18,6 +18,8 @@ import {RootStackParamList} from '../navigation';
 import {StackNavigationProp} from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useUserStore} from '../store/userStore';
+import {logoutAPI} from '../services/apiServices';
+import {useAuthStore} from '../store/authStore';
 
 const {width, height} = Dimensions.get('window');
 type AppHeaderProps = {
@@ -45,9 +47,11 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   const clearUserStore = useUserStore(state => state.clear);
 
   const handleLogout = async () => {
-    await AsyncStorage.removeItem('isLoggedIn');
-    await AsyncStorage.removeItem('userRole');
-    clearUserStore(); // <-- reset location & state
+    const refreshToken = await AsyncStorage.getItem('refresh_token');
+    try {
+      if (refreshToken) await logoutAPI(refreshToken);
+    } catch {}
+    await useAuthStore.getState().clearAuth();
     navigation.replace('Login');
   };
 
@@ -326,6 +330,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                   <Image
                     source={require('../assets/icons/ic-back.png')}
                     style={{width: 15, height: 20, tintColor: '#222'}}
+                    resizeMode="contain"
                   />
                 </TouchableOpacity>
                 <Text

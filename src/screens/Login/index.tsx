@@ -1,5 +1,5 @@
-import { useNavigation } from "@react-navigation/native";
-import React, { useState } from "react";
+import {useNavigation} from '@react-navigation/native';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -11,76 +11,147 @@ import {
   ScrollView,
   Linking,
   Platform,
-} from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { RootStackParamList } from "../../navigation";
-import { StackNavigationProp } from "@react-navigation/stack";
+  ActivityIndicator,
+} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {RootStackParamList} from '../../navigation';
+import {StackNavigationProp} from '@react-navigation/stack';
+import {useAuthStore, UserInfo} from '../../store/authStore';
+import {loginAPI, postData} from '../../services/apiServices';
+import Toast from '../../components/Toast';
 
 // Ganti path sesuai folder assets kamu
 
-const LOGO = require("../../assets/icons/uGemsIcon.png");
-const GOOGLE = require("../../assets/icons/googleLogin.png");
-const APPLE = require("../../assets/icons/applLogin.png");
-const ISAFE = require("../../assets/icons/i-safeLogin.png");
+const LOGO = require('../../assets/icons/uGemsIcon.png');
+const GOOGLE = require('../../assets/icons/googleLogin.png');
+const APPLE = require('../../assets/icons/applLogin.png');
+const ISAFE = require('../../assets/icons/i-safeLogin.png');
 
-const getRole = (input = "") => {
+const getRole = (input = '') => {
   const value = input.trim().toLowerCase();
 
-  if (/admin/.test(value)) return "admin";
+  if (/admin/.test(value)) return 'admin';
   if (/employee|pegawai|staff|karyawan|emp|emp1|emp2|emp3/.test(value))
-    return "employee";
-  if (/bod|dept\s*head|dh|director|direktur/.test(value)) return "BOD";
+    return 'employee';
+  if (/bod|dept\s*head|dh|director|direktur/.test(value)) return 'BOD';
   return null;
 };
 
 const LoginScreen = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [emailError, setEmailError] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const [roleError, setRoleError] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [roleError, setRoleError] = useState('');
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const [loading, setLoading] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastData, setToastData] = useState({
+    type: 'error',
+    title: '',
+    message: '',
+  });
 
   const handleLogin = async () => {
     let hasError = false;
-
-    // reset error state
-    setEmailError("");
-    setPasswordError("");
-    setRoleError("");
+    setEmailError('');
+    setPasswordError('');
+    setRoleError('');
 
     if (!email.trim()) {
-      setEmailError("Email tidak boleh kosong.");
+      setEmailError('Email tidak boleh kosong.');
       hasError = true;
     }
     if (!password.trim()) {
-      setPasswordError("Password tidak boleh kosong.");
+      setPasswordError('Password tidak boleh kosong.');
       hasError = true;
     }
-
-    const userRole = getRole(email);
+    const userRole = 'admin';
     if (!userRole && email.trim()) {
       setRoleError(
-        "Role tidak dikenali. Masukkan kata 'admin', 'employee', atau 'bod/dept head'."
+        "Role tidak dikenali. Masukkan kata 'admin', 'employee', atau 'bod/dept head'.",
       );
       hasError = true;
     }
-
     if (hasError) return;
+    setLoading(true);
+    try {
+      // Call login langsung dari postData (bukan loginAPI)
+      const payload = {email, password, mode: 'json', otp: 'string'};
+      const result = await postData('/auth/login', payload);
 
-    // Simpan ke storage
-    await AsyncStorage.setItem("isLoggedIn", "yes");
-    await AsyncStorage.setItem("userRole", userRole as string);
+      // CEK ADA FIELD errors
+      if ((result as any).errors && Array.isArray((result as any).errors)) {
+        const msg = result.errors[0]?.message || 'Login gagal!';
+        setToastData({
+          type: 'error',
+          title: 'Login Gagal',
+          message: msg || 'Login gagal!',
+        });
+        setToastVisible(true);
+        // setPasswordError(msg);
+        return;
+      }
 
-    navigation.replace("Main");
+      // CEK TOKEN
+      if (!result.data?.access_token) {
+        setToastData({
+          type: 'error',
+          title: 'Login Gagal',
+          message: 'Email atau password salah!',
+        });
+        setToastVisible(true);
+        setPasswordError('Login gagal, cek email/password!');
+        return;
+      }
+
+      // SUKSES
+      await useAuthStore.getState().setAuth({
+        accessToken: result.data.access_token,
+        refreshToken: result.data.refresh_token,
+        expires: result.data.expires,
+        user: {role: userRole, email} as UserInfo,
+      });
+
+      setToastData({
+        type: 'success',
+        title: 'Login Berhasil',
+        message: 'Selamat datang di aplikasi!',
+      });
+      setToastVisible(true);
+      navigation.replace('Main');
+    } catch (err: any) {
+      const msg =
+        err?.message ||
+        err?.response?.data?.errors?.[0]?.message ||
+        'Login gagal, cek email/password!';
+      setToastData({
+        type: 'error',
+        title: 'Login Gagal',
+        message: err?.message || 'Login gagal, cek email/password!',
+      });
+      setToastVisible(true);
+      // setPasswordError(msg);
+    }
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
         contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-      >
+        keyboardShouldPersistTaps="handled">
+        <Toast
+          visible={toastVisible}
+          type={toastData.type as any}
+          title={toastData.title}
+          message={toastData.message}
+          onClose={() => {
+            setToastVisible(false);
+            setLoading(false);
+            // Kalau success, setelah tutup baru navigate
+            if (toastData.type === 'success') navigation.replace('Main');
+          }}
+        />
         {/* Logo */}
         <Image source={LOGO} style={styles.logo} resizeMode="contain" />
 
@@ -96,10 +167,10 @@ const LoginScreen = () => {
             value={email}
             autoCapitalize="none"
             keyboardType="email-address"
-            onChangeText={(text) => {
+            onChangeText={text => {
               setEmail(text);
-              setEmailError("");
-              setRoleError("");
+              setEmailError('');
+              setRoleError('');
             }}
           />
           {emailError ? (
@@ -113,9 +184,9 @@ const LoginScreen = () => {
             placeholderTextColor="#999"
             secureTextEntry
             value={password}
-            onChangeText={(text) => {
+            onChangeText={text => {
               setPassword(text);
-              setPasswordError("");
+              setPasswordError('');
             }}
           />
           {passwordError ? (
@@ -125,7 +196,13 @@ const LoginScreen = () => {
 
         {/* Sign In Button */}
         <TouchableOpacity onPress={handleLogin} style={styles.signInBtn}>
-          <Text style={styles.signInText}>Sign In</Text>
+          <Text style={styles.signInText}>
+            {loading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.signInText}>Sign In</Text>
+            )}
+          </Text>
         </TouchableOpacity>
 
         {/* Or */}
@@ -149,22 +226,19 @@ const LoginScreen = () => {
         <View style={styles.linksRow}>
           <Text
             style={styles.link}
-            onPress={() => Linking.openURL("https://example.com/userguide")}
-          >
+            onPress={() => Linking.openURL('https://example.com/userguide')}>
             User Guide
           </Text>
           <Text style={styles.dot}>|</Text>
           <Text
             style={styles.link}
-            onPress={() => Linking.openURL("https://example.com/faq")}
-          >
+            onPress={() => Linking.openURL('https://example.com/faq')}>
             FAQ
           </Text>
           <Text style={styles.dot}>|</Text>
           <Text
             style={styles.link}
-            onPress={() => Linking.openURL("https://example.com/helpdesk")}
-          >
+            onPress={() => Linking.openURL('https://example.com/helpdesk')}>
             Helpdesk
           </Text>
         </View>
@@ -181,14 +255,14 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
   },
   container: {
     flexGrow: 1,
     padding: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
   },
   logo: {
     width: 180,
@@ -198,60 +272,60 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: "600",
-    color: "#222",
-    textAlign: "center",
+    fontWeight: '600',
+    color: '#222',
+    textAlign: 'center',
     marginBottom: 22,
     marginTop: 8,
   },
   inputBox: {
-    width: "100%",
+    width: '100%',
     marginBottom: 10,
     marginTop: 0,
   },
   input: {
     height: 46,
-    borderColor: "#DDD",
+    borderColor: '#DDD',
     borderWidth: 1,
     borderRadius: 6,
     marginBottom: 12,
     paddingHorizontal: 16,
     fontSize: 16,
-    color: "#222",
-    backgroundColor: "#fff",
+    color: '#222',
+    backgroundColor: '#fff',
   },
   signInBtn: {
-    width: "100%",
-    backgroundColor: "#A80000",
+    width: '100%',
+    backgroundColor: '#A80000',
     paddingVertical: 13,
     borderRadius: 6,
-    alignItems: "center",
+    alignItems: 'center',
     marginTop: 8,
     marginBottom: 18,
   },
   signInText: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   orText: {
     marginVertical: 7,
-    color: "#222",
+    color: '#222',
     fontSize: 15,
-    fontWeight: "400",
+    fontWeight: '400',
   },
   oauthBtn: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: "#A80000",
+    borderColor: '#A80000',
     borderRadius: 7,
     marginBottom: 13,
     paddingVertical: 10,
     paddingHorizontal: 16,
-    backgroundColor: "#fff",
-    justifyContent: "center",
+    backgroundColor: '#fff',
+    justifyContent: 'center',
   },
   oauthIcon: {
     width: 24,
@@ -259,34 +333,34 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   oauthText: {
-    color: "#222",
+    color: '#222',
     fontSize: 15,
-    fontWeight: "500",
+    fontWeight: '500',
   },
   linksRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginVertical: 18,
     marginBottom: 8,
   },
   link: {
-    color: "#1266D6",
+    color: '#1266D6',
     fontSize: 15,
-    textDecorationLine: "underline",
+    textDecorationLine: 'underline',
     marginHorizontal: 2,
   },
   dot: {
-    color: "#888",
+    color: '#888',
     fontSize: 15,
     marginHorizontal: 7,
   },
   footer: {
     marginTop: 20,
-    color: "#666",
+    color: '#666',
     fontSize: 13,
-    textAlign: "center",
+    textAlign: 'center',
   },
-  errorText: { color: "red", fontSize: 13, marginBottom: 8, marginLeft: 2 },
+  errorText: {color: 'red', fontSize: 13, marginBottom: 8, marginLeft: 2},
 });
 
 export default LoginScreen;

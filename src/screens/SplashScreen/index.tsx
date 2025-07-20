@@ -21,6 +21,7 @@ import {getLocationPermission, getCurrentLocation} from '../../utils/location';
 import {useUserStore} from '../../store/userStore';
 import {request, PERMISSIONS, RESULTS} from 'react-native-permissions';
 import {useFeatureStore} from '../../store/featureStore';
+import {autoRefreshTokenIfNeeded} from '../../utils/authUtils';
 
 type Props = {
   navigation: StackNavigationProp<RootStackParamList, 'Splash'>;
@@ -94,18 +95,18 @@ const SplashScreen: React.FC<Props> = ({navigation}) => {
   }, []);
 
   useEffect(() => {
-    // Cek status login dari storage
+    // Cek status login dari storage & auto-refresh token jika perlu
     const checkLogin = async () => {
       try {
-        const isLoggedIn = await AsyncStorage.getItem('isLoggedIn');
+        const loggedIn = await autoRefreshTokenIfNeeded();
         setTimeout(() => {
-          if (isLoggedIn === 'yes') {
+          if (loggedIn) {
             navigation.replace('Main');
           } else {
             setShowOnboarding(true);
             setLoading(false);
           }
-        }, 1200); // Splash screen tampil sebentar
+        }, 1200);
       } catch {
         setShowOnboarding(true);
         setLoading(false);
@@ -113,7 +114,6 @@ const SplashScreen: React.FC<Props> = ({navigation}) => {
     };
     checkLogin();
   }, [navigation]);
-
   useEffect(() => {
     if (!showOnboarding) return;
     // Set semua progress sebelumnya full (1), step setelahnya kosong (0)

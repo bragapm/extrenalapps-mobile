@@ -1,45 +1,45 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
-export const BASE_URL = "";
+export const BASE_URL = 'https://externalapps.braga.co.id/panel';
 export const MAPBOX_ACCESS_TOKEN =
-  "sk.eyJ1Ijoid2hvaXNhcnZpYW4iLCJhIjoiY21jOHFleHdjMDVkdTJqcGNicTRlZGJkbSJ9.TI5FkPGsFiIumVvzAPYpOQ";
+  'sk.eyJ1Ijoid2hvaXNhcnZpYW4iLCJhIjoiY21jOHFleHdjMDVkdTJqcGNicTRlZGJkbSJ9.TI5FkPGsFiIumVvzAPYpOQ';
 
 const api = axios.create({
   baseURL: BASE_URL,
   timeout: 10000,
   headers: {
-    "Content-Type": "application/json",
-    Accept: "application/json",
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
   },
 });
 
 api.interceptors.request.use(
-  async (config) => {
+  async config => {
     try {
-      const token = await AsyncStorage.getItem("token");
+      const token = await AsyncStorage.getItem('token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (error) {
-      console.error("Error getting token:", error);
+      console.error('Error getting token:', error);
     }
     return config;
   },
-  (error) => {
+  error => {
     return Promise.reject(error);
-  }
+  },
 );
 
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
+  response => response,
+  error => {
     if (error.response) {
       if (error.response.status === 401) {
         const errorMessage =
-          error.response.data?.errors?.[0]?.message || "Invalid credentials";
+          error.response.data?.errors?.[0]?.message || 'Invalid credentials';
         const errorCode =
-          error.response.data?.errors?.[0]?.extensions?.code || "UNKNOWN_ERROR";
+          error.response.data?.errors?.[0]?.extensions?.code || 'UNKNOWN_ERROR';
 
         return Promise.reject({
           status: error.response.status,
@@ -50,7 +50,7 @@ api.interceptors.response.use(
       } else {
         // Menggunakan pesan error dari response jika ada
         const errorMessage =
-          error.response.data?.error || "An unexpected error occurred";
+          error.response.data?.error || 'An unexpected error occurred';
         return Promise.reject({
           status: error.response.status,
           message: errorMessage,
@@ -60,20 +60,20 @@ api.interceptors.response.use(
     } else if (error.request) {
       return Promise.reject({
         status: null,
-        message: "No response from the server",
+        message: 'No response from the server',
       });
     } else {
       return Promise.reject({
         status: null,
-        message: "Failed to setup the request",
+        message: 'Failed to setup the request',
       });
     }
-  }
+  },
 );
 
 export const getData = async (endpoint: string, params = {}) => {
   try {
-    const response = await api.get(endpoint, { params });
+    const response = await api.get(endpoint, {params});
     return response.data;
   } catch (error) {
     throw error;
@@ -83,7 +83,7 @@ export const getData = async (endpoint: string, params = {}) => {
 export const postData = async (
   endpoint: string,
   data = {},
-  options: { returnStatus?: boolean } = {}
+  options: {returnStatus?: boolean} = {},
 ) => {
   try {
     const response = await api.post(endpoint, data);
@@ -105,7 +105,7 @@ export const putData = async (endpoint: string, data = {}) => {
 export const patchData = async (
   endpoint: string,
   data = {},
-  options: { returnStatus?: boolean } = {}
+  options: {returnStatus?: boolean} = {},
 ) => {
   try {
     const response = await api.patch(endpoint, data);
@@ -122,6 +122,177 @@ export const deleteData = async (endpoint: string) => {
   } catch (error) {
     throw error;
   }
+};
+
+export interface LoginResponse {
+  data: {
+    access_token: string;
+    refresh_token: string;
+    expires: number; // ms
+    [key: string]: any;
+  };
+}
+
+export const loginAPI = async (
+  email: string,
+  password: string,
+): Promise<LoginResponse> => {
+  const payload = {email, password, mode: 'json', otp: 'string'};
+  const res = await api.post<LoginResponse>('/auth/login', payload);
+  return res.data;
+};
+
+// --- Refresh Token
+export interface RefreshTokenResponse {
+  data: {
+    access_token: string;
+    refresh_token: string;
+    expires: number;
+    [key: string]: any;
+  };
+}
+
+export const refreshTokenAPI = async (
+  refresh_token: string,
+): Promise<RefreshTokenResponse> => {
+  const payload = {refresh_token, mode: 'json'};
+  const res = await api.post<RefreshTokenResponse>('/auth/refresh', payload);
+  return res.data;
+};
+
+// --- Logout
+export const logoutAPI = async (refresh_token: string): Promise<any> => {
+  const payload = {refresh_token, mode: 'json'};
+  const res = await api.post('/auth/logout', payload);
+  return res.data;
+};
+
+export const updateFileMetaDirectus = async (fileIds, data) => {
+  const token = await AsyncStorage.getItem('token');
+  if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
+
+  const payload = {
+    keys: fileIds,
+    data: data, // misal {filename_download: "nama_baru.jpg"}
+  };
+
+  // LOG payload sebelum request!
+  console.log('PATCH /files PAYLOAD:', JSON.stringify(payload, null, 2));
+
+  const res = await axios.patch(
+    'https://externalapps.braga.co.id/panel/files',
+    payload,
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+  return res.data;
+};
+
+export const uploadFileDirectus = async ({uri, name, type}) => {
+  const token = await AsyncStorage.getItem('token');
+  if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
+
+  const formData = new FormData();
+  formData.append('file', {
+    uri: uri,
+    type: type || 'image/jpeg',
+    name: name || 'photo.jpg',
+  });
+
+  // Debug FormData log
+  // console.log('UPLOAD FORM:', { uri, type, name });
+
+  const res = await axios.post(
+    'https://externalapps.braga.co.id/panel/files',
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+  // Hasil response Directus (lihat format)
+  // return res.data.data.id; // kalau mau langsung ID saja
+  return res.data.data.id || res.data.data; // biar aman
+};
+
+export const createDailyActivity = async body => {
+  const token = await AsyncStorage.getItem('token');
+  if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
+
+  const res = await axios.post(
+    'https://externalapps.braga.co.id/panel/items/daily_activities',
+    body,
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+  return res.data;
+};
+
+export const getUsers = async () => {
+  const res = await getData('/users');
+  return res.data; // array of users
+};
+
+export const getDailyActivities = async () => {
+  const res = await getData('/items/daily_activities');
+  // Langsung return array data agar enak
+  return res?.data || [];
+};
+
+// Fungsi ambil gambar asset pakai Authorization header, return dataURL base64
+export const getImageWithAuth = async uuid => {
+  const token = await AsyncStorage.getItem('token');
+  try {
+    const url = `https://externalapps.braga.co.id/panel/assets/${uuid}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        Accept: 'text/plain', // ganti sesuai tipe file kalau png, dsb
+      },
+    });
+
+    const blob = await response.blob();
+
+    // Konversi blob ke base64 dataURL
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result); // dataURL
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (e) {
+    // Kalau gagal (misal unauthorized, atau file gaada), return null/false/empty biar ga ngecrash
+    console.log('Error getImageWithAuth:', e);
+    return null;
+  }
+};
+
+export const updateDailyActivity = async (id, body) => {
+  const token = await AsyncStorage.getItem('token');
+  if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
+
+  const res = await axios.patch(
+    `https://externalapps.braga.co.id/panel/items/daily_activities/${id}`,
+    body,
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+  return res.data;
 };
 
 export default api;

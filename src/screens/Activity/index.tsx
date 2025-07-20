@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Image,
   StyleSheet,
   useColorScheme,
+  Alert,
 } from 'react-native';
 import {Picker} from '@react-native-picker/picker';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
@@ -35,7 +36,13 @@ import StackedBarChart from '../../components/StackedBarChart';
 import GroupedBarChart from '../../components/GroupedBarChart';
 import {RootStackParamList} from '../../navigation';
 import {StackNavigationProp} from '@react-navigation/stack';
-import {useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
+import {
+  deleteData,
+  getDailyActivities,
+  getUsers,
+} from '../../services/apiServices';
+import ActionDrawer from '../../components/ActionDrawer';
 
 const JENIS_REPORT = [
   {label: 'Semua', value: ''},
@@ -770,6 +777,16 @@ function formatDate(date) {
   )} ${d.getFullYear()}`;
 }
 
+function formatDateShort(date) {
+  if (!date) return '';
+  // Kalau date masih string “2025-07-20”
+  const d = new Date(date);
+  // Biar 2 digit hari, 3 huruf bulan, 4 digit tahun
+  const day = d.getDate().toString().padStart(2, '0');
+  const month = d.toLocaleString('id-ID', {month: 'short'}); // contoh: "Feb"
+  const year = d.getFullYear();
+  return `${day} ${month} ${year}`;
+}
 // --- CARD WEEKLY LIST ---
 const WeeklyReportCard = ({item}) => (
   <View style={styles.weeklyCard}>
@@ -853,16 +870,6 @@ const ReportCard = ({item}) => (
   </View>
 );
 
-// const activityData = [
-//   {label: 'issue a', open: 17, close: 12},
-//   {label: 'issue b', open: 14, close: 8},
-//   {label: 'issue c', open: 7, close: 18},
-//   {label: 'issue d', open: 7, close: 18},
-//   {label: 'issue e', open: 7, close: 18},
-// ];
-
-// Komponen Bar Chart "Employee Performance"
-
 // RETURN DISINI
 const Activity = () => {
   const activeMenu = useFeatureStore(state => state.activeMenu);
@@ -874,6 +881,11 @@ const Activity = () => {
   const [jenisReport, setJenisReport] = React.useState('');
   const [status, setStatus] = React.useState('');
   const [tanggal, setTanggal] = React.useState(null);
+  const [dailyActivities, setDailyActivities] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState(null);
+  const [users, setUsers] = React.useState([]);
+  const [usersMap, setUsersMap] = React.useState({});
   console.log('activeMenu', activeMenu);
   // Pakai data & UI sesuai initial
   let mode = 'daily'; // default
@@ -889,6 +901,73 @@ const Activity = () => {
     : [...dummyReport];
   if (sort === 'oldest') reports.reverse();
   const [showDate, setShowDate] = React.useState(false);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (mode === 'daily') {
+        setLoading(true);
+        setError(null);
+        getDailyActivities()
+          .then(setDailyActivities)
+          .catch(err => setError(err.message || 'Gagal load data'))
+          .finally(() => setLoading(false));
+      }
+      // bisa tambahkan dependen jika perlu, tapi biasanya tidak perlu
+    }, [mode]),
+  );
+
+  React.useEffect(() => {
+    // Ambil data users di awal
+    getUsers().then(data => {
+      setUsers(data);
+      // Buat dictionary {id: nama}
+      const map = {};
+      data.forEach(user => {
+        // ganti key & value ini sesuai response user kamu
+        map[user.id] = user.name || user.fullname || user.email || '-';
+      });
+      setUsersMap(map);
+    });
+  }, []);
+
+  const reloadDailyActivities = () => {
+    setLoading(true);
+    getDailyActivities()
+      .then(setDailyActivities)
+      .catch(err => setError(err.message || 'Gagal load data'))
+      .finally(() => setLoading(false));
+  };
+
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [selectedId, setSelectedId] = useState(null);
+
+  const handleEdit = () => {
+    setDrawerVisible(false);
+    navigation.navigate('DetailDailyActivity', {
+      showForm: true,
+      data: item,
+    });
+  };
+
+  const handleDelete = async itemId => {
+    setDrawerVisible(false);
+    Alert.alert('Konfirmasi', 'Yakin ingin menghapus data ini?', [
+      {text: 'Batal'},
+      {
+        text: 'Hapus',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteData(`/items/daily_activities/${itemId}`);
+            Alert.alert('Sukses', 'Berhasil dihapus!');
+            reloadDailyActivities();
+          } catch (e) {
+            Alert.alert('Gagal', e?.message || 'Gagal hapus data');
+          }
+        },
+      },
+    ]);
+  };
 
   const ActivityCard = ({item}) => (
     <TouchableOpacity
@@ -911,7 +990,9 @@ const Activity = () => {
         shadowRadius: 6,
       }}>
       <StatusBadge status={item.status} />
-      <Text style={{fontSize: 12, color: '#888'}}>{item.date}</Text>
+      <Text style={{fontSize: 12, color: '#888'}}>
+        {formatDateShort(item.date)}
+      </Text>
       <Text
         numberOfLines={2}
         style={{
@@ -929,6 +1010,7 @@ const Activity = () => {
           flexDirection: 'row',
           justifyContent: 'space-between',
           marginTop: '2%',
+          alignItems: 'center',
         }}>
         <View style={{alignItems: 'center', flexDirection: 'row'}}>
           <Image
@@ -943,7 +1025,7 @@ const Activity = () => {
               color: '#4F4D4A',
               marginLeft: 4,
             }}>
-            PIC:
+            Nama PIC:
           </Text>
 
           <Text
@@ -953,7 +1035,7 @@ const Activity = () => {
               color: '#4F4D4A',
               marginLeft: 4,
             }}>
-            {item?.pic}
+            {item?.pic ? usersMap[item.pic] || item.pic : '-'}
           </Text>
         </View>
         <TouchableOpacity style={{flexDirection: 'row', alignItems: 'center'}}>
@@ -968,6 +1050,10 @@ const Activity = () => {
         </TouchableOpacity>
       </View>
       <TouchableOpacity
+        onPress={() => {
+          setSelectedId(item.id);
+          setDrawerVisible(true);
+        }}
         style={{position: 'absolute', top: 12, right: 12, padding: 6}}>
         <Text style={{fontSize: 18, color: '#AAA'}}>⋮</Text>
       </TouchableOpacity>
@@ -976,6 +1062,13 @@ const Activity = () => {
 
   return (
     <>
+      <ActionDrawer
+        visible={drawerVisible}
+        onClose={() => setDrawerVisible(false)}
+        onEdit={handleEdit}
+        onDelete={() => handleDelete(selectedId)} // kasih id
+      />
+
       <StatusBar
         translucent
         backgroundColor="transparent"
@@ -1193,7 +1286,7 @@ const Activity = () => {
             {/* LIST */}
             <View style={{marginTop: 14, width: '92%', marginBottom: '20%'}}>
               <FlatList
-                data={reports}
+                data={mode === 'daily' ? dailyActivities : reports}
                 keyExtractor={item => String(item.id)}
                 renderItem={({item}) =>
                   mode === 'daily' ? (

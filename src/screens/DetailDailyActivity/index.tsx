@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   Linking,
   Dimensions,
   TextInput,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import AppHeader from '../../components/AppHeader';
@@ -18,61 +20,45 @@ import {Picker} from '@react-native-picker/picker';
 import UploadPickerModal from '../../components/UploadPickerModal';
 import ImagePicker from 'react-native-image-crop-picker';
 import DocumentPicker from 'react-native-document-picker';
+import {
+  createDailyActivity,
+  getImageWithAuth,
+  getUsers,
+  updateDailyActivity,
+  updateFileMetaDirectus,
+  uploadFileDirectus,
+} from '../../services/apiServices';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const {width} = Dimensions.get('window');
 const IMAGE_ASPECT = 1.85; // 16:9
 
-const dummyData = {
-  status: 'Open',
-  title: 'Land Dispute | Issue A',
-  mainImage: require('../../assets/images/imgSample.png'),
-  images: [
-    require('../../assets/images/imgSample2.png'),
-    require('../../assets/images/imgSample2.png'),
-    require('../../assets/images/imgSample2.png'),
-  ],
-  lokasi: 'Lokasi Kantor A',
-  koordinat: '-0.37042, 68.57022',
-  tanggalFoto: '12 Juni 2025',
-  jamFoto: '12:00 WIB',
-  thumbnailInfo: [
-    {
-      lokasi: 'Lokasi Kantor A',
-      koordinat: '-0.37042, 68.57022',
-      tanggalFoto: '12 Juni 2025',
-      jamFoto: '12:00 WIB',
-    },
-    {
-      lokasi: 'Lokasi Kantor A',
-      koordinat: '-0.37042, 68.57022',
-      tanggalFoto: '12 Juni 2025',
-      jamFoto: '12:00 WIB',
-    },
-    {
-      lokasi: 'Lokasi Kantor A',
-      koordinat: '-0.37042, 68.57022',
-      tanggalFoto: '12 Juni 2025',
-      jamFoto: '12:00 WIB',
-    },
-    {
-      lokasi: 'Lokasi Kantor A',
-      koordinat: '-0.37042, 68.57022',
-      tanggalFoto: '12 Juni 2025',
-      jamFoto: '12:00 WIB',
-    },
-  ],
-  tanggal: '12 Feb 2025',
-  isafe: 'ID123245',
-  pic: 'Priya Nair',
-  statusReport: 'Open',
-  lokasiA: 'Lokasi A',
-  jenis: 'Land Dispute',
-  deskripsi: 'Deskripsi',
-  kolaborasi: 'Divisi IT',
-  waktu: '09:00 - 17:00 WIB',
-  lampiran: {text: 'Surat permohonan cuti.pdf', url: 'https://google.com/'},
-};
+function parseTimeToDate(str) {
+  if (!str) return new Date();
+  // format: "HH:mm WIB"
+  const [time] = str.split(' ');
+  const [hour, minute] = time.split(':');
+  const now = new Date();
+  now.setHours(Number(hour), Number(minute), 0, 0);
+  return new Date(now); // harus new Date supaya re-render
+}
 
+function formatTime(dt) {
+  if (!dt) return '';
+  const jam = dt.getHours().toString().padStart(2, '0');
+  const menit = dt.getMinutes().toString().padStart(2, '0');
+  return `${jam}:${menit}`;
+}
+function formatDateShort(date) {
+  if (!date) return '';
+  // Kalau date masih string “2025-07-20”
+  const d = new Date(date);
+  // Biar 2 digit hari, 3 huruf bulan, 4 digit tahun
+  const day = d.getDate().toString().padStart(2, '0');
+  const month = d.toLocaleString('id-ID', {month: 'short'}); // contoh: "Feb"
+  const year = d.getFullYear();
+  return `${day} ${month} ${year}`;
+}
 const StatusMiniBadge = ({status = 'Open'}) => {
   const color =
     status === 'Open'
@@ -113,16 +99,10 @@ const FieldItem = ({label, value, bold, isLink}) => (
       <Text
         style={styles1.fieldLink}
         onPress={() => Linking.openURL(value.url)}>
-        {value.text}
+        {value?.text}
       </Text>
     ) : (
-      <Text
-        style={[
-          styles1.fieldValue,
-          bold && {fontWeight: 'bold', color: '#222'},
-        ]}>
-        {value}
-      </Text>
+      <Text style={[styles1.fieldValue]}>{value}</Text>
     )}
   </View>
 );
@@ -148,6 +128,8 @@ const OverlayImageInfo = ({
   </>
 );
 const STATUS_OPTIONS = [
+  {label: 'Approve', value: 'Approve'},
+  {label: 'Reject', value: 'Reject'},
   {label: 'Open', value: 'Open'},
   {label: 'Waiting', value: 'Waiting'},
   {label: 'Closed', value: 'Closed'},
@@ -160,12 +142,9 @@ const JENIS_REPORT_OPTIONS = [
 
 const DetailDailyActivity = () => {
   const navigation = useNavigation();
-  const data = dummyData;
+  // const data = dummyData;
   const route = useRoute();
-  const {
-    showForm = false,
-    // data
-  } = route.params || {};
+  const {showForm = false, data} = route.params || {};
 
   const [media, setMedia] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -181,7 +160,15 @@ const DetailDailyActivity = () => {
   const [kolaborasi, setKolaborasi] = useState('');
   const [waktuMulai, setWaktuMulai] = useState('09:00 WIB');
   const [waktuSelesai, setWaktuSelesai] = useState('09:00 WIB');
+  const [picName, setPicName] = useState('');
+  const [startTime, setStartTime] = useState(new Date());
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+  const [startTimeZone, setStartTimeZone] = useState('WIB');
 
+  const [endTime, setEndTime] = useState(new Date());
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const [endTimeZone, setEndTimeZone] = useState('WIB');
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
   const handleAddMedia = () => setModalVisible(true);
 
   const handleCamera = async () => {
@@ -194,9 +181,9 @@ const DetailDailyActivity = () => {
         cropperToolbarTitle: 'Crop Foto',
         includeBase64: false,
       });
-      if (img) setMedia(m => [...m, {uri: img.path}]);
+      if (img) setMedia(m => [...m, {id: String(Date.now()), uri: img.path}]); // <-- ADA id
     } catch (e) {
-      console.log('Camera error:', e); // <-- Tambahkan ini
+      console.log('Camera error:', e);
       alert('Gagal buka kamera: ' + (e.message || e));
     }
   };
@@ -212,9 +199,10 @@ const DetailDailyActivity = () => {
         includeBase64: false,
         mediaType: 'photo',
       });
-      if (img) setMedia(m => [...m, {uri: img.path}]);
+      if (img) setMedia(m => [...m, {id: String(Date.now()), uri: img.path}]); // <-- ADA id
     } catch (e) {}
   };
+
   const handleDocument = async () => {
     setModalVisible(false);
     try {
@@ -224,10 +212,11 @@ const DetailDailyActivity = () => {
       setMedia(m => [
         ...m,
         {
+          id: String(Date.now()), // <-- ADA id
           uri: res.uri,
           name: res.name,
           type: res.type,
-          isFile: true, // flag, biar tahu ini file bukan gambar
+          isFile: true,
         },
       ]);
     } catch (e) {
@@ -245,17 +234,202 @@ const DetailDailyActivity = () => {
     })} ${tgl.getFullYear()}`;
   }
 
+  const handleSubmit = async () => {
+    setLoadingSubmit(true);
+    try {
+      let documentId = null;
+      // Cek apakah ada media baru di-upload
+      const mediaBaru = media.find(item => !item.isServerFile); // media baru = belum ada di server
+      if (mediaBaru) {
+        const file = mediaBaru;
+        const id = await uploadFileDirectus({
+          uri: file.uri,
+          name: file.name || 'photo.jpg',
+          type:
+            file.type ||
+            (file.isFile ? 'application/octet-stream' : 'image/jpeg'),
+        });
+        documentId = id;
+        await updateFileMetaDirectus([id], {
+          filename_download: file.name || 'Lampiran_Daily_Activity.jpg',
+        });
+      } else if (media.length && media[0].isServerFile) {
+        // Pakai file lama saja (uuid)
+        documentId = media[0].id;
+      }
+
+      const formatDateISO = date => {
+        const d = new Date(date);
+        return `${d.getFullYear()}-${(d.getMonth() + 1)
+          .toString()
+          .padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+      };
+
+      const body = {
+        date: formatDateISO(tanggal),
+        status,
+        location: lokasi,
+        pic,
+        title: judul,
+        report_type: jenis,
+        description: deskripsi,
+        collaboration: kolaborasi,
+        start_time: `${formatTime(startTime)} ${startTimeZone}`,
+        end_time: `${formatTime(endTime)} ${endTimeZone}`,
+        document: documentId || null,
+      };
+
+      if (data && data.id) {
+        // --- MODE EDIT ---
+        await updateDailyActivity(data.id, body);
+        Alert.alert('Sukses', 'Berhasil update data', [
+          {
+            text: 'OK',
+            onPress: () => {
+              navigation.reset({
+                index: 0,
+                routes: [
+                  {
+                    name: 'Main',
+                    params: {
+                      screen: 'activity',
+                      params: {activeMenu: 'harian', mode: 'daily'},
+                    },
+                  },
+                ],
+              });
+            },
+          },
+        ]);
+      } else {
+        // --- MODE CREATE ---
+        await createDailyActivity(body);
+        Alert.alert('Sukses', 'Berhasil create data', [
+          {
+            text: 'OK',
+            onPress: () => {
+              navigation.reset({
+                index: 0,
+                routes: [
+                  {
+                    name: 'Main',
+                    params: {
+                      screen: 'activity',
+                      params: {activeMenu: 'harian', mode: 'daily'},
+                    },
+                  },
+                ],
+              });
+            },
+          },
+        ]);
+      }
+    } catch (err) {
+      console.log('ERROR:', err);
+      Alert.alert('Error', err?.message || 'Unknown error');
+    } finally {
+      setLoadingSubmit(false);
+    }
+  };
+
+  const [userList, setUserList] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  useEffect(() => {
+    setLoadingUsers(true);
+    getUsers()
+      .then(users => setUserList(users))
+      .catch(() => setUserList([]))
+      .finally(() => setLoadingUsers(false));
+  }, []);
+
+  // Biar support single atau array
+  const [assetUrls, setAssetUrls] = useState([]); // [data:image/jpeg;base64,...]
+  const documentList = Array.isArray(data?.document)
+    ? data?.document
+    : data?.document
+    ? [data?.document]
+    : [];
+
+  useEffect(() => {
+    // Fetch semua gambar ketika komponen mount
+    if (documentList.length === 0) return;
+    let isMounted = true;
+
+    const fetchAllImages = async () => {
+      try {
+        // Ambil token user (misal simpan di AsyncStorage)
+        const token = await AsyncStorage.getItem('access_token'); // atau nama lain
+
+        // Panggil util di atas untuk setiap UUID
+        const promises = documentList.map(uuid =>
+          getImageWithAuth(uuid, token),
+        );
+        const results = await Promise.all(promises);
+
+        if (isMounted) setAssetUrls(results);
+      } catch (e) {
+        if (isMounted) setAssetUrls([]);
+        console.log('Error fetching asset images:', e);
+      }
+    };
+
+    fetchAllImages();
+    return () => {
+      isMounted = false;
+    };
+  }, [JSON.stringify(documentList)]);
+
+  useEffect(() => {
+    // Cari nama PIC berdasarkan ID (hanya di mode review / bukan form)
+    if (!showForm && userList?.length && data?.pic) {
+      const user = userList.find(u => u?.id === data.pic);
+      setPicName(user ? `${user?.first_name} ${user.last_name}` : data.pic); // fallback ke UUID jika ga ketemu
+    }
+  }, [showForm, userList, data?.pic]);
+
+  useEffect(() => {
+    if (showForm && data) {
+      setTanggal(data.date ? new Date(data.date) : new Date());
+      setStatus(data.status || STATUS_OPTIONS[0].value);
+      setLokasi(data.location || '');
+      setPIC(data.pic || '');
+      setJudul(data.title || '-');
+      setJenis(data.report_type || JENIS_REPORT_OPTIONS[0].value);
+      setDeskripsi(data.description || '');
+      setKolaborasi(data.collaboration || '');
+      setStartTime(
+        data.start_time ? parseTimeToDate(data.start_time) : new Date(),
+      );
+      setStartTimeZone(data.start_time?.split(' ')[1] || 'WIB');
+      setEndTime(data.end_time ? parseTimeToDate(data.end_time) : new Date());
+      setEndTimeZone(data.end_time?.split(' ')[1] || 'WIB');
+      // === Tambahan khusus prefill media ===
+      if (data.document) {
+        // NOTE: asumsi data.document bisa array atau string (uuid)
+        const docArr = Array.isArray(data.document)
+          ? data.document
+          : [data.document];
+        setMedia(
+          docArr.map(uuid => ({
+            id: uuid, // atau pake String(Date.now()) biar unique
+            uri: uuid, // simpan UUID aja dulu, untuk tampilkan thumbnail bisa difetch nanti
+            isServerFile: true, // flag buat ngebedain mana file lama, mana baru
+          })),
+        );
+      } else {
+        setMedia([]); // Kosongin kalau nggak ada dokumen
+      }
+    }
+  }, [showForm, data]);
+
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="#F6F6F6" />
       <View style={{flex: 1, backgroundColor: '#F6F6F6'}}>
         {showForm ? (
           <>
-            <AppHeader
-              detail={true}
-              home={false}
-              label="Buat Daily Activity"
-            />
+            <AppHeader detail={true} home={false} label="Buat Daily Activity" />
             // ---------- FORM INPUT (EDIT/CREATE) ----------
             <ScrollView
               style={{width: '100%', marginBottom: '20%'}}
@@ -263,6 +437,7 @@ const DetailDailyActivity = () => {
               {/* Tanggal Kerja */}
               <Text style={styles.inputLabel}>Tanggal kerja</Text>
               <TouchableOpacity
+                disabled={loadingSubmit}
                 style={styles.input}
                 onPress={() => setShowDatePicker(true)}>
                 <Text style={styles.inputText}>
@@ -284,6 +459,7 @@ const DetailDailyActivity = () => {
               <Text style={styles.inputLabel}>Status Report</Text>
               <View style={styles.pickerWrapper}>
                 <Picker
+                  enabled={!loadingSubmit}
                   selectedValue={status}
                   onValueChange={setStatus}
                   style={styles.picker}>
@@ -304,16 +480,30 @@ const DetailDailyActivity = () => {
                 value={lokasi}
                 onChangeText={setLokasi}
                 placeholder="Enter Location"
+                editable={!loadingSubmit}
               />
 
               {/* PIC */}
               <Text style={styles.inputLabel}>PIC</Text>
-              <TextInput
-                style={styles.input}
-                value={pic}
-                onChangeText={setPIC}
-                placeholder="Nama PIC"
-              />
+              <View style={styles.pickerWrapper}>
+                <Picker
+                  enabled={!loadingSubmit}
+                  selectedValue={pic}
+                  onValueChange={setPIC}
+                  style={styles.picker}>
+                  <Picker.Item
+                    label={loadingUsers ? 'Memuat...' : 'Pilih PIC'}
+                    value=""
+                  />
+                  {userList.map(user => (
+                    <Picker.Item
+                      key={user?.id}
+                      label={`${user?.first_name} ${user.last_name}`}
+                      value={user?.id} // value adalah UUID, dikirim ke backend
+                    />
+                  ))}
+                </Picker>
+              </View>
 
               {/* Judul Report */}
               <Text style={styles.inputLabel}>Judul Report</Text>
@@ -322,24 +512,18 @@ const DetailDailyActivity = () => {
                 value={judul}
                 onChangeText={setJudul}
                 placeholder="-"
+                editable={!loadingSubmit}
               />
 
               {/* Jenis Report */}
               <Text style={styles.inputLabel}>Jenis Report</Text>
-              <View style={styles.pickerWrapper}>
-                <Picker
-                  selectedValue={jenis}
-                  onValueChange={setJenis}
-                  style={styles.picker}>
-                  {JENIS_REPORT_OPTIONS.map(opt => (
-                    <Picker.Item
-                      key={opt.value}
-                      label={opt.label}
-                      value={opt.value}
-                    />
-                  ))}
-                </Picker>
-              </View>
+              <TextInput
+                style={styles.input}
+                value={jenis}
+                onChangeText={setJenis}
+                placeholder="Land Dispute"
+                editable={!loadingSubmit}
+              />
 
               {/* Deskripsi */}
               <Text style={styles.inputLabel}>Deskripsi</Text>
@@ -349,6 +533,7 @@ const DetailDailyActivity = () => {
                 onChangeText={setDeskripsi}
                 placeholder="Input Text or Placeholder"
                 multiline
+                editable={!loadingSubmit}
               />
 
               {/* Kolaborasi dengan */}
@@ -358,24 +543,82 @@ const DetailDailyActivity = () => {
                 value={kolaborasi}
                 onChangeText={setKolaborasi}
                 placeholder="Divisi IT"
+                editable={!loadingSubmit}
               />
 
               {/* Waktu Mulai */}
               <Text style={styles.inputLabel}>Waktu mulai</Text>
-              <TextInput
-                style={styles.input}
-                value={waktuMulai}
-                onChangeText={setWaktuMulai}
-                placeholder="09:00 WIB"
+              <View
+                style={{flexDirection: 'row', gap: 8, alignItems: 'center'}}>
+                {/* Jam */}
+                <TouchableOpacity
+                  disabled={loadingSubmit}
+                  style={[styles.input, {flex: 1}]}
+                  onPress={() => setShowStartTimePicker(true)}>
+                  <Text style={styles.inputText}>
+                    {formatTime(startTime) || 'Pilih jam'}
+                  </Text>
+                </TouchableOpacity>
+                {/* Zona waktu */}
+                <View style={[styles.pickerWrapper, {flex: 1}]}>
+                  <Picker
+                    enabled={!loadingSubmit}
+                    selectedValue={startTimeZone}
+                    onValueChange={setStartTimeZone}
+                    style={styles.picker}>
+                    <Picker.Item label="WIB" value="WIB" />
+                    <Picker.Item label="WITA" value="WITA" />
+                    <Picker.Item label="WIT" value="WIT" />
+                    {/* tambah zona lain kalau perlu */}
+                  </Picker>
+                </View>
+              </View>
+              <DateTimePickerModal
+                isVisible={showStartTimePicker}
+                mode="time"
+                date={startTime}
+                onConfirm={date => {
+                  setStartTime(date);
+                  setShowStartTimePicker(false);
+                }}
+                onCancel={() => setShowStartTimePicker(false)}
               />
 
               {/* Waktu Selesai */}
               <Text style={styles.inputLabel}>Waktu Selesai</Text>
-              <TextInput
-                style={styles.input}
-                value={waktuSelesai}
-                onChangeText={setWaktuSelesai}
-                placeholder="09:00 WIB"
+              <View
+                style={{flexDirection: 'row', gap: 8, alignItems: 'center'}}>
+                {/* Jam */}
+                <TouchableOpacity
+                  disabled={loadingSubmit}
+                  style={[styles.input, {flex: 1}]}
+                  onPress={() => setShowEndTimePicker(true)}>
+                  <Text style={styles.inputText}>
+                    {formatTime(endTime) || 'Pilih jam'}
+                  </Text>
+                </TouchableOpacity>
+                {/* Zona waktu */}
+                <View style={[styles.pickerWrapper, {flex: 1}]}>
+                  <Picker
+                    enabled={!loadingSubmit}
+                    selectedValue={endTimeZone}
+                    onValueChange={setEndTimeZone}
+                    style={styles.picker}>
+                    <Picker.Item label="WIB" value="WIB" />
+                    <Picker.Item label="WITA" value="WITA" />
+                    <Picker.Item label="WIT" value="WIT" />
+                  </Picker>
+                </View>
+              </View>
+              <DateTimePickerModal
+                isVisible={showEndTimePicker}
+                mode="time"
+                date={endTime}
+                onConfirm={date => {
+                  setEndTime(date);
+                  setShowEndTimePicker(false);
+                }}
+                onCancel={() => setShowEndTimePicker(false)}
               />
 
               {/* Lampiran / Media */}
@@ -389,9 +632,16 @@ const DetailDailyActivity = () => {
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={{alignItems: 'center', gap: 7}}>
                   {media.map((item, idx) => (
-                    <View key={idx} style={styles.mediaItemWrap}>
-                      {item.isFile ? (
+                    <View key={item.id} style={styles.mediaItemWrap}>
+                      {/* Cek jika item dari server (lampiran lama), fetch thumbnail dari Directus */}
+                      {item.isServerFile ? (
+                        <Image
+                          source={{uri: assetUrls[idx]}}
+                          style={styles.mediaThumb}
+                        />
+                      ) : item.isFile ? (
                         <TouchableOpacity
+                          disabled={loadingSubmit}
                           onPress={() => Linking.openURL(item.uri)}
                           style={[
                             styles.mediaThumb,
@@ -415,6 +665,7 @@ const DetailDailyActivity = () => {
                         />
                       )}
                       <TouchableOpacity
+                        disabled={loadingSubmit}
                         style={styles.mediaRemoveBtn}
                         onPress={() => handleRemoveMedia(idx)}>
                         <Text style={{color: '#fff', fontWeight: 'bold'}}>
@@ -425,6 +676,7 @@ const DetailDailyActivity = () => {
                   ))}
                   {/* Tombol tambah */}
                   <TouchableOpacity
+                    disabled={loadingSubmit}
                     style={styles.mediaAddBtn}
                     onPress={handleAddMedia}>
                     <Text style={{color: '#D22C32', fontWeight: '500'}}>
@@ -443,10 +695,18 @@ const DetailDailyActivity = () => {
             </ScrollView>
             {/* Bottom Button */}
             <View style={styles.bottomBtnGroup}>
-              <TouchableOpacity style={styles.btnSubmit}>
-                <Text style={styles.submitText}>Simpan</Text>
+              <TouchableOpacity
+                style={[styles.btnSubmit, loadingSubmit && {opacity: 0.6}]}
+                onPress={handleSubmit}
+                disabled={loadingSubmit}>
+                {loadingSubmit ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.submitText}>Simpan</Text>
+                )}
               </TouchableOpacity>
               <TouchableOpacity
+                disabled={loadingSubmit}
                 style={styles.btnCancel}
                 onPress={() => navigation.goBack()}>
                 <Text style={styles.cancelText}>Batal</Text>
@@ -472,11 +732,25 @@ const DetailDailyActivity = () => {
 
               {/* --- MAIN IMAGE + overlay info --- */}
               <View style={styles1.imageWrap}>
-                <Image
-                  source={data.mainImage}
-                  style={styles1.headerImage}
-                  resizeMode="cover"
-                />
+                {assetUrls[0] ? (
+                  <Image
+                    source={{uri: assetUrls[0]}}
+                    style={styles1.headerImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View
+                    style={[
+                      styles1.headerImage,
+                      {
+                        backgroundColor: '#eee',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      },
+                    ]}>
+                    <Text style={{color: '#aaa'}}>No Image</Text>
+                  </View>
+                )}
                 {/* Overlay kiri bawah & kanan bawah */}
                 <OverlayImageInfo
                   leftTop={data.lokasi}
@@ -491,36 +765,70 @@ const DetailDailyActivity = () => {
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 style={{paddingLeft: 18, marginTop: 13, marginBottom: 10}}>
-                {data.images.map((img, i) => (
-                  <View key={i} style={styles1.thumbBox}>
-                    <Image
-                      source={img}
-                      style={styles1.smallImage}
-                      resizeMode="contain"
-                    />
-                    {/* Overlay kiri bawah & kanan bawah thumbnail */}
-                    <OverlayImageInfo
-                      leftTop={data.thumbnailInfo[i].lokasi}
-                      leftBot={data.thumbnailInfo[i].koordinat}
-                      rightTop={data.thumbnailInfo[i].tanggalFoto}
-                      rightBot={data.thumbnailInfo[i].jamFoto}
-                    />
-                  </View>
-                ))}
+                {assetUrls.map((imgUrl, i) => {
+                  console.log('imgUrl', imgUrl);
+                  return (
+                    <View key={i} style={styles1.thumbBox}>
+                      {imgUrl ? (
+                        <Image
+                          source={{uri: imgUrl}}
+                          style={styles1.smallImage}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View
+                          style={[
+                            styles1.smallImage,
+                            {
+                              backgroundColor: '#eee',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                            },
+                          ]}>
+                          <Text>?</Text>
+                        </View>
+                      )}
+                      <OverlayImageInfo
+                        leftTop={data.thumbnailInfo?.[i]?.lokasi}
+                        leftBot={data.thumbnailInfo?.[i]?.koordinat}
+                        rightTop={data.thumbnailInfo?.[i]?.tanggalFoto}
+                        rightBot={data.thumbnailInfo?.[i]?.jamFoto}
+                      />
+                    </View>
+                  );
+                })}
               </ScrollView>
 
               {/* --- FIELD LIST --- */}
               <View style={styles1.detailCard}>
-                <FieldItem label="Tanggal" value={data.tanggal} bold />
-                <FieldItem label="iSafe Number" value={data.isafe} bold />
-                <FieldItem label="PIC" value={data.pic} bold />
-                <FieldItem label="Status Report" value={data.statusReport} />
-                <FieldItem label="Lokasi" value={data.lokasiA} />
-                <FieldItem label="Jenis Report" value={data.jenis} />
-                <FieldItem label="Deskripsi" value={data.deskripsi} />
-                <FieldItem label="Kolaborasi dengan" value={data.kolaborasi} />
-                <FieldItem label="Waktu" value={data.waktu} />
-                <FieldItem label="Lampiran" value={data.lampiran} isLink />
+                <FieldItem
+                  label="Tanggal"
+                  value={formatDateShort(data?.date)}
+                  bold
+                />
+                <FieldItem
+                  label="iSafe Number"
+                  value={data?.isafe || '-'}
+                  bold
+                />
+                <FieldItem label="PIC" value={picName || data?.pic} />
+                <FieldItem label="Status Report" value={data?.status} />
+                <FieldItem label="Lokasi" value={data?.location} />
+                <FieldItem label="Jenis Report" value={data.report_type} />
+                <FieldItem label="Deskripsi" value={data?.description} />
+                <FieldItem
+                  label="Kolaborasi dengan"
+                  value={data.collaboration}
+                />
+                <FieldItem
+                  label="Waktu"
+                  value={`${data?.start_time} - ${data?.end_time}`}
+                />
+                <FieldItem
+                  label="Lampiran"
+                  value={data?.lampiran || '-'}
+                  isLink
+                />
               </View>
 
               {/* --- EDIT BUTTON --- */}
@@ -557,7 +865,7 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     fontSize: 16,
     color: '#181818',
-    paddingVertical: 10,
+    paddingVertical: 14,
     paddingHorizontal: 12,
     marginBottom: 11,
     backgroundColor: '#fff',
@@ -765,9 +1073,9 @@ const styles1 = StyleSheet.create({
     shadowOffset: {width: 0, height: 1},
   },
   fieldRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    // flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
     borderBottomColor: '#E2E2E2',
     borderBottomWidth: 1,
     paddingVertical: 10,
