@@ -135,9 +135,9 @@ const STATUS_OPTIONS = [
   {label: 'Closed', value: 'Closed'},
 ];
 const JENIS_REPORT_OPTIONS = [
-  {label: 'Land Dispute', value: 'Land Dispute'},
-  {label: 'Taman Nasional', value: 'Taman Nasional'},
-  {label: 'Lainnya', value: 'Lainnya'},
+  {label: 'Report Urgent', value: 'Report Urgent'},
+  {label: 'Warning Report', value: 'Warning Report'},
+  {label: 'Daily Report', value: 'Daily Report'},
 ];
 
 const DetailDailyActivity = () => {
@@ -517,13 +517,21 @@ const DetailDailyActivity = () => {
 
               {/* Jenis Report */}
               <Text style={styles.inputLabel}>Jenis Report</Text>
-              <TextInput
-                style={styles.input}
-                value={jenis}
-                onChangeText={setJenis}
-                placeholder="Land Dispute"
-                editable={!loadingSubmit}
-              />
+              <View style={styles.pickerWrapper}>
+                <Picker
+                  enabled={!loadingSubmit}
+                  selectedValue={jenis}
+                  onValueChange={setJenis}
+                  style={styles.picker}>
+                  {JENIS_REPORT_OPTIONS.map(opt => (
+                    <Picker.Item
+                      key={opt.value}
+                      label={opt.label}
+                      value={opt.value}
+                    />
+                  ))}
+                </Picker>
+              </View>
 
               {/* Deskripsi */}
               <Text style={styles.inputLabel}>Deskripsi</Text>

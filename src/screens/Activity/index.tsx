@@ -46,16 +46,18 @@ import ActionDrawer from '../../components/ActionDrawer';
 
 const JENIS_REPORT = [
   {label: 'Semua', value: ''},
-  {label: 'Activity', value: 'activity'},
-  {label: 'Weekly', value: 'weekly'},
-  {label: 'Laporan', value: 'laporan'},
+  {label: 'Report Urgent', value: 'Report Urgent'},
+  {label: 'Warning Report', value: 'Warning Report'},
+  {label: 'Daily Report', value: 'Daily Report'},
 ];
 
 const STATUS = [
   {label: 'Semua', value: ''},
-  {label: 'Open', value: 'open'},
-  {label: 'Close', value: 'close'},
-  {label: 'Approved', value: 'approved'},
+  {label: 'Approve', value: 'Approve'},
+  {label: 'Reject', value: 'Reject'},
+  {label: 'Open', value: 'Open'},
+  {label: 'Waiting', value: 'Waiting'},
+  {label: 'Closed', value: 'Closed'},
 ];
 const COLOR_WEEKLY_M1 = '#FFE2BB';
 const COLOR_WEEKLY_M2 = '#FF832A';
@@ -902,18 +904,33 @@ const Activity = () => {
   if (sort === 'oldest') reports.reverse();
   const [showDate, setShowDate] = React.useState(false);
 
+  const buildParams = () => {
+    const params = {};
+    if (status) params['filter[status][_eq]'] = status;
+    if (jenisReport) params['filter[report_type][_eq]'] = jenisReport;
+    if (tanggal)
+      params['filter[date][_eq]'] =
+        typeof tanggal === 'string'
+          ? tanggal
+          : tanggal.toISOString().slice(0, 10);
+    if (sort === 'latest') params['sort'] = '-date';
+    else if (sort === 'oldest') params['sort'] = 'date';
+    // bisa tambah limit/offset dsb
+    return params;
+  };
+  console.log('PARAMS', buildParams());
   useFocusEffect(
     React.useCallback(() => {
       if (mode === 'daily') {
         setLoading(true);
         setError(null);
-        getDailyActivities()
+        getDailyActivities(buildParams())
           .then(setDailyActivities)
           .catch(err => setError(err.message || 'Gagal load data'))
           .finally(() => setLoading(false));
       }
       // bisa tambahkan dependen jika perlu, tapi biasanya tidak perlu
-    }, [mode]),
+    }, [status, jenisReport, tanggal, sort, mode]),
   );
 
   React.useEffect(() => {
@@ -1112,16 +1129,27 @@ const Activity = () => {
                   ? 'Daily Activity'
                   : 'Report'}
               </Text>
-              <Text
-                style={{
-                  color: '#4F4D4A',
-                  fontSize: 12,
-                  marginTop: '2%',
-                  fontWeight: '400',
-                }}>
-                Catat dan kelola aktivitas harian Anda dengan mudah.
-              </Text>
             </View>
+            {/* FILTER & SORT */}
+            {mode !== 'laporan' && (
+              <FilterSortHeader
+                filter={filter}
+                setFilter={setFilter}
+                sort={sort}
+                setSort={setSort}
+                jenisReport={jenisReport}
+                setJenisReport={setJenisReport}
+                status={status}
+                setStatus={setStatus}
+                tanggal={tanggal}
+                setTanggal={setTanggal}
+                showDate={showDate}
+                setShowDate={setShowDate}
+                onDownload={() => {
+                  /* aksi download data sesuai filter */
+                }}
+              />
+            )}
             {/* RANGE/DATE DAN CHART */}
             {mode === 'weekly' && (
               <>
@@ -1262,26 +1290,6 @@ const Activity = () => {
                 </View>
               </>
             )}
-            {/* FILTER & SORT */}
-            {mode !== 'laporan' && (
-              <FilterSortHeader
-                filter={filter}
-                setFilter={setFilter}
-                sort={sort}
-                setSort={setSort}
-                jenisReport={jenisReport}
-                setJenisReport={setJenisReport}
-                status={status}
-                setStatus={setStatus}
-                tanggal={tanggal}
-                setTanggal={setTanggal}
-                showDate={showDate}
-                setShowDate={setShowDate}
-                onDownload={() => {
-                  /* aksi download data sesuai filter */
-                }}
-              />
-            )}
 
             {/* LIST */}
             <View style={{marginTop: 14, width: '92%', marginBottom: '20%'}}>
@@ -1298,6 +1306,40 @@ const Activity = () => {
                   )
                 }
                 scrollEnabled={false}
+                ListEmptyComponent={
+                  <View
+                    style={{
+                      alignItems: 'center',
+                      marginVertical: 42,
+                      backgroundColor: '#FFF',
+                      borderRadius: 10,
+                      paddingVertical: '5%',
+                      paddingHorizontal: '2%',
+                    }}>
+                    <Image
+                      source={require('../../assets/images/404.png')}
+                      style={{
+                        width: 96,
+                        height: 96,
+                        marginBottom: 12,
+                        opacity: 0.7,
+                      }}
+                      resizeMode="contain"
+                    />
+                    <Text
+                      style={{
+                        fontSize: 17,
+                        color: '#999',
+                        fontWeight: '600',
+                        marginBottom: 4,
+                      }}>
+                      Data Tidak di Temukan
+                    </Text>
+                    <Text style={{fontSize: 13, color: '#A5A5A5'}}>
+                      Silahkan coba lagi
+                    </Text>
+                  </View>
+                }
               />
             </View>
           </View>
@@ -1331,7 +1373,11 @@ const Activity = () => {
           date={tanggal ? new Date(tanggal) : new Date()}
           onConfirm={date => {
             setShowDate(false);
-            setTanggal(date);
+            // Convert date ke string YYYY-MM-DD (Lokal)
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            setTanggal(`${year}-${month}-${day}`);
           }}
           onCancel={() => setShowDate(false)}
         />

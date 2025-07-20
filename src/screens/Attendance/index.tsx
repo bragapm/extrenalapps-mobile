@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -24,7 +24,9 @@ import Svg, {
 import {useFeatureStore} from '../../store/featureStore';
 import {RootStackParamList} from '../../navigation';
 import {StackNavigationProp} from '@react-navigation/stack';
-import {useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
+import {getLeavesRequest, getUsers} from '../../services/apiServices';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 
 // Dummy data list absen
 const DUMMY_LIST_ABSENSI = [
@@ -203,6 +205,13 @@ const AbsensiCard = ({item, onPress}) => (
   </TouchableOpacity>
 );
 
+function formatDate(d) {
+  if (!d) return '';
+  const tgl = new Date(d);
+  return `${tgl.getDate()} ${tgl.toLocaleString('id-ID', {
+    month: 'short',
+  })} ${tgl.getFullYear()}`;
+}
 const Attendance: React.FC = () => {
   const activeMenu = useFeatureStore(state => state.activeMenu);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -215,6 +224,80 @@ const Attendance: React.FC = () => {
   const [period, setPeriod] = useState('Weekly');
   const [showPeriodOptions, setShowPeriodOptions] = useState(false);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [userMap, setUserMap] = useState({});
+  const [cutiList, setCutiList] = useState([]);
+  const [loadingCuti, setLoadingCuti] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (activeMenu === 'cuti') {
+        fetchCutiList();
+      }
+    }, [activeMenu, search, selectedDate]),
+  );
+  const fetchCutiList = async () => {
+    setLoadingCuti(true);
+    try {
+      const params = {};
+      if (search) params.search = search;
+      if (selectedDate) {
+        params['filter'] = {
+          ...(params['filter'] || {}),
+          start_date: {_eq: selectedDate},
+        };
+      }
+      const result = await getLeavesRequest(params);
+      setCutiList(result);
+    } catch (e) {
+      setCutiList([]);
+    } finally {
+      setLoadingCuti(false);
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const users = await getUsers();
+        // {id: "first_name last_name"}
+        const map = {};
+        users.forEach(u => {
+          map[u.id] = `${u.first_name || ''} ${u.last_name || ''}`.trim();
+        });
+        setUserMap(map);
+      } catch (e) {
+        setUserMap({});
+      }
+    })();
+  }, []);
+
+  const getDayDiff = (start, end) => {
+    if (!start || !end) return '-';
+    // Pastikan formatnya YYYY-MM-DD, biar aman parse ke Date
+    const tglAwal = new Date(start);
+    const tglAkhir = new Date(end);
+    if (isNaN(tglAwal) || isNaN(tglAkhir)) return '-';
+    const selisihMs = tglAkhir - tglAwal;
+    const hari = Math.abs(Math.round(selisihMs / (1000 * 60 * 60 * 24))) + 1;
+    return hari;
+  };
+
+  const mapStatus = status => {
+    if (!status) return 'Waiting';
+    if (status.toLowerCase() === 'waiting') return 'Waiting';
+    if (
+      status.toLowerCase() === 'ditolak' ||
+      status.toLowerCase() === 'rejected'
+    )
+      return 'Ditolak';
+    if (
+      status.toLowerCase() === 'disetujui' ||
+      status.toLowerCase() === 'approved'
+    )
+      return 'Disetujui';
+    return status;
+  };
 
   const StatusBadge = ({status}) => {
     let color, bg, border, icon, text;
@@ -294,6 +377,76 @@ const Attendance: React.FC = () => {
               fontWeight: '500',
               marginBottom: 6,
             }}>
+            {formatDate(item.start_date)} -{formatDate(item.end_date)}
+          </Text>
+        </View>
+        <StatusBadge status={mapStatus(item.status)} />
+      </View>
+      <View
+        style={{
+          borderBottomWidth: 1,
+          borderColor: '#F2F2F2',
+          marginVertical: 10,
+        }}
+      />
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'flex-end',
+        }}>
+        <View style={{flex: 1}}>
+          <Text style={styles.cutiLabel}>Nama</Text>
+          <Text style={styles.cutiValue}>
+            {' '}
+            {userMap[item.user_created] || '-'}
+          </Text>
+        </View>
+        <View style={{flex: 1}}>
+          <Text style={styles.cutiLabel}>Jumlah Hari</Text>
+          <Text style={styles.cutiValue}>
+            {getDayDiff(item.start_date, item.end_date)} hari
+          </Text>
+        </View>
+        <View style={{flex: 1}}>
+          <Text style={styles.cutiLabel}>Approved by</Text>
+          <Text style={styles.cutiValue}>{userMap[item.user] || '-'}</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+  const renderItemPerdin = ({item}) => (
+    <TouchableOpacity
+      onPress={() =>
+        navigation.navigate('DetailPerdin', {
+          showForm: false,
+          data: item,
+        })
+      }
+      style={styles.cutiCard}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+        <View>
+          <Text
+            style={{
+              color: '#8F8D89',
+              fontSize: 12,
+              fontWeight: '400',
+              marginBottom: 1,
+            }}>
+            Date
+          </Text>
+          <Text
+            style={{
+              color: '#23221E',
+              fontSize: 13,
+              fontWeight: '500',
+              marginBottom: 6,
+            }}>
             {item.from} -{item.to}
           </Text>
         </View>
@@ -317,8 +470,8 @@ const Attendance: React.FC = () => {
           <Text style={styles.cutiValue}>{item.name}</Text>
         </View>
         <View style={{flex: 1}}>
-          <Text style={styles.cutiLabel}>Jumlah Hari</Text>
-          <Text style={styles.cutiValue}>{item.totalDay} hari</Text>
+          <Text style={styles.cutiLabel}>Tujuan</Text>
+          <Text style={styles.cutiValue}>{item.totalDay}</Text>
         </View>
         <View style={{flex: 1}}>
           <Text style={styles.cutiLabel}>Approved by</Text>
@@ -327,71 +480,6 @@ const Attendance: React.FC = () => {
       </View>
     </TouchableOpacity>
   );
-    const renderItemPerdin = ({item}) => (
-      <TouchableOpacity
-        onPress={() =>
-          navigation.navigate('DetailPerdin', {
-            showForm: false,
-            data: item,
-          })
-        }
-        style={styles.cutiCard}>
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}>
-          <View>
-            <Text
-              style={{
-                color: '#8F8D89',
-                fontSize: 12,
-                fontWeight: '400',
-                marginBottom: 1,
-              }}>
-              Date
-            </Text>
-            <Text
-              style={{
-                color: '#23221E',
-                fontSize: 13,
-                fontWeight: '500',
-                marginBottom: 6,
-              }}>
-              {item.from} -{item.to}
-            </Text>
-          </View>
-          <StatusBadge status={item.status} />
-        </View>
-        <View
-          style={{
-            borderBottomWidth: 1,
-            borderColor: '#F2F2F2',
-            marginVertical: 10,
-          }}
-        />
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'flex-end',
-          }}>
-          <View style={{flex: 1}}>
-            <Text style={styles.cutiLabel}>Nama</Text>
-            <Text style={styles.cutiValue}>{item.name}</Text>
-          </View>
-          <View style={{flex: 1}}>
-            <Text style={styles.cutiLabel}>Tujuan</Text>
-            <Text style={styles.cutiValue}>{item.totalDay}</Text>
-          </View>
-          <View style={{flex: 1}}>
-            <Text style={styles.cutiLabel}>Approved by</Text>
-            <Text style={styles.cutiValue}>{item.approvedBy}</Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
 
   const handlePeriodPress = () => setShowPeriodOptions(true);
 
@@ -418,9 +506,18 @@ const Attendance: React.FC = () => {
 
   // Dummy untuk date picker (simple)
   const handleDateFilter = () => {
-    // Ganti ini pakai DatePicker/Modal sesuai kebutuhan
-    // Demo: Pilih tanggal hardcode (toggle)
-    setSelectedDate(selectedDate ? '' : '15 Jul 2025');
+    setShowDatePicker(true);
+  };
+
+  const handleConfirmDate = date => {
+    setShowDatePicker(false);
+    // Format ke YYYY-MM-DD (biar cocok ke filter backend)
+    const ymd = date.toISOString().slice(0, 10);
+    setSelectedDate(ymd);
+  };
+
+  const handleCancelDate = () => {
+    setShowDatePicker(false);
   };
   // Dummy untuk period picker
   const handlePeriodFilter = () => {
@@ -483,36 +580,7 @@ const Attendance: React.FC = () => {
               </Text>
             </View>
             {/* Card Summary */}
-            {/* <View style={styles.summaryCard}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: 4,
-                }}>
-                <Text
-                  style={{fontWeight: '700', fontSize: 15, color: '#181818'}}>
-                  Summary{' '}
-                  {activeMenu === 'absen'
-                    ? 'Absensi'
-                    : activeMenu === 'cuti'
-                    ? 'Cuti'
-                    : activeMenu === 'perdin'
-                    ? 'Perjalanan Dinas'
-                    : ''}
-                </Text>
-                <TouchableOpacity
-                  style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
-                  <Text style={{color: '#989898', fontWeight: '500'}}>
-                    Lihat detail
-                  </Text>
-                  <Text style={{fontSize: 14, color: '#989898'}}>›</Text>
-                </TouchableOpacity>
-              </View>
-              <AbsensiLineChart type={activeMenu} />
-              <AbsensiBarChart type={activeMenu} />
-            </View> */}
+
             {/* Filter Row */}
             <View style={styles.searchContainer}>
               <TextInput
@@ -547,12 +615,18 @@ const Attendance: React.FC = () => {
                   }}
                 />
                 <Text style={{color: '#222', fontWeight: '500', fontSize: 15}}>
-                  {selectedDate ? selectedDate : 'Pilih Tanggal'}
+                  {selectedDate ? formatDate(selectedDate) : 'Pilih Tanggal'}
                 </Text>
                 <Text style={{fontSize: 16, marginLeft: 5, color: '#BDBDBD'}}>
                   ▼
                 </Text>
               </TouchableOpacity>
+              <DateTimePickerModal
+                isVisible={showDatePicker}
+                mode="date"
+                onConfirm={handleConfirmDate}
+                onCancel={handleCancelDate}
+              />
               <TouchableOpacity
                 onPress={handlePeriodPress}
                 style={styles.filterBtn}>
@@ -622,12 +696,21 @@ const Attendance: React.FC = () => {
                   scrollEnabled={false}
                 />
               ) : activeMenu === 'cuti' ? (
-                <FlatList
-                  data={DUMMY_CUTI}
-                  keyExtractor={item => String(item.id)}
-                  renderItem={renderItemCuti}
-                  scrollEnabled={false}
-                />
+                loadingCuti ? (
+                  <Text style={{margin: 20, color: '#222'}}>Loading...</Text>
+                ) : (
+                  <FlatList
+                    data={cutiList}
+                    keyExtractor={item =>
+                      String(item.id || item.ID || Math.random())
+                    }
+                    renderItem={renderItemCuti}
+                    ListEmptyComponent={
+                      <Text style={{margin: 20}}>Tidak ada data cuti</Text>
+                    }
+                    scrollEnabled={false}
+                  />
+                )
               ) : (
                 <FlatList
                   data={DUMMY_PERDIN}
@@ -812,7 +895,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginBottom: 1,
   },
-  cutiValue: {color: '#23221E', fontSize: 15, fontWeight: '700'},
+  cutiValue: {color: '#23221E', fontSize: 12, fontWeight: '500'},
 });
 
 export default Attendance;

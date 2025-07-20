@@ -242,13 +242,15 @@ export const getUsers = async () => {
   const res = await getData('/users');
   return res.data; // array of users
 };
-
-export const getDailyActivities = async () => {
-  const res = await getData('/items/daily_activities');
-  // Langsung return array data agar enak
-  return res?.data || [];
+export const getUserById = async id => {
+  const res = await getData(`/users/${id}`);
+  return res.data;
 };
 
+export const getDailyActivities = async (params = {}) => {
+  const res = await getData('/items/daily_activities', params);
+  return res?.data || [];
+};
 // Fungsi ambil gambar asset pakai Authorization header, return dataURL base64
 export const getImageWithAuth = async uuid => {
   const token = await AsyncStorage.getItem('token');
@@ -284,6 +286,28 @@ export const updateDailyActivity = async (id, body) => {
 
   const res = await axios.patch(
     `https://externalapps.braga.co.id/panel/items/daily_activities/${id}`,
+    body,
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+  return res.data;
+};
+
+export const getLeavesRequest = async (params = {}) => {
+  const res = await getData('/items/leave_requests', params);
+  return res?.data || [];
+};
+
+export const updateLeaveRequest = async (id, body) => {
+  const token = await AsyncStorage.getItem('token');
+  if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
+
+  const res = await axios.patch(
+    `https://externalapps.braga.co.id/panel/items/leave_requests/${id}`,
     body,
     {
       headers: {

@@ -10,29 +10,60 @@ import {
   ScrollView,
   useColorScheme,
   Image,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import {Picker} from '@react-native-picker/picker';
 import {useThemeStore} from '../../theme/useThemeStore';
 import AppHeader from '../../components/AppHeader';
 import {RootStackParamList} from '../../navigation';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {useNavigation, useRoute} from '@react-navigation/native';
+import {
+  getUserById,
+  getUsers,
+  postData,
+  updateLeaveRequest,
+} from '../../services/apiServices';
 
-const jenisCutiOptions = [
-  {label: 'Paid Leave', value: 'Paid Leave'},
-  {label: 'Unpaid Leave', value: 'Unpaid Leave'},
-  {label: 'Sick Leave', value: 'Sick Leave'},
+const CUTI_TYPE_OPTIONS = [
+  {label: 'Paid Leave', value: 'Paid Leave'}, // Cuti Tahunan/Cuti Dibayar
+  {label: 'Unpaid Leave', value: 'Unpaid Leave'}, // Cuti di Luar Tanggungan/Diambil di luar kuota
+  {label: 'Sick Leave', value: 'Sick Leave'}, // Cuti Sakit
+  {label: 'Maternity Leave', value: 'Maternity Leave'}, // Cuti Melahirkan
+  {label: 'Paternity Leave', value: 'Paternity Leave'}, // Cuti Ayah
+  {label: 'Bereavement Leave', value: 'Bereavement Leave'}, // Cuti Duka
+  {label: 'Marriage Leave', value: 'Marriage Leave'}, // Cuti Pernikahan
+  {label: 'Special Leave', value: 'Special Leave'}, // Cuti Khusus
+  {label: 'Annual Leave', value: 'Annual Leave'}, // Cuti Tahunan (jika mau dipisah dari Paid Leave)
+  {label: 'Study Leave', value: 'Study Leave'}, // Cuti untuk Studi
+  {label: 'Hajj Leave', value: 'Hajj Leave'}, // Cuti Ibadah Haji
+  {label: 'Child Care Leave', value: 'Child Care Leave'}, // Cuti Anak
 ];
 
 const approverList = ['Jerry Anwar Halim', 'Putri Maulani', 'Dewi Marlina'];
-function formatDate(date) {
-  if (!date) return '-';
-  return date.toLocaleDateString('id-ID', {
-    day: '2-digit',
+
+const formatDateISO = date => {
+  const d = new Date(date);
+  return `${d.getFullYear()}-${(d.getMonth() + 1)
+    .toString()
+    .padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+};
+
+function countDays(start, end) {
+  if (!start || !end) return 1;
+  const d1 = new Date(start);
+  const d2 = new Date(end);
+  // Tambahkan 1 hari agar inklusif (misal 15-16 = 2 hari)
+  return Math.abs(Math.round((d2 - d1) / (1000 * 60 * 60 * 24))) + 1;
+}
+function formatDate(d) {
+  if (!d) return '';
+  const tgl = new Date(d);
+  return `${tgl.getDate()} ${tgl.toLocaleString('id-ID', {
     month: 'short',
-    year: 'numeric',
-  });
+  })} ${tgl.getFullYear()}`;
 }
 const DetailCuti = () => {
   const route = useRoute();
@@ -41,42 +72,128 @@ const DetailCuti = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const {colors} = useThemeStore();
   const colorScheme = useColorScheme();
-
+  const [userName, setUserName] = useState('-');
   // console.log('showForm', showForm);
-
-  const [tanggalMulai, setTanggalMulai] = useState(null);
-  const [tanggalAkhir, setTanggalAkhir] = useState(null);
+  const [cutiType, setCutiType] = useState(CUTI_TYPE_OPTIONS[0].value);
+  const [tanggalMulai, setTanggalMulai] = useState(new Date());
+  const [tanggalAkhir, setTanggalAkhir] = useState(new Date());
   const [tipeCuti, setTipeCuti] = useState('lebih');
-  const [tanggal, setTanggal] = useState('05 Jul 2025 - 10 Jul 2025');
-  const [jenisCuti, setJenisCuti] = useState(jenisCutiOptions[0].value);
-  const [approver, setApprover] = useState(approverList[0]);
+  const [jenisCuti, setJenisCuti] = useState(CUTI_TYPE_OPTIONS[0].value);
+  const [approver, setApprover] = useState('');
+  const [approverName, setApproverName] = useState('-');
+
   const [note, setNote] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [dateType, setDateType] = useState('mulai');
+  const [showDatePickerMulai, setShowDatePickerMulai] = useState(false);
+  const [showDatePickerAkhir, setShowDatePickerAkhir] = useState(false);
+  const USER_ID = 'a464a937-bb6c-4f6c-b0b4-27d98485a559';
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const userData = await getUserById(USER_ID);
+        if (userData?.first_name && userData?.last_name) {
+          setUserName(`${userData.first_name} ${userData.last_name}`);
+        } else if (userData?.first_name) {
+          setUserName(userData.first_name);
+        } else {
+          setUserName('-');
+        }
+      } catch (e) {
+        setUserName('-');
+      }
+    };
+    fetchUser();
+  }, []);
 
   useEffect(() => {
-    if (data && !showForm) {
-      // isi dari data cuti
+    if (showForm && data) {
+      // Set value form sesuai data params yang dilempar dari detail
+      setTipeCuti('lebih'); // atau sesuaikan data?.type kalau mau
+      setTanggalMulai(data.start_date ? new Date(data.start_date) : new Date());
+      setTanggalAkhir(data.end_date ? new Date(data.end_date) : new Date());
+      setCutiType(data.leave_type || CUTI_TYPE_OPTIONS[0].value);
+      setApprover(data?.user || '');
+      setNote(data.reason || '');
+    } else if (showForm && !data) {
+      // Form kosong untuk tambah baru
       setTipeCuti('lebih');
-      setTanggalMulai(data?.from ? new Date(data.from) : null);
-      setTanggalAkhir(data?.to ? new Date(data.to) : null);
-      setJenisCuti(data.type || jenisCutiOptions[0].value);
-      setApprover(data.approvedBy || approverList[0]);
-      setNote(data.note || '');
-    } else if (!data && showForm) {
-      // reset untuk add baru
-      setTipeCuti('lebih');
-      setTanggalMulai(null);
-      setTanggalAkhir(null);
-      setJenisCuti(jenisCutiOptions[0].value);
-      setApprover(approverList[0]);
+      setTanggalMulai(new Date());
+      setTanggalAkhir(new Date());
+      setCutiType(CUTI_TYPE_OPTIONS[0].value);
+      setApprover(USER_ID);
       setNote('');
     }
-  }, [data, showForm]);
+  }, [showForm, data]);
 
-  const handleSubmit = () => {
-    // submit logic
+  useEffect(() => {
+    if (!approver) return setApproverName('-');
+    if (approver.length > 24) {
+      getUserById(approver)
+        .then(u => {
+          setApproverName(
+            [u?.first_name, u?.last_name].filter(Boolean).join(' ') || '-',
+          );
+        })
+        .catch(() => setApproverName('-'));
+    } else {
+      setApproverName(approver);
+    }
+  }, [approver]);
+
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
+  const handleSubmit = async () => {
+    if (!cutiType) return Alert.alert('Error', 'Pilih jenis cuti!');
+    if (!tanggalMulai) return Alert.alert('Error', 'Pilih tanggal mulai!');
+    if (tipeCuti === 'lebih' && !tanggalAkhir)
+      return Alert.alert('Error', 'Pilih tanggal akhir!');
+    if (!note) return Alert.alert('Error', 'Isi alasan cuti!');
+    setLoadingSubmit(true);
+    try {
+      const start_date = tanggalMulai
+        ? tanggalMulai.toISOString().slice(0, 10)
+        : null;
+      const end_date =
+        tipeCuti === 'lebih' && tanggalAkhir
+          ? tanggalAkhir.toISOString().slice(0, 10)
+          : start_date;
+
+      const payload = {
+        leave_type: cutiType,
+        start_date: start_date,
+        end_date: end_date,
+        reason: note,
+        user: USER_ID,
+        status: 'waiting',
+      };
+      // console.log('Body:', payload);
+
+      if (showForm && data && data.id) {
+        // **EDIT MODE**
+        await updateLeaveRequest(data.id, payload);
+        Alert.alert('Sukses', 'Pengajuan cuti berhasil diupdate!', [
+          {text: 'OK', onPress: () => navigation.goBack()},
+        ]);
+      } else {
+        // **TAMBAH BARU**
+        await postData('/items/leave_requests', payload);
+        Alert.alert('Sukses', 'Pengajuan cuti berhasil dikirim!', [
+          {text: 'OK', onPress: () => navigation.goBack()},
+        ]);
+      }
+
+      Alert.alert('Sukses', 'Pengajuan cuti berhasil dikirim!', [
+        {text: 'OK', onPress: () => navigation.goBack()},
+      ]);
+    } catch (err) {
+      Alert.alert(
+        'Gagal',
+        err?.message || 'Pengajuan cuti gagal, cek data dan koneksi!',
+      );
+    } finally {
+      setLoadingSubmit(false);
+    }
   };
+
   const handleCancel = () => {
     navigation.goBack();
   };
@@ -90,6 +207,7 @@ const DetailCuti = () => {
   const openDatePicker = type => {
     setDateType(type);
     setShowDatePicker(true);
+    console.log('SHOW DATE PICKER:', type);
   };
 
   const reviewStyles = StyleSheet.create({
@@ -146,6 +264,47 @@ const DetailCuti = () => {
     },
   });
 
+  const [userCreatedName, setUserCreatedName] = useState('-');
+
+  // Dapatkan nama user berdasarkan ID (asumsi data.user & data.user_created adalah ID)
+  useEffect(() => {
+    const fetchFullName = async (userId, setter) => {
+      if (!userId) return setter('-');
+      try {
+        const userData = await getUserById(userId);
+        if (userData && (userData?.first_name || userData?.last_name)) {
+          setter(
+            [userData?.first_name, userData?.last_name]
+              .filter(Boolean)
+              .join(' '),
+          );
+        } else {
+          setter('-');
+        }
+      } catch {
+        setter('-');
+      }
+    };
+
+    fetchFullName(data?.user, setUserName);
+    fetchFullName(data?.user_created, setUserCreatedName);
+  }, [data]);
+
+  const mapStatus = status => {
+    if (!status) return 'Waiting';
+    if (status.toLowerCase() === 'waiting') return 'Waiting';
+    if (
+      status.toLowerCase() === 'ditolak' ||
+      status.toLowerCase() === 'rejected'
+    )
+      return 'Ditolak';
+    if (
+      status.toLowerCase() === 'disetujui' ||
+      status.toLowerCase() === 'approved'
+    )
+      return 'Disetujui';
+    return status;
+  };
   const StatusBadge = ({status}) => {
     let color, bg, border, icon, text;
     if (status === 'Ditolak') {
@@ -167,6 +326,7 @@ const DetailCuti = () => {
       icon = require('../../assets/icons/ic-check.png');
       text = 'Disetujui';
     }
+
     return (
       <View
         style={{
@@ -230,30 +390,9 @@ const DetailCuti = () => {
             {/* Tanggal */}
 
             {/* Jenis Cuti */}
-            <Text style={styles.label}>Tanggal Mulai/akhir</Text>
-            <View style={{flexDirection: 'row', gap: 8}}>
-              <TouchableOpacity
-                style={[styles.inputRow, {flex: 1}]}
-                onPress={() => openDatePicker('mulai')}>
-                <Text style={styles.inputText}>
-                  {tanggalMulai ? formatDate(tanggalMulai) : 'Tanggal Mulai'}
-                </Text>
-                <Text style={{fontSize: 20}}>📅</Text>
-              </TouchableOpacity>
-              {tipeCuti === 'lebih' && (
-                <TouchableOpacity
-                  style={[styles.inputRow, {flex: 1}]}
-                  onPress={() => openDatePicker('akhir')}>
-                  <Text style={styles.inputText}>
-                    {tanggalAkhir ? formatDate(tanggalAkhir) : 'Tanggal Akhir'}
-                  </Text>
-                  <Text style={{fontSize: 20}}>📅</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
             {/* Modal date picker */}
-            <DateTimePickerModal
+
+            {/* <DateTimePickerModal
               isVisible={showDatePicker}
               mode="date"
               onConfirm={date => {
@@ -270,12 +409,79 @@ const DetailCuti = () => {
                   ? tanggalMulai || new Date()
                   : tanggalAkhir || tanggalMulai || new Date()
               }
-            />
+            /> */}
+            <Text style={styles.label}>Tanggal Mulai/akhir</Text>
+            <View style={{flexDirection: 'row', gap: 8}}>
+              <TouchableOpacity
+                style={[styles.inputRow, {flex: 1}]}
+                onPress={() => setShowDatePickerMulai(true)}>
+                <Text style={styles.inputText}>
+                  {tanggalMulai ? formatDate(tanggalMulai) : 'Tanggal Mulai'}
+                </Text>
+                <Text style={{fontSize: 20}}>📅</Text>
+              </TouchableOpacity>
+              {showDatePickerMulai && (
+                <DateTimePicker
+                  value={tanggalMulai}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  minimumDate={new Date(2000, 0, 1)}
+                  maximumDate={tanggalAkhir || undefined}
+                  onChange={(event, date) => {
+                    setShowDatePickerMulai(Platform.OS === 'ios');
+                    if (date) setTanggalMulai(date);
+                    if (Platform.OS === 'android')
+                      setShowDatePickerMulai(false);
+                  }}
+                />
+              )}
+              {tipeCuti === 'lebih' && (
+                <TouchableOpacity
+                  style={[styles.inputRow, {flex: 1}]}
+                  onPress={() => setShowDatePickerAkhir(true)}>
+                  <Text style={styles.inputText}>
+                    {tanggalAkhir ? formatDate(tanggalAkhir) : 'Tanggal Akhir'}
+                  </Text>
+                  <Text style={{fontSize: 20}}>📅</Text>
+                </TouchableOpacity>
+              )}
+              {showDatePickerAkhir && (
+                <DateTimePicker
+                  value={tanggalAkhir}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  minimumDate={tanggalMulai}
+                  onChange={(event, date) => {
+                    setShowDatePickerAkhir(Platform.OS === 'ios');
+                    if (date) setTanggalAkhir(date);
+                    if (Platform.OS === 'android')
+                      setShowDatePickerAkhir(false);
+                  }}
+                />
+              )}
+            </View>
+
+            <Text style={styles.inputLabel}>Status Report</Text>
+            <View style={styles.pickerWrapper}>
+              <Picker
+                // enabled={!loadingSubmit}
+                selectedValue={cutiType}
+                onValueChange={setCutiType}
+                style={styles.picker}>
+                {CUTI_TYPE_OPTIONS.map(opt => (
+                  <Picker.Item
+                    key={opt.value}
+                    label={opt.label}
+                    value={opt.value}
+                  />
+                ))}
+              </Picker>
+            </View>
 
             {/* Approver */}
             <Text style={styles.label}>Approver</Text>
             <View style={styles.approverBox}>
-              <Text style={styles.approverText}>{approver}</Text>
+              <Text style={styles.approverText}>{approverName}</Text>
             </View>
 
             {/* Note */}
@@ -293,7 +499,11 @@ const DetailCuti = () => {
           </ScrollView>
           <View style={styles.footer}>
             <TouchableOpacity style={styles.btnSubmit} onPress={handleSubmit}>
-              <Text style={styles.submitText}>Submit</Text>
+              {loadingSubmit ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.submitText}>Simpan</Text>
+              )}
             </TouchableOpacity>
             <TouchableOpacity style={styles.btnCancel} onPress={handleCancel}>
               <Text style={styles.cancelText}>Cancel</Text>
@@ -310,78 +520,65 @@ const DetailCuti = () => {
               {/* Nama Personil */}
               <View style={reviewStyles.fieldWrap}>
                 <Text style={reviewStyles.label}>Nama Personil</Text>
-                <Text style={reviewStyles.value}>{data?.name || '-'}</Text>
+                <Text style={reviewStyles.value}>{userCreatedName}</Text>
               </View>
               {/* iSafe ID */}
               <View style={reviewStyles.fieldWrap}>
                 <Text style={reviewStyles.label}>iSafe ID</Text>
-                <Text style={reviewStyles.value}>
-                  {data?.isafeId || '121HGF'}
-                </Text>
+                <Text style={reviewStyles.value}>{data?.isafeId || '-'}</Text>
               </View>
               {/* NIK */}
               <View style={reviewStyles.fieldWrap}>
                 <Text style={reviewStyles.label}>NIK</Text>
-                <Text style={reviewStyles.value}>
-                  {data?.nik || 'IDT01A5JWADPKZA999'}
-                </Text>
+                <Text style={reviewStyles.value}>{data?.nik || '-'}</Text>
               </View>
               {/* Tanggal Mulai */}
               <View style={reviewStyles.fieldWrap}>
                 <Text style={reviewStyles.label}>Tanggal Mulai</Text>
                 <Text style={reviewStyles.value}>
-                  {data?.from ? formatDate(new Date(data.from)) : '-'}
+                  {formatDate(data.start_date)}
                 </Text>
               </View>
               {/* Tanggal Selesai */}
               <View style={reviewStyles.fieldWrap}>
                 <Text style={reviewStyles.label}>Tanggal Selesai</Text>
                 <Text style={reviewStyles.value}>
-                  {data?.to ? formatDate(new Date(data.to)) : '-'}
+                  {formatDate(data.end_date)}
                 </Text>
               </View>
               {/* Total Cuti */}
               <View style={reviewStyles.fieldWrap}>
                 <Text style={reviewStyles.label}>Total Cuti</Text>
                 <Text style={reviewStyles.value}>
-                  {data?.totalDay ? `${data.totalDay} Hari` : '1 Hari'}
+                  {countDays(data.start_date, data.end_date)} Hari
                 </Text>
               </View>
               {/* Jenis Cuti */}
               <View style={reviewStyles.fieldWrap}>
                 <Text style={reviewStyles.label}>Jenis Cuti</Text>
-                <Text style={reviewStyles.value}>
-                  {data?.type || 'Paid Leave'}
-                </Text>
+                <Text style={reviewStyles.value}>{data?.leave_type || ''}</Text>
               </View>
               {/* Alasan Cuti */}
               <View style={reviewStyles.fieldWrap}>
                 <Text style={reviewStyles.label}>Alasan Cuti</Text>
-                <Text style={reviewStyles.value}>
-                  {data?.alasan || 'Karena Acara Keluarga'}
-                </Text>
+                <Text style={reviewStyles.value}>{data?.reason || ''}</Text>
               </View>
               {/* Approver */}
               <View style={reviewStyles.fieldWrap}>
                 <Text style={reviewStyles.label}>Approver</Text>
-                <Text style={reviewStyles.value}>
-                  {data?.approvedBy || 'Jerry Anwar Halim'}
-                </Text>
+                <Text style={reviewStyles.value}>{userName}</Text>
               </View>
               {/* Status */}
               <View style={reviewStyles.fieldWrap}>
                 <Text style={reviewStyles.label}>Status</Text>
                 <View style={{marginTop: 4, width: 'auto'}}>
-                  <StatusBadge status={data?.status || 'Ditolak'} />
+                  <StatusBadge status={mapStatus(data.status)} />
                 </View>
               </View>
               {/* Alasan Penolakan */}
               <View style={reviewStyles.fieldWrap}>
                 <Text style={reviewStyles.label}>Alasan Penolakan</Text>
-                <Text style={reviewStyles.value}>
-                  {data?.alasanPenolakan ||
-                    'Alasan Tidak disetujui karena Lampiran tidak lengkap'}
-                </Text>
+                <Text style={reviewStyles.value}>{data?.reason || ''}</Text>
               </View>
             </View>
             <TouchableOpacity
@@ -502,6 +699,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelText: {color: '#D22C32', fontSize: 18, fontWeight: '500'},
+  inputLabel: {
+    fontSize: 14,
+    color: '#4B4749',
+    fontWeight: '400',
+    marginBottom: 6,
+    marginTop: 4,
+  },
+  input: {
+    borderWidth: 1.2,
+    borderColor: '#D2D2D2',
+    borderRadius: 7,
+    fontSize: 16,
+    color: '#181818',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    marginBottom: 11,
+    backgroundColor: '#fff',
+  },
 });
 
 export default DetailCuti;
