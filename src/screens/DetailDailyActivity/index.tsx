@@ -22,6 +22,7 @@ import ImagePicker from 'react-native-image-crop-picker';
 import DocumentPicker from 'react-native-document-picker';
 import {
   createDailyActivity,
+  getDailyActivityDetail,
   getImageWithAuth,
   getUsers,
   updateDailyActivity,
@@ -29,6 +30,7 @@ import {
   uploadFileDirectus,
 } from '../../services/apiServices';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import InputMultiSelect from '../../components/InputMultiSelect';
 
 const {width} = Dimensions.get('window');
 const IMAGE_ASPECT = 1.85; // 16:9
@@ -92,6 +94,16 @@ const StatusMiniBadge = ({status = 'Open'}) => {
   );
 };
 
+const STATUS_LABEL = {
+  approved: 'Approved',
+  in_progress: 'In Progress',
+  open: 'Open',
+  reject: 'Rejected',
+  closed: 'Closed',
+  waiting: 'Waiting',
+  draft: 'Draft',
+};
+
 const FieldItem = ({label, value, bold, isLink}) => (
   <View style={styles1.fieldRow}>
     <Text style={styles1.fieldLabel}>{label}</Text>
@@ -128,16 +140,18 @@ const OverlayImageInfo = ({
   </>
 );
 const STATUS_OPTIONS = [
-  {label: 'Approve', value: 'Approve'},
-  {label: 'Reject', value: 'Reject'},
-  {label: 'Open', value: 'Open'},
-  {label: 'Waiting', value: 'Waiting'},
-  {label: 'Closed', value: 'Closed'},
+  {label: 'Approved', value: 'approved'},
+  {label: 'In Progress', value: 'in_progress'},
+  {label: 'Draft', value: 'draft'},
+  {label: 'Reject', value: 'reject'},
+  {label: 'Open', value: 'open'},
+  {label: 'Waiting', value: 'waiting'},
+  {label: 'Closed', value: 'closed'},
 ];
 const JENIS_REPORT_OPTIONS = [
-  {label: 'Report Urgent', value: 'Report Urgent'},
-  {label: 'Warning Report', value: 'Warning Report'},
-  {label: 'Daily Report', value: 'Daily Report'},
+  {label: 'Report Urgent', value: 1},
+  {label: 'Warning Report', value: 2},
+  {label: 'Daily Report', value: 3},
 ];
 
 const DetailDailyActivity = () => {
@@ -145,7 +159,8 @@ const DetailDailyActivity = () => {
   // const data = dummyData;
   const route = useRoute();
   const {showForm = false, data} = route.params || {};
-
+  const id = data?.id;
+  console?.log('CEKK DATA', JSON.stringify(data));
   const [media, setMedia] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -153,7 +168,8 @@ const DetailDailyActivity = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [status, setStatus] = useState(STATUS_OPTIONS[0].value);
   const [lokasi, setLokasi] = useState('');
-  const [pic, setPIC] = useState('');
+  const [showPicPicker, setShowPicPicker] = useState(false);
+  const [pic, setPIC] = useState([]);
   const [judul, setJudul] = useState('-');
   const [jenis, setJenis] = useState(JENIS_REPORT_OPTIONS[0].value);
   const [deskripsi, setDeskripsi] = useState('');
@@ -169,6 +185,31 @@ const DetailDailyActivity = () => {
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [endTimeZone, setEndTimeZone] = useState('WIB');
   const [loadingSubmit, setLoadingSubmit] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchDetail = async () => {
+      setLoadingDetail(true);
+      try {
+        console.log('[DetailDailyActivity] getDailyActivityDetail id:', id); // <--- tambahkan disini
+        const res = await getDailyActivityDetail(id);
+        console.log('[DetailDailyActivity] Response:', res); // <--- tambahkan disini
+        if (isMounted) setDetail(res);
+      } catch (e) {
+        console.log('[DetailDailyActivity] ERROR:', e); // <--- tambahkan disini
+        setDetail(null);
+      } finally {
+        setLoadingDetail(false);
+      }
+    };
+    if (id) fetchDetail();
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
+
   const handleAddMedia = () => setModalVisible(true);
 
   const handleCamera = async () => {
@@ -237,50 +278,64 @@ const DetailDailyActivity = () => {
   const handleSubmit = async () => {
     setLoadingSubmit(true);
     try {
-      let documentId = null;
-      // Cek apakah ada media baru di-upload
-      const mediaBaru = media.find(item => !item.isServerFile); // media baru = belum ada di server
-      if (mediaBaru) {
-        const file = mediaBaru;
-        const id = await uploadFileDirectus({
-          uri: file.uri,
-          name: file.name || 'photo.jpg',
-          type:
-            file.type ||
-            (file.isFile ? 'application/octet-stream' : 'image/jpeg'),
-        });
-        documentId = id;
-        await updateFileMetaDirectus([id], {
-          filename_download: file.name || 'Lampiran_Daily_Activity.jpg',
-        });
-      } else if (media.length && media[0].isServerFile) {
-        // Pakai file lama saja (uuid)
-        documentId = media[0].id;
+      // Upload dan mapping dokumen tetap sama
+      const uploadedIds = [];
+      for (const file of media) {
+        if (!file.isServerFile) {
+          const id = await uploadFileDirectus({
+            uri: file.uri,
+            name: file.name || 'photo.jpg',
+            type:
+              file.type ||
+              (file.isFile ? 'application/octet-stream' : 'image/jpeg'),
+          });
+          await updateFileMetaDirectus([id], {
+            filename_download: file.name || 'Lampiran_Daily_Activity.jpg',
+          });
+          uploadedIds.push(id);
+        } else {
+          uploadedIds.push(file.id);
+        }
       }
 
-      const formatDateISO = date => {
+      const documents = uploadedIds.map(id => ({
+        directus_files_id: id,
+      }));
+
+      // Multi PIC (di UI, kalau picker single, biar array 1 data saja)
+      // NOTE: Kalau picker-nya multi, tinggal mapping array-nya
+      const pics = Array.isArray(pic)
+        ? pic.map(id => ({directus_users_id: id}))
+        : pic
+        ? [{directus_users_id: pic}]
+        : [];
+
+      // Fungsi ambil jam & menit jadi string "HH:mm:ss"
+      const toTimeString = date => {
         const d = new Date(date);
-        return `${d.getFullYear()}-${(d.getMonth() + 1)
-          .toString()
-          .padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        return `${hh}:${mm}:00`;
       };
 
+      // Build body sesuai format
       const body = {
-        date: formatDateISO(tanggal),
-        status,
-        location: lokasi,
-        pic,
-        title: judul,
+        date: tanggal ? tanggal.toISOString().slice(0, 10) : '', // YYYY-MM-DD
+        start_time: toTimeString(startTime),
+        end_time: toTimeString(endTime),
         report_type: jenis,
+        location: lokasi,
+        title: judul,
         description: deskripsi,
-        collaboration: kolaborasi,
-        start_time: `${formatTime(startTime)} ${startTimeZone}`,
-        end_time: `${formatTime(endTime)} ${endTimeZone}`,
-        document: documentId || null,
+        status,
+        documents,
+        pics,
       };
+
+      // DEBUG
+      console.log('CREATE/UPDATE BODY:', JSON.stringify(body, null, 2));
 
       if (data && data.id) {
-        // --- MODE EDIT ---
         await updateDailyActivity(data.id, body);
         Alert.alert('Sukses', 'Berhasil update data', [
           {
@@ -302,7 +357,6 @@ const DetailDailyActivity = () => {
           },
         ]);
       } else {
-        // --- MODE CREATE ---
         await createDailyActivity(body);
         Alert.alert('Sukses', 'Berhasil create data', [
           {
@@ -345,83 +399,106 @@ const DetailDailyActivity = () => {
 
   // Biar support single atau array
   const [assetUrls, setAssetUrls] = useState([]); // [data:image/jpeg;base64,...]
-  const documentList = Array.isArray(data?.document)
-    ? data?.document
-    : data?.document
-    ? [data?.document]
+  const documentList = Array.isArray(detail?.documents)
+    ? detail.documents.map(doc => doc.directus_files_id)
     : [];
 
   useEffect(() => {
-    // Fetch semua gambar ketika komponen mount
-    if (documentList.length === 0) return;
+    if (!detail || !detail.documents || detail.documents.length === 0) return;
     let isMounted = true;
-
     const fetchAllImages = async () => {
       try {
-        // Ambil token user (misal simpan di AsyncStorage)
-        const token = await AsyncStorage.getItem('access_token'); // atau nama lain
-
-        // Panggil util di atas untuk setiap UUID
-        const promises = documentList.map(uuid =>
-          getImageWithAuth(uuid, token),
+        const token = await AsyncStorage.getItem('access_token'); // atau token lain sesuai implementasi kamu
+        const promises = detail.documents.map(doc =>
+          getImageWithAuth(doc.directus_files_id, token),
         );
         const results = await Promise.all(promises);
-
         if (isMounted) setAssetUrls(results);
       } catch (e) {
         if (isMounted) setAssetUrls([]);
         console.log('Error fetching asset images:', e);
       }
     };
-
     fetchAllImages();
     return () => {
       isMounted = false;
     };
-  }, [JSON.stringify(documentList)]);
+  }, [detail]);
 
   useEffect(() => {
-    // Cari nama PIC berdasarkan ID (hanya di mode review / bukan form)
-    if (!showForm && userList?.length && data?.pic) {
-      const user = userList.find(u => u?.id === data.pic);
-      setPicName(user ? `${user?.first_name} ${user.last_name}` : data.pic); // fallback ke UUID jika ga ketemu
+    if (!showForm && userList?.length && detail?.pics) {
+      // Ambil nama-nama PIC (bisa array)
+      const names = (detail.pics || [])
+        .map(picObj => {
+          const user = userList.find(u => u?.id === picObj.directus_users_id);
+          return user
+            ? `${user?.first_name} ${user.last_name}`
+            : picObj.directus_users_id; // fallback ke id
+        })
+        .filter(Boolean);
+      setPicName(names.join(', '));
     }
-  }, [showForm, userList, data?.pic]);
+  }, [showForm, userList, detail?.pics]);
 
   useEffect(() => {
-    if (showForm && data) {
-      setTanggal(data.date ? new Date(data.date) : new Date());
-      setStatus(data.status || STATUS_OPTIONS[0].value);
-      setLokasi(data.location || '');
-      setPIC(data.pic || '');
-      setJudul(data.title || '-');
-      setJenis(data.report_type || JENIS_REPORT_OPTIONS[0].value);
-      setDeskripsi(data.description || '');
-      setKolaborasi(data.collaboration || '');
-      setStartTime(
-        data.start_time ? parseTimeToDate(data.start_time) : new Date(),
+    if (showForm && detail) {
+      // GUNAKAN detail, BUKAN data!
+      setTanggal(detail.date ? new Date(detail.date) : new Date());
+      setStatus(detail.status || STATUS_OPTIONS[0].value);
+      setLokasi(detail.location || '');
+      setPIC(
+        Array.isArray(detail.pics) && detail.pics.length > 0
+          ? detail.pics.map(x => x.directus_users_id) // kalau multi
+          : '',
       );
-      setStartTimeZone(data.start_time?.split(' ')[1] || 'WIB');
-      setEndTime(data.end_time ? parseTimeToDate(data.end_time) : new Date());
-      setEndTimeZone(data.end_time?.split(' ')[1] || 'WIB');
-      // === Tambahan khusus prefill media ===
-      if (data.document) {
-        // NOTE: asumsi data.document bisa array atau string (uuid)
-        const docArr = Array.isArray(data.document)
-          ? data.document
-          : [data.document];
+      setJudul(detail.title || '-');
+      setJenis(detail.report_type || JENIS_REPORT_OPTIONS[0].value);
+      setDeskripsi(detail.description || '');
+      setKolaborasi(detail.collaboration || '');
+      setStartTime(detail.start_time ? new Date() : new Date()); // <- Kalau ada, parse sesuai format backend (di sini null)
+      setStartTimeZone('WIB');
+      setEndTime(detail.end_time ? new Date() : new Date()); // <- Kalau ada, parse sesuai format backend (di sini null)
+      setEndTimeZone('WIB');
+
+      // Lampiran/media dari detail.documents
+      if (detail.documents && Array.isArray(detail.documents)) {
         setMedia(
-          docArr.map(uuid => ({
-            id: uuid, // atau pake String(Date.now()) biar unique
-            uri: uuid, // simpan UUID aja dulu, untuk tampilkan thumbnail bisa difetch nanti
-            isServerFile: true, // flag buat ngebedain mana file lama, mana baru
+          detail.documents.map(doc => ({
+            id: doc.directus_files_id,
+            uri: doc.directus_files_id,
+            isServerFile: true,
           })),
         );
       } else {
-        setMedia([]); // Kosongin kalau nggak ada dokumen
+        setMedia([]);
       }
     }
-  }, [showForm, data]);
+  }, [showForm, detail]);
+
+  if (!showForm) {
+    if (loadingDetail) {
+      return (
+        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+          <ActivityIndicator color="#D22C32" size="large" />
+          <Text style={{marginTop: 16}}>Memuat detail...</Text>
+        </View>
+      );
+    }
+    if (!detail) {
+      return (
+        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+          <Text>Data tidak ditemukan</Text>
+        </View>
+      );
+    }
+    if (!detail) {
+      return (
+        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+          <Text>Data tidak ditemukan</Text>
+        </View>
+      );
+    }
+  }
 
   return (
     <>
@@ -486,23 +563,48 @@ const DetailDailyActivity = () => {
               {/* PIC */}
               <Text style={styles.inputLabel}>PIC</Text>
               <View style={styles.pickerWrapper}>
-                <Picker
-                  enabled={!loadingSubmit}
-                  selectedValue={pic}
-                  onValueChange={setPIC}
-                  style={styles.picker}>
-                  <Picker.Item
-                    label={loadingUsers ? 'Memuat...' : 'Pilih PIC'}
-                    value=""
-                  />
-                  {userList.map(user => (
-                    <Picker.Item
-                      key={user?.id}
-                      label={`${user?.first_name} ${user.last_name}`}
-                      value={user?.id} // value adalah UUID, dikirim ke backend
-                    />
-                  ))}
-                </Picker>
+                <TouchableOpacity
+                  style={[
+                    styles.picker,
+                    {
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      minHeight: 'auto',
+                      justifyContent: 'center',
+                      paddingHorizontal: '4%',
+                    },
+                  ]}
+                  disabled={loadingSubmit || loadingUsers}
+                  onPress={() => setShowPicPicker(true)}>
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      color: pic.length ? '#181818' : '#bbb',
+                      flex: 1,
+                    }}>
+                    {loadingUsers
+                      ? 'Memuat...'
+                      : pic.length
+                      ? userList
+                          .filter(u => pic.includes(u.id))
+                          .map(u => `${u.first_name} ${u.last_name}`)
+                          .join(', ')
+                      : 'Pilih PIC'}
+                  </Text>
+                </TouchableOpacity>
+
+                <InputMultiSelect
+                  visible={showPicPicker}
+                  onClose={() => setShowPicPicker(false)}
+                  data={userList}
+                  selected={pic}
+                  onSelect={setPIC}
+                  title="Pilih PIC"
+                  labelExtractor={item =>
+                    `${item.first_name} ${item.last_name}`
+                  }
+                  valueExtractor={item => item.id}
+                />
               </View>
 
               {/* Judul Report */}
@@ -733,10 +835,12 @@ const DetailDailyActivity = () => {
               contentContainerStyle={{padding: 0, paddingBottom: 60}}>
               {/* --- STATUS BADGE --- */}
               <View style={{paddingHorizontal: 18, paddingTop: 12}}>
-                <StatusMiniBadge status={data.status} />
+                <StatusMiniBadge
+                  status={STATUS_LABEL[detail?.status] || detail?.status || '-'}
+                />
               </View>
               {/* --- TITLE --- */}
-              <Text style={styles1.titleText}>{data.title}</Text>
+              <Text style={styles1.titleText}>{detail?.title}</Text>
 
               {/* --- MAIN IMAGE + overlay info --- */}
               <View style={styles1.imageWrap}>
@@ -811,7 +915,7 @@ const DetailDailyActivity = () => {
               <View style={styles1.detailCard}>
                 <FieldItem
                   label="Tanggal"
-                  value={formatDateShort(data?.date)}
+                  value={formatDateShort(detail?.date)}
                   bold
                 />
                 <FieldItem
@@ -819,18 +923,45 @@ const DetailDailyActivity = () => {
                   value={data?.isafe || '-'}
                   bold
                 />
-                <FieldItem label="PIC" value={picName || data?.pic} />
-                <FieldItem label="Status Report" value={data?.status} />
-                <FieldItem label="Lokasi" value={data?.location} />
-                <FieldItem label="Jenis Report" value={data.report_type} />
-                <FieldItem label="Deskripsi" value={data?.description} />
+                <FieldItem
+                  label="PIC"
+                  value={
+                    Array.isArray(detail?.pics)
+                      ? detail.pics
+                          .map(pic => {
+                            // Cek jika pic.directus_users_id object (isi nama user)
+                            if (
+                              pic.directus_users_id &&
+                              typeof pic.directus_users_id === 'object'
+                            ) {
+                              const u = pic.directus_users_id;
+                              return [u.first_name, u.last_name]
+                                .filter(Boolean)
+                                .join(' ');
+                            }
+                            // fallback: UUID (jika pakai id doang)
+                            return typeof pic.directus_users_id === 'string'
+                              ? pic.directus_users_id
+                              : '-';
+                          })
+                          .join(', ')
+                      : '-'
+                  }
+                />
+                <FieldItem
+                  label="Status Report"
+                  value={STATUS_LABEL[detail?.status] || detail?.status || '-'}
+                />
+                <FieldItem label="Lokasi" value={detail?.location} />
+                <FieldItem label="Jenis Report" value={detail?.report_type} />
+                <FieldItem label="Deskripsi" value={detail?.description} />
                 <FieldItem
                   label="Kolaborasi dengan"
-                  value={data.collaboration}
+                  value={detail.collaboration}
                 />
                 <FieldItem
                   label="Waktu"
-                  value={`${data?.start_time} - ${data?.end_time}`}
+                  value={`${detail?.start_time} - ${detail?.end_time}`}
                 />
                 <FieldItem
                   label="Lampiran"
@@ -845,7 +976,7 @@ const DetailDailyActivity = () => {
                 onPress={() =>
                   navigation.replace('DetailDailyActivity', {
                     showForm: true,
-                    data,
+                    id: detail?.id,
                   })
                 }
                 activeOpacity={0.85}>

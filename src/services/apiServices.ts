@@ -173,11 +173,22 @@ export const updateFileMetaDirectus = async (fileIds, data) => {
 
   const payload = {
     keys: fileIds,
-    data: data, // misal {filename_download: "nama_baru.jpg"}
+    data: data,
   };
 
-  // LOG payload sebelum request!
-  console.log('PATCH /files PAYLOAD:', JSON.stringify(payload, null, 2));
+  // Print cURL for debugging
+  const curlCommand = `
+curl -X PATCH "https://externalapps.braga.co.id/panel/files" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${token}" \\
+  -d '${JSON.stringify(payload, null, 2)}'
+  `.trim();
+
+  // console.log(
+  //   '===== C U R L  S I M U L A T I O N =====\n',
+  //   curlCommand,
+  //   '\n=========================================',
+  // );
 
   const res = await axios.patch(
     'https://externalapps.braga.co.id/panel/files',
@@ -224,6 +235,20 @@ export const uploadFileDirectus = async ({uri, name, type}) => {
 export const createDailyActivity = async body => {
   const token = await AsyncStorage.getItem('token');
   if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
+
+  // Print cURL for debugging
+  const curlCommand = `
+curl -X POST "https://externalapps.braga.co.id/panel/items/daily_activities" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${token}" \\
+  -d '${JSON.stringify(body, null, 2)}'
+`.trim();
+
+  console.log(
+    '===== C U R L  S I M U L A T I O N =====\n',
+    curlCommand,
+    '\n=========================================',
+  );
 
   const res = await axios.post(
     'https://externalapps.braga.co.id/panel/items/daily_activities',
@@ -295,6 +320,28 @@ export const updateDailyActivity = async (id, body) => {
     },
   );
   return res.data;
+};
+
+export const getDailyActivityDetail = async id => {
+  const token = await AsyncStorage.getItem('token');
+  if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
+
+  const params = {
+    fields:
+      '*,' +
+      'documents.directus_files_id,' +
+      'pics.directus_users_id.first_name,pics.directus_users_id.last_name',
+  };
+
+  // Langsung pakai axios, jangan getData()!
+  const res = await axios.get(`${BASE_URL}/items/daily_activities/${id}`, {
+    params,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res?.data?.data;
 };
 
 export const getLeavesRequest = async (params = {}) => {

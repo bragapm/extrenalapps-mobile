@@ -53,11 +53,13 @@ const JENIS_REPORT = [
 
 const STATUS = [
   {label: 'Semua', value: ''},
-  {label: 'Approve', value: 'Approve'},
-  {label: 'Reject', value: 'Reject'},
-  {label: 'Open', value: 'Open'},
-  {label: 'Waiting', value: 'Waiting'},
-  {label: 'Closed', value: 'Closed'},
+  {label: 'Approved', value: 'approved'},
+  {label: 'In Progress', value: 'in_progress'},
+  {label: 'Draft', value: 'draft'},
+  {label: 'Reject', value: 'reject'},
+  {label: 'Open', value: 'open'},
+  {label: 'Waiting', value: 'waiting'},
+  {label: 'Closed', value: 'closed'},
 ];
 const COLOR_WEEKLY_M1 = '#FFE2BB';
 const COLOR_WEEKLY_M2 = '#FF832A';
@@ -65,11 +67,12 @@ const COLOR_DAILY_OPEN = '#1F93FF';
 const COLOR_DAILY_CLOSE = '#20D372';
 
 const STATUS_STYLE = {
-  Waiting: {bg: '#F7F7F7', color: '#868686', border: '#B0B0B0'},
-  Approved: {bg: '#FBE41D66', color: '#161414', border: '#FBE41D'},
-  Reject: {bg: '#E9745685', color: '#161414', border: '#E35131'},
-  Open: {bg: '#CDF1F7', color: '#1F93FF', border: '#1F93FF'},
-  Close: {bg: '#E6FFF1', color: '#21B573', border: '#21B573'},
+  waiting: {bg: '#F7F7F7', color: '#868686', border: '#B0B0B0'},
+  approved: {bg: '#FBE41D66', color: '#161414', border: '#FBE41D'},
+  in_progress: {bg: '#FF832A', color: '#FFF', border: '#FF832A'},
+  reject: {bg: '#E9745685', color: '#161414', border: '#E35131'},
+  open: {bg: '#CDF1F7', color: '#1F93FF', border: '#1F93FF'},
+  close: {bg: '#E6FFF1', color: '#21B573', border: '#21B573'},
 };
 
 const employeePerformanceDummy = {
@@ -106,22 +109,34 @@ const pieChartData = [
     color: '#D32E36', // orange kemerahan
   },
 ];
+const STATUS_LABEL = {
+  approved: 'Approved',
+  in_progress: 'In Progress',
+  open: 'Open',
+  reject: 'Rejected',
+  closed: 'Closed',
+  waiting: 'Waiting',
+  draft: 'Draft',
+};
 
 const StatusBadge = ({status}) => {
-  const style = STATUS_STYLE[status] || STATUS_STYLE.Waiting;
+  const key = status?.toLowerCase?.() || status;
+  const style = STATUS_STYLE[key] || STATUS_STYLE.waiting;
   let icon = require('../../assets/icons/ic-time.png');
-  if (status === 'Approved')
+  if (status === 'approved')
     icon = require('../../assets/icons/ic-check-black.png');
-  if (status === 'Open') icon = require('../../assets/icons/ic-edit.png');
-  if (status === 'Reject') icon = require('../../assets/icons/ic-close.png');
-  if (status === 'Close') icon = require('../../assets/icons/ic-time.png');
+  if (status === 'open') icon = require('../../assets/icons/ic-edit.png');
+  if (status === 'in_progress')
+    icon = require('../../assets/icons/in_prosess.png');
+  if (status === 'reject') icon = require('../../assets/icons/ic-close.png');
+  if (status === 'close') icon = require('../../assets/icons/ic-time.png');
   return (
     <View
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: style.bg,
-        borderColor: style.border,
+        backgroundColor: style?.bg,
+        borderColor: style?.border,
         borderWidth: 1,
         paddingHorizontal: 8,
         paddingVertical: 2,
@@ -134,8 +149,8 @@ const StatusBadge = ({status}) => {
         style={{width: 16, height: 16, marginRight: 6}}
         resizeMode="contain"
       />
-      <Text style={{fontSize: 13, color: style.color, fontWeight: '500'}}>
-        {status}
+      <Text style={{fontSize: 13, color: style?.color, fontWeight: '500'}}>
+        {STATUS_LABEL[key] || key}
       </Text>
     </View>
   );

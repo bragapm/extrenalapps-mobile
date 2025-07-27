@@ -274,12 +274,12 @@ const Attendance: React.FC = () => {
 
   const getDayDiff = (start, end) => {
     if (!start || !end) return '-';
-    // Pastikan formatnya YYYY-MM-DD, biar aman parse ke Date
     const tglAwal = new Date(start);
     const tglAkhir = new Date(end);
     if (isNaN(tglAwal) || isNaN(tglAkhir)) return '-';
     const selisihMs = tglAkhir - tglAwal;
-    const hari = Math.abs(Math.round(selisihMs / (1000 * 60 * 60 * 24))) + 1;
+    // EKSCLUSIF:
+    const hari = Math.abs(Math.round(selisihMs / (1000 * 60 * 60 * 24)));
     return hari;
   };
 
