@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useRef} from 'react';
+import React, {useEffect, useState, useRef, useCallback} from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,10 @@ import {
 import Svg, {G, Rect, Text as SvgText, TSpan, Path} from 'react-native-svg';
 import {useThemeStore} from '../../theme/useThemeStore';
 import AppHeader from '../../components/AppHeader';
+import {getStakeholders, getUsers} from '../../services/apiServices';
+import {RootStackParamList} from '../../navigation';
+import {StackNavigationProp} from '@react-navigation/stack';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 
 type StakeholderProps = {
   home?: boolean;
@@ -346,41 +350,6 @@ const SentimenStakeholderCard = () => {
   );
 };
 
-const DUMMY_LIST_ABSENSI = [
-  {
-    id: 1,
-    date: '15/02/2025',
-    name: 'Ajip Rosyadi',
-    role: 'Sekertaris',
-    status: 'Ormas A',
-    statusType: 'Positif',
-  },
-  {
-    id: 2,
-    date: '15/02/2025',
-    name: 'Alma Sintia',
-    role: 'Sekertaris',
-    status: 'Ormas C',
-    statusType: 'Netral',
-  },
-  {
-    id: 3,
-    date: '15/02/2025',
-    name: 'Alma Sintia',
-    role: 'Ketua Umum',
-    status: 'Ormas A',
-    statusType: 'Negatif',
-  },
-  {
-    id: 4,
-    date: '15/02/2025',
-    name: 'Alma Sintia',
-    role: 'Bendahara',
-    status: 'Ormas B',
-    statusType: 'Negatif',
-  },
-];
-
 const AbsensiBadge = ({statusType}) => {
   let color = '#AAA',
     bg = '#F3F3F3',
@@ -416,55 +385,117 @@ const AbsensiBadge = ({statusType}) => {
   );
 };
 
-const AbsensiCard = ({item}) => (
-  <View style={styles.absenCard}>
-    <AbsensiBadge status={item.statusType} statusType={item.statusType} />
-    <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 3}}>
-      <Text style={styles.absenCardName}>{item.name}</Text>
-    </View>
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}>
-      <View
-        style={{
-          flexDirection: 'row',
-        }}>
-        <Text style={styles.absenCardRole}>{item.role}</Text>
-        <Text style={styles.absenCardRole}>-</Text>
-        <Text style={styles.absenCardRole}>{item.status}</Text>
-      </View>
-      <View>
-        <TouchableOpacity
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-          }}>
-          <Text
-            style={{
-              fontSize: 16,
-              fontWeight: '400',
-              color: '#4F4D4A',
-              marginRight: 2,
-            }}>
-            Lihat
-          </Text>
-          <Image
-            source={require('../../assets/icons/chevRed.png')}
-            style={{width: 12, height: 12}}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-      </View>
-    </View>
-  </View>
-);
-
 const Stakeholder: React.FC<StakeholderProps> = ({}) => {
   const {colors} = useThemeStore();
   const colorScheme = useColorScheme();
+
+  const [absensiList, setAbsensiList] = useState([]);
+  const [userMap, setUserMap] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+
+  const AbsensiCard = ({item, userName}) => (
+    <TouchableOpacity
+      style={styles.absenCard}
+      onPress={() =>
+        navigation.navigate('DetailStakeHolder', {
+          showForm: false,
+          data: item,
+        })
+      }>
+      <AbsensiBadge
+        statusType={
+          item.sentiment === 'positive'
+            ? 'Positif'
+            : item.sentiment === 'negative'
+            ? 'Negatif'
+            : 'Netral'
+        }
+      />
+      <View
+        style={{flexDirection: 'row', alignItems: 'center', marginBottom: 3}}>
+        <Text style={styles.absenCardName}>{userName || '-'}</Text>
+      </View>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+        <View
+          style={{
+            flexDirection: 'row',
+          }}>
+          <Text style={styles.absenCardRole}>{item.position}</Text>
+          <Text style={styles.absenCardRole}>-</Text>
+          <Text style={styles.absenCardRole}>{item.organization}</Text>
+        </View>
+        <View>
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+            }}>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: '400',
+                color: '#4F4D4A',
+                marginRight: 2,
+              }}>
+              Lihat
+            </Text>
+            <Image
+              source={require('../../assets/icons/chevRed.png')}
+              style={{width: 12, height: 12}}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      const fetchData = async () => {
+        setLoading(true);
+        setError('');
+        try {
+          const [stakeholders, users] = await Promise.all([
+            getStakeholders(),
+            getUsers(),
+          ]);
+
+          const userMapping = {};
+          users.forEach(u => {
+            userMapping[u.id] = [u.first_name, u.last_name]
+              .filter(Boolean)
+              .join(' ');
+          });
+
+          if (isActive) {
+            setUserMap(userMapping);
+            setAbsensiList(stakeholders);
+          }
+        } catch (e) {
+          if (isActive) setError('Gagal memuat data stakeholder');
+        }
+        if (isActive) setLoading(false);
+      };
+
+      fetchData();
+
+      // Cleanup function
+      return () => {
+        isActive = false;
+      };
+    }, []),
+  );
+
   return (
     <>
       <StatusBar
@@ -473,10 +504,10 @@ const Stakeholder: React.FC<StakeholderProps> = ({}) => {
         barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
       />
       <View style={[styles.container, {backgroundColor: colors.bgHome}]}>
-        <AppHeader 
-        // menu={true} 
-        home={true} 
-        // label={'Stakeholder'}
+        <AppHeader
+          // menu={true}
+          home={true}
+          // label={'Stakeholder'}
         />
         <ScrollView
           style={{flex: 1, width: '100%'}}
@@ -558,9 +589,14 @@ const Stakeholder: React.FC<StakeholderProps> = ({}) => {
             </View>
             <View style={{width: '100%', marginTop: 10, marginBottom: '10%'}}>
               <FlatList
-                data={DUMMY_LIST_ABSENSI}
+                data={absensiList}
                 keyExtractor={item => String(item.id)}
-                renderItem={({item}) => <AbsensiCard item={item} />}
+                renderItem={({item}) => (
+                  <AbsensiCard
+                    item={item}
+                    userName={userMap[item.user_created]}
+                  />
+                )}
                 scrollEnabled={false}
               />
             </View>
@@ -577,10 +613,12 @@ const Stakeholder: React.FC<StakeholderProps> = ({}) => {
             zIndex: 99,
             paddingVertical: '3%',
           }}>
-          <TouchableOpacity style={styles.fabButton}>
-            <Text style={styles.fabButtonText}>
-              Tambah Stakeholder
-            </Text>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('DetailStakeHolder', {showForm: true})
+            }
+            style={styles.fabButton}>
+            <Text style={styles.fabButtonText}>Tambah Stakeholder</Text>
           </TouchableOpacity>
         </View>
       </View>

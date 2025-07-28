@@ -285,7 +285,7 @@ export const getImageWithAuth = async uuid => {
       method: 'GET',
       headers: {
         Authorization: 'Bearer ' + token,
-        Accept: 'text/plain', // ganti sesuai tipe file kalau png, dsb
+        Accept: '*/*', // ganti sesuai tipe file kalau png, dsb
       },
     });
 
@@ -364,6 +364,111 @@ export const updateLeaveRequest = async (id, body) => {
     },
   );
   return res.data;
+};
+export const getWeeklyReports = async () => {
+  const token = await AsyncStorage.getItem('token');
+  if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
+
+  const params = {
+    fields: [
+      'title',
+      'pics.directus_users_id.first_name',
+      'pics.directus_users_id.last_name',
+      'date_updated',
+      'id',
+    ].join(','),
+  };
+  // Nggak usah tulis headers manual, sudah auto diintercept
+  const res = await getData('/items/weekly_activities', params);
+  return res?.data || [];
+};
+
+export const getWeeklyActivityDetail = async id => {
+  const token = await AsyncStorage.getItem('token');
+  if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
+
+  const params = {
+    fields:
+      '*,' +
+      'documents.directus_files_id,' +
+      'pics.directus_users_id.first_name,pics.directus_users_id.last_name',
+  };
+
+  // Langsung pakai axios, jangan getData()!
+  const res = await axios.get(`${BASE_URL}/items/weekly_activities/${id}`, {
+    params,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res?.data?.data;
+};
+
+export const createWeeklyActivity = async body => {
+  const token = await AsyncStorage.getItem('token');
+  if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
+
+  // Optional: log cURL buat debugging
+  const curlCommand = `
+curl -X POST "https://externalapps.braga.co.id/panel/items/weekly_activities" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${token}" \\
+  -d '${JSON.stringify(body, null, 2)}'
+  `.trim();
+
+  console.log(
+    '===== C U R L  S I M U L A T I O N =====\n',
+    curlCommand,
+    '\n=========================================',
+  );
+
+  const res = await axios.post(
+    'https://externalapps.braga.co.id/panel/items/weekly_activities',
+    body,
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+  return res.data;
+};
+
+export const getBusinessTrips = async (params = {}) => {
+  // optional: bisa pakai params kalau mau filter/pagination
+  const res = await getData('/items/business_trips', params);
+  return res?.data || [];
+};
+export const getBusinessTripDetail = async id => {
+  const token = await AsyncStorage.getItem('token');
+  if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
+
+  const res = await axios.get(`${BASE_URL}/items/business_trips/${id}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res?.data?.data;
+};
+
+export const getStakeholders = async (params = {}) => {
+  const res = await getData('/items/stakeholders?fields=', params);
+  return res?.data || [];
+};
+export const getStakeholdersDetail = async id => {
+  const token = await AsyncStorage.getItem('token');
+  if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
+
+  const res = await axios.get(`${BASE_URL}/items/stakeholders/${id}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res?.data?.data;
 };
 
 export default api;

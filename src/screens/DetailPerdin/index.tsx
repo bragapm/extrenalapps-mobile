@@ -9,12 +9,22 @@ import {
   ScrollView,
   useColorScheme,
   Image,
+  Alert,
 } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import {Picker} from '@react-native-picker/picker';
 import {useThemeStore} from '../../theme/useThemeStore';
 import AppHeader from '../../components/AppHeader';
 import {useNavigation, useRoute} from '@react-navigation/native';
+import {
+  getBusinessTripDetail,
+  getUsers,
+  patchData,
+  postData,
+  putData,
+  updateFileMetaDirectus,
+  uploadFileDirectus,
+} from '../../services/apiServices';
 
 const transportasiList = [
   {label: 'Air Transportation', value: 'air'},
@@ -40,12 +50,30 @@ function formatDate(date) {
   });
 }
 
+function mapStatus(status) {
+  // Mapping value dari status Directus ke label UI
+  switch (status) {
+    case 'in_progress':
+      return 'Waiting'; // atau "Sedang Berjalan"
+    case 'approved':
+      return 'Disetujui';
+    case 'rejected':
+      return 'Ditolak';
+    default:
+      return status || '-';
+  }
+}
+
 const DetailPerdin = () => {
   const route = useRoute();
   const {showForm = false, data} = route.params || {};
+  const id = data?.id;
   const navigation = useNavigation();
   const {colors} = useThemeStore();
   const colorScheme = useColorScheme();
+  const [detail, setDetail] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [userMap, setUserMap] = useState({});
 
   // Form states
   const [tujuan, setTujuan] = useState('');
@@ -55,10 +83,12 @@ const DetailPerdin = () => {
   const [negara, setNegara] = useState('Indonesia');
   const [kota, setKota] = useState('');
   const [transportasi, setTransportasi] = useState([]);
-  const [approver, setApprover] = useState('Jerry Anwar Halim');
+  const [approver, setApprover] = useState('');
   const [note, setNote] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [dateType, setDateType] = useState('mulai');
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
+  const [media, setMedia] = useState([]);
 
   // Simulasi detail personnel
   const personnel = {
@@ -68,18 +98,55 @@ const DetailPerdin = () => {
   };
 
   useEffect(() => {
+    const fetchDetail = async () => {
+      setLoading(true);
+      try {
+        const [detailData, users] = await Promise.all([
+          getBusinessTripDetail(id),
+          getUsers(),
+        ]);
+        // Map user id to name
+        const userMapping = {};
+        users.forEach(u => {
+          userMapping[u.id] = `${u.first_name || ''} ${
+            u.last_name || ''
+          }`.trim();
+        });
+        setUserMap(userMapping);
+        setDetail(detailData);
+      } catch (e) {
+        setDetail(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (id) fetchDetail();
+  }, [id]);
+
+  useEffect(() => {
     if (data && showForm) {
-      setTujuan(data?.tujuan || '');
-      setJenisPerdin(data?.jenisPerdin || jenisPerdinList[0].value);
-      setTanggalMulai(data?.from ? new Date(data.from) : null);
-      setTanggalAkhir(data?.to ? new Date(data.to) : null);
-      setNegara(data?.negara || 'Indonesia');
-      setKota(data?.kota || '');
-      setTransportasi(data?.transportasi || []);
-      setApprover(data?.approvedBy || 'Jerry Anwar Halim');
-      setNote(data?.note || '');
+      setTujuan(data.destination || ''); // DARI destination
+      setJenisPerdin(data.purpose || jenisPerdinList[0].value); // DARI purpose
+      setTanggalMulai(data.start_date ? new Date(data.start_date) : null); // DARI start_date
+      setTanggalAkhir(data.end_date ? new Date(data.end_date) : null); // DARI end_date
+      setNegara(data.country || 'Indonesia'); // DARI country
+      setKota(data.city || ''); // DARI city
+      // Handle multi/array transportation
+      setTransportasi(
+        data.transportation
+          ? typeof data.transportation === 'string'
+            ? data.transportation.split(',').map(x => x.trim())
+            : Array.isArray(data.transportation)
+            ? data.transportation
+            : []
+          : [],
+      );
+      setApprover(data.approved_by || 'Jerry Anwar Halim');
+      setNote(data.note || '');
+      // File dsb (kalau kamu mau handle file upload)
+      // setMedia(...);
     } else if (showForm) {
-      // Reset form
+      // Reset form (sudah ok)
       setTujuan('');
       setJenisPerdin(jenisPerdinList[0].value);
       setTanggalMulai(null);
@@ -150,6 +217,68 @@ const DetailPerdin = () => {
         <Text style={{fontSize: 14, color}}>{text}</Text>
       </View>
     );
+  };
+
+  const handleSubmit = async () => {
+    setLoadingSubmit(true);
+    try {
+      // === UPLOAD DOKUMEN (JIKA ADA FILE) ===
+      let documentId = null;
+      if (media.length > 0) {
+        const file = media[0];
+        // uploadFileDirectus harus return ID file dari Directus
+        documentId = await uploadFileDirectus({
+          uri: file.uri,
+          name: file.name || 'document.pdf',
+          type: file.type || 'application/pdf',
+        });
+        // Optional: update filename di Directus jika mau
+        await updateFileMetaDirectus([documentId], {
+          filename_download: file.name || 'document.pdf',
+        });
+      }
+
+      // === BANGUN BODY SESUAI DOKUMEN API ===
+      // Untuk format: https://externalapps.braga.co.id/panel/items/business_trips
+      // Kalo ada update, pakai putData('/items/business_trips/{id}', body)
+      const body = {
+        start_date: tanggalMulai
+          ? new Date(tanggalMulai).toISOString().slice(0, 10)
+          : '',
+        end_date: tanggalAkhir
+          ? new Date(tanggalAkhir).toISOString().slice(0, 10)
+          : '',
+        status: 'in_progress', // GANTI sesuai kebutuhan, misal status flow dari UI
+        destination: tujuan,
+        purpose: jenisPerdin,
+        transportation: transportasi.join(','), // <--- DIJOIN jadi string kalau multi
+        user: 'a464a937-bb6c-4f6c-b0b4-27d98485a559', // id user, GANTI sesuai id user yang sedang login (atau personnel.id)
+        document: documentId, // id dokumen hasil upload
+        // Tambahkan field lain sesuai kebutuhan API (misal note, kota, negara, dsb)
+        note,
+        city: kota,
+        country: negara,
+        approved_by: approver, // opsional jika field ini memang ada di directus
+      };
+
+      // DEBUG
+      console.log('[PERDIN] BODY:', JSON.stringify(body, null, 2));
+
+      // === CREATE / UPDATE ===
+      if (data && data.id) {
+        await patchData(`/items/business_trips/${data.id}`, body);
+        Alert.alert('Sukses', 'Perjalanan dinas berhasil diupdate');
+      } else {
+        await postData('/items/business_trips', body);
+        Alert.alert('Sukses', 'Perjalanan dinas berhasil dibuat');
+      }
+      navigation.goBack();
+    } catch (err) {
+      console.log('[PERDIN] ERROR:', err);
+      Alert.alert('Error', err?.message || 'Gagal submit');
+    } finally {
+      setLoadingSubmit(false);
+    }
   };
 
   // ===== RENDER UI =====
@@ -321,60 +450,62 @@ const DetailPerdin = () => {
               style={{width: '100%'}}
               contentContainerStyle={{padding: 20, paddingBottom: 60}}>
               <Text style={styles.sectionTitle}>Detail Personil</Text>
-              <DetailField label="Nama Personil" value={personnel.name} />
+              <DetailField
+                label="Nama Personil"
+                value={userMap[detail?.user_created] || '-'}
+              />
               <DetailField label="iSafe ID" value={personnel.isafeId} />
               <DetailField label="NIK" value={personnel.nik} />
 
               <Text style={[styles.sectionTitle, {marginTop: 22}]}>
                 Detail Perjalanan Dinas
               </Text>
-              <DetailField label="Tujuan" value={data?.tujuan || 'Cirebon'} />
+              <DetailField label="Tujuan" value={detail?.destination || '-'} />
               <DetailField
                 label="Jenis Perjalanan Dinas"
-                value={data?.jenisPerdin || 'Seminar'}
+                value={detail?.purpose || '-'}
               />
               <DetailField
                 label="Tanggal Mulai"
-                value={data?.from ? formatDate(data.from) : '5 Jul 2025'}
+                value={
+                  detail?.start_date ? formatDate(detail?.start_date) : '-'
+                }
               />
               <DetailField
                 label="Tanggal Selesai"
-                value={data?.to ? formatDate(data.to) : '7 Jul 2025'}
+                value={detail?.end_date ? formatDate(detail?.end_date) : '-'}
               />
-              <DetailField label="Negara" value={data?.negara || 'Indonesia'} />
-              <DetailField label="Kota" value={data?.kota || 'Cirebon'} />
+              <DetailField label="Negara" value={'Indonesia'} />
+              <DetailField label="Kota" value={detail?.destination || '-'} />
               {/* Transportasi */}
               <View style={styles.fieldWrap}>
                 <Text style={styles.label}>Transportasi</Text>
                 {transportasiList.map(opt => (
                   <View key={opt.value} style={styles.transportReadRow}>
                     <Text style={styles.checkBoxRead}>
-                      {Array.isArray(data?.transportasi) &&
-                      data.transportasi.includes(opt.value)
-                        ? '☑'
-                        : '☐'}
+                      {detail?.transportation === opt.value ? '☑' : '☐'}
                     </Text>
-                    <Text style={styles.transportLabel}>{opt.label}</Text>
+                    <Text style={styles.transportLabel}>{opt?.label}</Text>
                   </View>
                 ))}
               </View>
               <DetailField
                 label="Approver"
-                value={data?.approvedBy || 'Jerry Anwar Halim'}
+                value={userMap[detail?.user] || '-'}
               />
-              <DetailField
-                label="Alasan untuk Approver"
-                value={data?.note || 'Perjalanan dinas penting'}
-              />
+              <DetailField label="Alasan untuk Approver" value={'-'} />
               <View style={styles.fieldWrap}>
                 <Text style={styles.label}>Status</Text>
-                <StatusBadge status={data?.status || 'Waiting'} />
+                <StatusBadge status={mapStatus(detail?.status)} />
               </View>
               {/* Bottom Edit Button */}
               <TouchableOpacity
                 style={styles.btnEdit}
                 onPress={() =>
-                  navigation.replace('DetailPerdin', {showForm: true, data})
+                  navigation.replace('DetailPerdin', {
+                    showForm: true,
+                    data: detail,
+                  })
                 }
                 activeOpacity={0.85}>
                 <Text style={styles.btnEditText}>Edit</Text>
@@ -385,7 +516,10 @@ const DetailPerdin = () => {
         {/* Bottom Button (showForm only) */}
         {showForm && (
           <View style={styles.bottomBtnGroup}>
-            <TouchableOpacity style={styles.btnSubmit}>
+            <TouchableOpacity
+              style={[styles.btnSubmit, loadingSubmit && {opacity: 0.6}]}
+              onPress={handleSubmit}
+              disabled={loadingSubmit}>
               <Text style={styles.submitText}>Submit</Text>
             </TouchableOpacity>
             <TouchableOpacity

@@ -41,6 +41,8 @@ import DetailPerdin from '../screens/DetailPerdin';
 import DetailDailyActivity from '../screens/DetailDailyActivity';
 import MenuDrawer from '../components/MenuDrawer';
 import {useFeatureStore} from '../store/featureStore';
+import DetailWeeklyActivity from '../screens/DetailWeeklyActivity';
+import DetailStakeholder from '../screens/DetailStakeholder';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -52,6 +54,8 @@ export type RootStackParamList = {
   DetailCuti: undefined;
   DetailPerdin: undefined;
   DetailDailyActivity: undefined;
+  DetailWeeklyActivity: undefined;
+  DetailStakeHolder: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -449,6 +453,11 @@ export default function AppNavigation() {
           name="DetailDailyActivity"
           component={DetailDailyActivity}
         />
+        <Stack.Screen
+          name="DetailWeeklyActivity"
+          component={DetailWeeklyActivity}
+        />
+        <Stack.Screen name="DetailStakeHolder" component={DetailStakeholder} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -41,6 +41,7 @@ import {
   deleteData,
   getDailyActivities,
   getUsers,
+  getWeeklyReports,
 } from '../../services/apiServices';
 import ActionDrawer from '../../components/ActionDrawer';
 
@@ -805,50 +806,6 @@ function formatDateShort(date) {
   return `${day} ${month} ${year}`;
 }
 // --- CARD WEEKLY LIST ---
-const WeeklyReportCard = ({item}) => (
-  <View style={styles.weeklyCard}>
-    <Text style={{fontSize: 13, color: '#888', marginBottom: 3}}>
-      {item.date}
-    </Text>
-    <Text
-      numberOfLines={2}
-      style={{
-        fontSize: 21,
-        fontWeight: '700',
-        color: '#181818',
-        marginBottom: 12,
-      }}>
-      {item.title}
-    </Text>
-    <View style={{width: '100%', flexDirection: 'row', alignItems: 'center'}}>
-      <Image
-        source={require('../../assets/icons/ic-stackeHolder-disable.png')}
-        style={{width: 18, height: 18, marginRight: 6}}
-        resizeMode="contain"
-      />
-      <Text style={{fontSize: 15, fontWeight: '400', color: '#514E4A'}}>
-        Nama PIC - iSafe Number
-      </Text>
-      <View style={{flex: 1}} />
-      <TouchableOpacity style={{flexDirection: 'row', alignItems: 'center'}}>
-        <Text
-          style={{
-            fontSize: 16,
-            fontWeight: '600',
-            color: '#FF832A',
-            marginRight: 2,
-          }}>
-          Lihat
-        </Text>
-        <Image
-          source={require('../../assets/icons/chevRed.png')}
-          style={{width: 12, height: 12}}
-          resizeMode="contain"
-        />
-      </TouchableOpacity>
-    </View>
-  </View>
-);
 
 // --- CARD DAILY LIST ---
 
@@ -903,6 +860,8 @@ const Activity = () => {
   const [error, setError] = React.useState(null);
   const [users, setUsers] = React.useState([]);
   const [usersMap, setUsersMap] = React.useState({});
+  const [weeklyReports, setWeeklyReports] = useState([]);
+  const [loadingWeekly, setLoadingWeekly] = useState(false);
   console.log('activeMenu', activeMenu);
   // Pakai data & UI sesuai initial
   let mode = 'daily'; // default
@@ -943,8 +902,14 @@ const Activity = () => {
           .then(setDailyActivities)
           .catch(err => setError(err.message || 'Gagal load data'))
           .finally(() => setLoading(false));
+      } else if (mode === 'weekly') {
+        setLoadingWeekly(true);
+        setError(null);
+        getWeeklyReports()
+          .then(setWeeklyReports)
+          .catch(err => setError(err.message || 'Gagal load data weekly'))
+          .finally(() => setLoadingWeekly(false));
       }
-      // bisa tambahkan dependen jika perlu, tapi biasanya tidak perlu
     }, [status, jenisReport, tanggal, sort, mode]),
   );
 
@@ -1092,6 +1057,71 @@ const Activity = () => {
     </TouchableOpacity>
   );
 
+  const WeeklyReportCard = ({item}) => {
+    // Gabungkan semua nama PIC
+    const picNames =
+      Array.isArray(item.pics) && item.pics.length
+        ? item.pics
+            .map(
+              pic =>
+                `${pic.directus_users_id?.first_name || ''} ${
+                  pic.directus_users_id?.last_name || ''
+                }`,
+            )
+            .filter(Boolean)
+            .join(', ')
+        : '-';
+
+    // Format tanggal
+    let dateLabel = '-';
+    if (item.date_updated || item.date_created) {
+      const d = new Date(item.date_updated || item.date_created);
+      dateLabel = `${d
+        .getDate()
+        .toString()
+        .padStart(2, '0')} ${d.toLocaleString('id-ID', {
+        month: 'long',
+      })} ${d.getFullYear()}`;
+    }
+
+    return (
+      <TouchableOpacity
+        onPress={() =>
+          navigation.navigate('DetailWeeklyActivity', {
+            showForm: false,
+            data: item,
+          })
+        }
+        style={styles.weeklyCard}>
+        <Text style={{fontSize: 13, color: '#888', marginBottom: 3}}>
+          Last Update - {dateLabel}
+        </Text>
+        <Text
+          numberOfLines={2}
+          style={{
+            fontSize: 21,
+            fontWeight: '500',
+            color: '#181818',
+            marginBottom: 12,
+          }}>
+          ({item.title || '-'})
+        </Text>
+        <View
+          style={{width: '100%', flexDirection: 'row', alignItems: 'center'}}>
+          <Image
+            source={require('../../assets/icons/ic-stackeHolder-disable.png')}
+            style={{width: 18, height: 18, marginRight: 6}}
+            resizeMode="contain"
+          />
+          <Text style={{fontSize: 13, fontWeight: '400', color: '#514E4A'}}>
+            {picNames}
+          </Text>
+          <View style={{flex: 1}} />
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <>
       <ActionDrawer
@@ -1166,53 +1196,7 @@ const Activity = () => {
               />
             )}
             {/* RANGE/DATE DAN CHART */}
-            {mode === 'weekly' && (
-              <>
-                {/* TANGGAL FILTER WEEKLY */}
-                <View style={styles.weeklyHeaderWrap}>
-                  <TouchableOpacity style={styles.weeklyInput}>
-                    <Image
-                      source={require('../../assets/icons/ic-time.png')}
-                      style={{width: 16, height: 16, marginRight: 7}}
-                      resizeMode="contain"
-                    />
-                    <Text style={styles.weeklyInputText}>02 Mei, 2025</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.weeklyInput}>
-                    <Image
-                      source={require('../../assets/icons/ic-time.png')}
-                      style={{width: 16, height: 16, marginRight: 7}}
-                      resizeMode="contain"
-                    />
-                    <Text style={styles.weeklyInputText}>02 Mei, 2025</Text>
-                  </TouchableOpacity>
-                </View>
-                <TouchableOpacity
-                  style={{...styles.weeklyButton, backgroundColor: colors.red}}>
-                  <Text style={styles.weeklyButtonText}>Tampilkan</Text>
-                </TouchableOpacity>
-                <View
-                  style={{
-                    width: '90%',
-                    backgroundColor: '#FFF',
-                    borderRadius: 14,
-                    paddingHorizontal: '3%',
-                    paddingVertical: '2%',
-                    marginTop: '3%',
-                  }}>
-                  <Text
-                    style={{
-                      color: '#161414',
-                      fontSize: 13,
-                      marginTop: 5,
-                      fontWeight: '500',
-                    }}>
-                    Summery Activity
-                  </Text>
-                  <WeeklyBarChart data={dummyWeeklyActivityData} />
-                </View>
-              </>
-            )}
+            {mode === 'weekly' && <></>}
             {mode === 'daily' && (
               <>
                 <View
@@ -1309,7 +1293,13 @@ const Activity = () => {
             {/* LIST */}
             <View style={{marginTop: 14, width: '92%', marginBottom: '20%'}}>
               <FlatList
-                data={mode === 'daily' ? dailyActivities : reports}
+                data={
+                  mode === 'daily'
+                    ? dailyActivities
+                    : mode === 'weekly'
+                    ? weeklyReports
+                    : reports
+                }
                 keyExtractor={item => String(item.id)}
                 renderItem={({item}) =>
                   mode === 'daily' ? (
@@ -1371,7 +1361,7 @@ const Activity = () => {
                         showForm: true,
                       })
                   : () =>
-                      navigation.navigate('DetailDailyActivity', {
+                      navigation.navigate('DetailWeeklyActivity', {
                         showForm: true,
                       })
               }>

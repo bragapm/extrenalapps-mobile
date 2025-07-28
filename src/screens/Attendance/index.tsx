@@ -25,7 +25,11 @@ import {useFeatureStore} from '../../store/featureStore';
 import {RootStackParamList} from '../../navigation';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
-import {getLeavesRequest, getUsers} from '../../services/apiServices';
+import {
+  getBusinessTrips,
+  getLeavesRequest,
+  getUsers,
+} from '../../services/apiServices';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 
 // Dummy data list absen
@@ -228,11 +232,16 @@ const Attendance: React.FC = () => {
   const [cutiList, setCutiList] = useState([]);
   const [loadingCuti, setLoadingCuti] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [perdinList, setPerdinList] = useState([]);
+  const [loadingPerdin, setLoadingPerdin] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       if (activeMenu === 'cuti') {
         fetchCutiList();
+      }
+      if (activeMenu === 'perdin') {
+        fetchPerdinList();
       }
     }, [activeMenu, search, selectedDate]),
   );
@@ -256,6 +265,17 @@ const Attendance: React.FC = () => {
     }
   };
 
+  const fetchPerdinList = async () => {
+    setLoadingPerdin(true);
+    try {
+      const result = await getBusinessTrips(); // Bisa tambahkan filter kalau mau
+      setPerdinList(result);
+    } catch (e) {
+      setPerdinList([]); // atau tampilkan error
+    } finally {
+      setLoadingPerdin(false);
+    }
+  };
   useEffect(() => {
     (async () => {
       try {
@@ -415,6 +435,27 @@ const Attendance: React.FC = () => {
       </View>
     </TouchableOpacity>
   );
+
+  const mapStatusPerdin = status => {
+    if (!status) return 'Waiting';
+    if (
+      status.toLowerCase() === 'waiting' ||
+      status.toLowerCase() === 'in_progress'
+    )
+      return 'Waiting';
+    if (
+      status.toLowerCase() === 'ditolak' ||
+      status.toLowerCase() === 'rejected'
+    )
+      return 'Ditolak';
+    if (
+      status.toLowerCase() === 'disetujui' ||
+      status.toLowerCase() === 'approved'
+    )
+      return 'Disetujui';
+    return status;
+  };
+
   const renderItemPerdin = ({item}) => (
     <TouchableOpacity
       onPress={() =>
@@ -447,10 +488,11 @@ const Attendance: React.FC = () => {
               fontWeight: '500',
               marginBottom: 6,
             }}>
-            {item.from} -{item.to}
+            {item.start_date ? formatDate(item.start_date) : '-'} -{' '}
+            {item.end_date ? formatDate(item.end_date) : '-'}
           </Text>
         </View>
-        <StatusBadge status={item.status} />
+        <StatusBadge status={mapStatusPerdin(item.status)} />
       </View>
       <View
         style={{
@@ -467,15 +509,17 @@ const Attendance: React.FC = () => {
         }}>
         <View style={{flex: 1}}>
           <Text style={styles.cutiLabel}>Nama</Text>
-          <Text style={styles.cutiValue}>{item.name}</Text>
+          <Text style={styles.cutiValue}>
+            {userMap[item.user_created] || '-'}
+          </Text>
         </View>
         <View style={{flex: 1}}>
           <Text style={styles.cutiLabel}>Tujuan</Text>
-          <Text style={styles.cutiValue}>{item.totalDay}</Text>
+          <Text style={styles.cutiValue}>{item.destination || '-'}</Text>
         </View>
         <View style={{flex: 1}}>
           <Text style={styles.cutiLabel}>Approved by</Text>
-          <Text style={styles.cutiValue}>{item.approvedBy}</Text>
+          <Text style={styles.cutiValue}>{userMap[item.user] || '-'}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -712,12 +756,25 @@ const Attendance: React.FC = () => {
                   />
                 )
               ) : (
-                <FlatList
-                  data={DUMMY_PERDIN}
-                  keyExtractor={item => String(item.id)}
-                  renderItem={renderItemPerdin}
-                  scrollEnabled={false}
-                />
+                <>
+                  {loadingPerdin ? (
+                    <Text style={{margin: 20, color: '#222'}}>Loading...</Text>
+                  ) : (
+                    <FlatList
+                      data={perdinList}
+                      keyExtractor={item =>
+                        String(item.id || item.ID || Math.random())
+                      }
+                      renderItem={renderItemPerdin}
+                      ListEmptyComponent={
+                        <Text style={{margin: 20}}>
+                          Tidak ada data perjalanan dinas
+                        </Text>
+                      }
+                      scrollEnabled={false}
+                    />
+                  )}
+                </>
               )}
             </View>
           </View>
