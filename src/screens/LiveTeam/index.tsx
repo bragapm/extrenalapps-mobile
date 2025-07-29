@@ -18,12 +18,12 @@ import {useUserStore} from '../../store/userStore';
 import AppHeader from '../../components/AppHeader';
 import FastImage from 'react-native-fast-image';
 
-
-
 const {width, height} = Dimensions.get('window');
 
 // Set token hanya sekali, di luar komponen
-MapboxGL.setAccessToken(MAPBOX_ACCESS_TOKEN);
+MapboxGL.setAccessToken(
+  'sk.eyJ1Ijoid2hvaXNhcnZpYW4iLCJhIjoiY21jOHFleHdjMDVkdTJqcGNicTRlZGJkbSJ9.TI5FkPGsFiIumVvzAPYpOQ',
+);
 
 const DEFAULT_COORDINATE = [106.8272, -6.1751];
 
@@ -115,6 +115,8 @@ interface Marker {
   jabatan?: string;
   address?: string;
 }
+
+type AnnotationMap = Record<string, MapboxGL.PointAnnotation | null>;
 const LiveTeam: React.FC = () => {
   const {colors} = useThemeStore();
   const isFocused = useIsFocused(); // untuk pastikan hanya render saat aktif
@@ -125,7 +127,14 @@ const LiveTeam: React.FC = () => {
 
   const mapRef = useRef<MapboxGL.MapView>(null);
   const cameraRef = useRef<MapboxGL.Camera>(null);
+  const annotationRefs = useRef<AnnotationMap>({});
 
+  // 2️⃣ preload icon supaya lebih cepat (opsional)
+  useEffect(() => {
+    FastImage.preload(
+      markers.map(m => ({uri: Image.resolveAssetSource(m.image).uri})),
+    );
+  }, []);
   const coordinate: any = userLocation
     ? [userLocation.longitude, userLocation.latitude] // Mapbox pakai [lng, lat]
     : DEFAULT_COORDINATE;
@@ -139,7 +148,6 @@ const LiveTeam: React.FC = () => {
       setMapLoaded(false); // reset saat keluar dari screen
     }
   }, [isFocused]);
-  
 
   const baseLng = 106.81443833333333;
   const baseLat = -6.473346666666667;
@@ -150,13 +158,11 @@ const LiveTeam: React.FC = () => {
       Math.abs(m.coordinate[1] - baseLat) < 0.02,
   );
 
-  
-
   useEffect(() => {
     const fetchLocationName = async () => {
       const [longitude, latitude] = centerCoord;
       // Ganti MAPBOX_TOKEN dengan token kamu!
-      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?types=place,region&language=id&access_token=${MAPBOX_ACCESS_TOKEN}`;
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?types=place,region&language=id&access_token=sk.eyJ1Ijoid2hvaXNhcnZpYW4iLCJhIjoiY21jOHFleHdjMDVkdTJqcGNicTRlZGJkbSJ9.TI5FkPGsFiIumVvzAPYpOQ`;
       try {
         const response = await fetch(url);
         const json = await response.json();
@@ -205,6 +211,7 @@ const LiveTeam: React.FC = () => {
             </View>
           </TouchableOpacity>
           <MapboxGL.MapView
+            onDidFinishLoadingStyle={() => setMapLoaded(true)}
             scaleBarEnabled={false}
             style={styles.map}
             logoEnabled={false}
@@ -223,20 +230,25 @@ const LiveTeam: React.FC = () => {
               centerCoordinate={coordinate}
             />
 
-            {mapLoaded === true
-              ? markers.map(marker => (
-                  <MapboxGL.PointAnnotation
-                    key={marker.id}
-                    id={marker.id}
-                    coordinate={marker.coordinate}
-                    onSelected={() => setSelectedMarker(marker)}>
-                    <Image
-                      source={marker.image}
-                      style={{width: 54, height: 54, resizeMode: 'contain'}} // lebih gede!
-                    />
-                  </MapboxGL.PointAnnotation>
-                ))
-              : null}
+            {mapLoaded &&
+              markers.map(m => (
+                <MapboxGL.PointAnnotation
+                  key={m.id}
+                  id={m.id}
+                  coordinate={m.coordinate}
+                  onSelected={() => setSelectedMarker(m)}
+                  ref={ref => {
+                    annotationRefs.current[m.id] = ref;
+                  }}>
+                  <FastImage
+                    source={m.image}
+                    style={{width: 54, height: 54}}
+                    resizeMode={FastImage.resizeMode.contain}
+                    // 3️⃣ panggil refresh agar Mapbox raster ulang child‑view
+                    onLoad={() => annotationRefs.current[m.id]?.refresh()}
+                  />
+                </MapboxGL.PointAnnotation>
+              ))}
 
             {/* User Location */}
             <MapboxGL.PointAnnotation id="me" coordinate={coordinate}>
