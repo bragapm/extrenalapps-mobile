@@ -21,9 +21,7 @@ import FastImage from 'react-native-fast-image';
 const {width, height} = Dimensions.get('window');
 
 // Set token hanya sekali, di luar komponen
-MapboxGL.setAccessToken(
-  'sk.eyJ1Ijoid2hvaXNhcnZpYW4iLCJhIjoiY21jOHFleHdjMDVkdTJqcGNicTRlZGJkbSJ9.TI5FkPGsFiIumVvzAPYpOQ',
-);
+MapboxGL.setAccessToken(`${MAPBOX_ACCESS_TOKEN}`);
 
 const DEFAULT_COORDINATE = [106.8272, -6.1751];
 
@@ -162,7 +160,7 @@ const LiveTeam: React.FC = () => {
     const fetchLocationName = async () => {
       const [longitude, latitude] = centerCoord;
       // Ganti MAPBOX_TOKEN dengan token kamu!
-      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?types=place,region&language=id&access_token=sk.eyJ1Ijoid2hvaXNhcnZpYW4iLCJhIjoiY21jOHFleHdjMDVkdTJqcGNicTRlZGJkbSJ9.TI5FkPGsFiIumVvzAPYpOQ`;
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?types=place,region&language=id&access_token=${MAPBOX_ACCESS_TOKEN}`;
       try {
         const response = await fetch(url);
         const json = await response.json();
