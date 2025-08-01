@@ -14,61 +14,48 @@ const api = axios.create({
   },
 });
 
+// api.interceptors.request.use(
+//   async config => {
+//     try {
+//       const token = await AsyncStorage.getItem('token');
+//       if (token) {
+//         config.headers.Authorization = `Bearer ${token}`;
+//       }
+//     } catch (error) {
+//       console.error('Error getting token:', error);
+//     }
+//     return config;
+//   },
+//   error => {
+//     return Promise.reject(error);
+//   },
+// );
+
 api.interceptors.request.use(
   async config => {
-    try {
-      const token = await AsyncStorage.getItem('token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+    const skipAuth =
+      config.url?.includes('/auth/login') ||
+      config.url?.includes('/auth/refresh') ||
+      config.url?.includes('/auth/register');
+
+    if (!skipAuth) {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      } catch (error) {
+        console.error('Error getting token:', error);
       }
-    } catch (error) {
-      console.error('Error getting token:', error);
+    } else {
+      // Pastikan Authorization header tidak ada
+      if (config.headers && config.headers.Authorization) {
+        delete config.headers.Authorization;
+      }
     }
     return config;
   },
-  error => {
-    return Promise.reject(error);
-  },
-);
-
-api.interceptors.response.use(
-  response => response,
-  error => {
-    if (error.response) {
-      if (error.response.status === 401) {
-        const errorMessage =
-          error.response.data?.errors?.[0]?.message || 'Invalid credentials';
-        const errorCode =
-          error.response.data?.errors?.[0]?.extensions?.code || 'UNKNOWN_ERROR';
-
-        return Promise.reject({
-          status: error.response.status,
-          message: errorMessage,
-          code: errorCode,
-          data: error.response.data,
-        });
-      } else {
-        // Menggunakan pesan error dari response jika ada
-        const errorMessage =
-          error.response.data?.error || 'An unexpected error occurred';
-        return Promise.reject({
-          status: error.response.status,
-          message: errorMessage,
-          data: error.response.data,
-        });
-      }
-    } else if (error.request) {
-      return Promise.reject({
-        status: null,
-        message: 'No response from the server',
-      });
-    } else {
-      return Promise.reject({
-        status: null,
-        message: 'Failed to setup the request',
-      });
-    }
-  },
+  error => Promise.reject(error),
 );
 
 export const getData = async (endpoint: string, params = {}) => {

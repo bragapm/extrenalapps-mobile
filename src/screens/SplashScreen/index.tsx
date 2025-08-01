@@ -22,6 +22,10 @@ import {useUserStore} from '../../store/userStore';
 import {request, PERMISSIONS, RESULTS} from 'react-native-permissions';
 import {useFeatureStore} from '../../store/featureStore';
 import {autoRefreshTokenIfNeeded} from '../../utils/authUtils';
+import ReactNativeBiometrics from 'react-native-biometrics';
+import * as Keychain from 'react-native-keychain';
+import {useAuthStore} from '../../store/authStore';
+import {loginAPI} from '../../services/apiServices';
 
 type Props = {
   navigation: StackNavigationProp<RootStackParamList, 'Splash'>;
@@ -57,6 +61,8 @@ const SplashScreen: React.FC<Props> = ({navigation}) => {
   const colorScheme = useColorScheme();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [step, setStep] = useState(0);
+  const [biometricRetryCount, setBiometricRetryCount] = useState(0);
+  const MAX_BIOMETRIC_RETRY = 3;
   const [loading, setLoading] = useState(true);
   const progress = useRef(new Animated.Value(0)).current;
   const segmentAnims = useRef(
@@ -70,6 +76,75 @@ const SplashScreen: React.FC<Props> = ({navigation}) => {
     // Saat SplashScreen dibuka (atau App mount pertama)
     useFeatureStore.getState().clear();
   }, []);
+
+  const handleBiometricLogin = async () => {
+    const rnBiometrics = new ReactNativeBiometrics();
+    const {available} = await rnBiometrics.isSensorAvailable();
+    if (!available) {
+      Alert.alert(
+        'Biometric tidak tersedia',
+        'Perangkat tidak mendukung biometric.',
+      );
+      navigation.replace('Login');
+      return;
+    }
+
+    const {success} = await rnBiometrics.simplePrompt({
+      promptMessage: 'Otentikasi ulang dengan Biometric',
+    });
+
+    if (success) {
+      // Hapus token sebelum login ulang
+      await useAuthStore.getState().clearAuth();
+      await AsyncStorage.multiRemove(['token', 'refresh_token', 'expires_at']);
+
+      const credentials = await Keychain.getGenericPassword();
+      if (credentials) {
+        const {username: savedEmail, password: savedPassword} = credentials;
+        try {
+          const result = await loginAPI(savedEmail, savedPassword);
+          await useAuthStore.getState().setAuth({
+            accessToken: result.data.access_token,
+            refreshToken: result.data.refresh_token,
+            expires: result.data.expires,
+            user: {role: 'admin', email: savedEmail},
+            loginSaved: 'Saved',
+          });
+          setBiometricRetryCount(0); // reset counter
+          navigation.replace('Main');
+        } catch (err) {
+          // Jika gagal login, retry biometric max 3x
+          if (biometricRetryCount + 1 < MAX_BIOMETRIC_RETRY) {
+            setBiometricRetryCount(cnt => cnt + 1);
+            setTimeout(() => {
+              handleBiometricLogin();
+            }, 500); // retry setelah sedikit jeda
+          } else {
+            Alert.alert(
+              'Login Gagal',
+              'Gagal login dengan Biometric setelah 3 kali percobaan. Silakan login manual.',
+              [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    setBiometricRetryCount(0);
+                    navigation.replace('Login');
+                  },
+                },
+              ],
+              {cancelable: false},
+            );
+          }
+        }
+      } else {
+        navigation.replace('Login');
+      }
+    } else {
+      // Jika user cancel biometric prompt, langsung ke login manual
+      navigation.replace('Login');
+    }
+  };
+
   useEffect(() => {
     const checkLocation = async () => {
       const isLocationAsked = await AsyncStorage.getItem('isLocationAsked');
@@ -95,25 +170,86 @@ const SplashScreen: React.FC<Props> = ({navigation}) => {
   }, []);
 
   useEffect(() => {
-    // Cek status login dari storage & auto-refresh token jika perlu
     const checkLogin = async () => {
       try {
-        const loggedIn = await autoRefreshTokenIfNeeded();
-        setTimeout(() => {
-          if (loggedIn) {
-            navigation.replace('Main');
+        const token = await AsyncStorage.getItem('token');
+        const refreshToken = await AsyncStorage.getItem('refresh_token');
+        const expiresAt = await AsyncStorage.getItem('expires_at');
+        const loginSaved = await AsyncStorage.getItem('login_saved');
+
+        const isExpired = expiresAt
+          ? Date.now() > parseInt(expiresAt, 10)
+          : true;
+        console.log('token', token, 'expired', isExpired);
+
+        // Token masih aktif
+        if (token && refreshToken && !isExpired && loginSaved === 'Saved') {
+          navigation.replace('Main');
+        }
+        // Token expired & biometric
+        else if (token && refreshToken && isExpired && loginSaved === 'Saved') {
+          const rnBiometrics = new ReactNativeBiometrics();
+          const {available} = await rnBiometrics.isSensorAvailable();
+          if (!available) throw new Error('Biometric not available');
+
+          const {success} = await rnBiometrics.simplePrompt({
+            promptMessage: 'Otentikasi ulang dengan Biometric',
+          });
+
+          if (success) {
+            // Ambil credential dari Keychain
+            const credentials = await Keychain.getGenericPassword();
+            if (credentials) {
+              const {username: savedEmail, password: savedPassword} =
+                credentials;
+              console.log('[DEBUG][Biometric] Payload login:', {
+                email: savedEmail,
+                password: savedPassword,
+              });
+              try {
+                const result = await loginAPI(savedEmail, savedPassword);
+                console.log('[DEBUG][Biometric] Result loginAPI:', result);
+                await useAuthStore.getState().setAuth({
+                  accessToken: result.data.access_token,
+                  refreshToken: result.data.refresh_token,
+                  expires: result.data.expires,
+                  user: {role: 'admin', email: savedEmail}, // role bisa dynamic kalau di Keychain sekalian
+                  loginSaved: 'Saved',
+                });
+
+                navigation.replace('Main');
+              } catch (err) {
+                console.log(
+                  '[DEBUG][Biometric] Error saat loginAPI:',
+                  err,
+                  err?.response,
+                );
+                // Login gagal, ke halaman login manual
+                navigation.replace('Login');
+              }
+            } else {
+              // Tidak ada credential, ke login manual
+              navigation.replace('Login');
+            }
           } else {
-            setShowOnboarding(true);
-            setLoading(false);
+            // Biometric cancel/gagal
+            navigation.replace('Login');
           }
-        }, 1200);
+        }
+        // Tidak ada session/login
+        else {
+          setShowOnboarding(true);
+          setLoading(false);
+        }
       } catch {
         setShowOnboarding(true);
         setLoading(false);
       }
     };
+
     checkLogin();
   }, [navigation]);
+
   useEffect(() => {
     if (!showOnboarding) return;
     // Set semua progress sebelumnya full (1), step setelahnya kosong (0)

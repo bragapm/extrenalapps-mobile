@@ -9,6 +9,8 @@ import {
   Image,
   ScrollView,
   ActivityIndicator,
+  StatusBar,
+  useColorScheme,
 } from 'react-native';
 import MapboxGL from '@rnmapbox/maps';
 import {useThemeStore} from '../../theme/useThemeStore';
@@ -116,6 +118,7 @@ interface Marker {
 
 type AnnotationMap = Record<string, MapboxGL.PointAnnotation | null>;
 const LiveTeam: React.FC = () => {
+  const colorScheme = useColorScheme();
   const {colors} = useThemeStore();
   const isFocused = useIsFocused(); // untuk pastikan hanya render saat aktif
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -186,516 +189,524 @@ const LiveTeam: React.FC = () => {
   }, [centerCoord]);
 
   return (
-    <View style={[styles.container, {backgroundColor: colors.background}]}>
-      <AppHeader home={false} liveTeam={true} location={locationName} />
-      {isFocused && (
-        <View style={styles.mapContainer}>
-          <TouchableOpacity
-            style={styles.centerButton}
-            onPress={() => {
-              // trigger camera to user location/default
-              cameraRef.current?.setCamera({
-                centerCoordinate: coordinate,
-                zoomLevel: 15,
-                animationDuration: 600,
-              });
-            }}>
-            <View style={styles.centerButtonBg}>
-              <Image
-                source={require('../../assets/icons/ic-location.png')}
-                style={{width: 32, height: 32}}
-                resizeMode="contain"
-              />
-            </View>
-          </TouchableOpacity>
-          <MapboxGL.MapView
-            onDidFinishLoadingStyle={() => setMapLoaded(true)}
-            scaleBarEnabled={false}
-            style={styles.map}
-            logoEnabled={false}
-            attributionEnabled={false}
-            onDidFinishLoadingMap={() => setMapLoaded(true)}
-            styleURL="mapbox://styles/mapbox/satellite-v9"
-            onRegionDidChange={async region => {
-              // Dapatkan koordinat center terbaru
-              const center: any = await mapRef.current?.getCenter(); // pastikan mapRef = useRef(null)
-              if (center) setCenterCoord(center);
-            }}
-            ref={mapRef}>
-            <MapboxGL.Camera
-              ref={cameraRef}
-              zoomLevel={15}
-              centerCoordinate={coordinate}
-            />
-
-            {mapLoaded &&
-              markers.map(m => (
-                <MapboxGL.PointAnnotation
-                  key={m.id}
-                  id={m.id}
-                  coordinate={m.coordinate}
-                  onSelected={() => setSelectedMarker(m)}
-                  ref={ref => {
-                    annotationRefs.current[m.id] = ref;
-                  }}>
-                  <FastImage
-                    source={m.image}
-                    style={{width: 54, height: 54}}
-                    resizeMode={FastImage.resizeMode.contain}
-                    // 3️⃣ panggil refresh agar Mapbox raster ulang child‑view
-                    onLoad={() => annotationRefs.current[m.id]?.refresh()}
-                  />
-                </MapboxGL.PointAnnotation>
-              ))}
-
-            {/* User Location */}
-            <MapboxGL.PointAnnotation id="me" coordinate={coordinate}>
-              <View style={styles.marker} />
-            </MapboxGL.PointAnnotation>
-          </MapboxGL.MapView>
-        </View>
-      )}
-
-      {/* Modal detail marker */}
-      <Modal
-        visible={!!selectedMarker}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setSelectedMarker(null)}>
-        <View style={styles.modalBg}>
-          <View
-            style={{
-              ...styles.bottomSheet,
-              height:
-                selectedMarker?.type === 'kantor_kepala_desa'
-                  ? height * 0.8
-                  : 'auto',
-            }}>
+    <>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle={colorScheme === 'dark' ? 'light-content' : 'light-content'}
+      />
+      <View style={[styles.container, {backgroundColor: colors.background}]}>
+        <AppHeader home={false} liveTeam={true} location={locationName} />
+        {isFocused && (
+          <View style={styles.mapContainer}>
             <TouchableOpacity
-              style={styles.closeBtn}
-              onPress={() => setSelectedMarker(null)}>
-              <Text style={{fontSize: 34, fontWeight: '300', color: '#B4B4AF'}}>
-                ×
-              </Text>
+              style={styles.centerButton}
+              onPress={() => {
+                // trigger camera to user location/default
+                cameraRef.current?.setCamera({
+                  centerCoordinate: coordinate,
+                  zoomLevel: 15,
+                  animationDuration: 600,
+                });
+              }}>
+              <View style={styles.centerButtonBg}>
+                <Image
+                  source={require('../../assets/icons/ic-location.png')}
+                  style={{width: 32, height: 32}}
+                  resizeMode="contain"
+                />
+              </View>
             </TouchableOpacity>
-            {/* Profile Detail */}
+            <MapboxGL.MapView
+              onDidFinishLoadingStyle={() => setMapLoaded(true)}
+              scaleBarEnabled={false}
+              style={styles.map}
+              logoEnabled={false}
+              attributionEnabled={false}
+              onDidFinishLoadingMap={() => setMapLoaded(true)}
+              styleURL="mapbox://styles/mapbox/satellite-v9"
+              onRegionDidChange={async region => {
+                // Dapatkan koordinat center terbaru
+                const center: any = await mapRef.current?.getCenter(); // pastikan mapRef = useRef(null)
+                if (center) setCenterCoord(center);
+              }}
+              ref={mapRef}>
+              <MapboxGL.Camera
+                ref={cameraRef}
+                zoomLevel={15}
+                centerCoordinate={coordinate}
+              />
 
-            {selectedMarker && selectedMarker.profile && (
-              <View>
-                {/* Gambar carousel */}
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'flex-start',
-                  }}>
-                  <Image
-                    source={require('../../assets/icons/icon-kantor-kepdes.png')}
-                    style={{
-                      marginRight: '2%',
-                      height: 25,
-                      width: 25,
-                    }}
-                  />
-                  <Text style={styles.title}>
-                    {selectedMarker?.type === 'kantor_kepala_desa'
-                      ? 'Profile Desa'
-                      : selectedMarker.title}
-                  </Text>
-                </View>
-                <View
-                  style={{
-                    backgroundColor: '#C3C3BF',
-                    borderWidth: 1,
-                    marginBottom: '5%',
-                    borderColor: '#C3C3BF',
-                    marginTop: '2%',
-                  }}
-                />
-                <Image
-                  source={require('../../assets/images/sample1.png')}
-                  style={{
-                    width: '100%',
-                    height: height * 0.2,
-                    borderRadius: 8,
-                    marginBottom: '1%',
-                  }}
-                  resizeMode="cover"
-                />
-                {/* FOTO THUMBNAIL */}
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    gap: 8,
-                    justifyContent: 'center',
-                    marginBottom: '2%',
-                    paddingHorizontal: '2%',
-                  }}>
-                  <Image
-                    source={require('../../assets/images/sample2.png')}
-                    style={styles.thumbPhoto}
-                  />
-                  <Image
-                    source={require('../../assets/images/sample2.png')}
-                    style={styles.thumbPhoto}
-                  />
-                  <Image
-                    source={require('../../assets/images/sample2.png')}
-                    style={styles.thumbPhoto}
-                  />
-                </View>
-                {/*  */}
-
-                <Text style={styles.subtitle}>
-                  {selectedMarker.profile.namaDesa},{' '}
-                  {selectedMarker.profile.kecamatan},{' '}
-                  {selectedMarker.profile.kabupaten}
-                </Text>
-                <Text
-                  style={{fontWeight: '400', fontSize: 14, color: '#4F4D4A'}}>
-                  Kecamatan {selectedMarker.profile.kecamatan}
-                </Text>
-
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'flex-start',
-                    marginTop: '3%',
-                    marginLeft: '2%',
-                  }}>
-                  <View
-                    style={{
-                      alignItems: 'flex-start',
-                      justifyContent: 'flex-start',
+              {mapLoaded &&
+                markers.map(m => (
+                  <MapboxGL.PointAnnotation
+                    key={m.id}
+                    id={m.id}
+                    coordinate={m.coordinate}
+                    onSelected={() => setSelectedMarker(m)}
+                    ref={ref => {
+                      annotationRefs.current[m.id] = ref;
                     }}>
-                    <Image
-                      source={require('../../assets/images/kepdes.png')}
-                      style={{
-                        width: 35,
-                        height: 35,
-                      }}
-                      resizeMode="contain"
+                    <FastImage
+                      source={m.image}
+                      style={{width: 54, height: 54}}
+                      resizeMode={FastImage.resizeMode.contain}
+                      // 3️⃣ panggil refresh agar Mapbox raster ulang child‑view
+                      onLoad={() => annotationRefs.current[m.id]?.refresh()}
                     />
-                    <View
-                      style={{
-                        marginTop: '3%',
-                      }}>
-                      <Text
-                        style={{
-                          fontWeight: '400',
-                          color: '#777674',
-                          fontSize: 12,
-                        }}>
-                        Kepala Desa
-                      </Text>
-                      <Text
-                        style={{
-                          fontWeight: '600',
-                          color: '#161414',
-                          fontSize: 14,
-                        }}>
-                        {selectedMarker.profile.kepalaDesa}
-                      </Text>
-                    </View>
-                  </View>
-                  <View
-                    style={{
-                      alignItems: 'flex-start',
-                      justifyContent: 'flex-start',
-                      marginLeft: '10%',
-                    }}>
-                    <Image
-                      source={require('../../assets/images/call.png')}
-                      style={{width: 35, height: 35}}
-                      resizeMode="contain"
-                    />
-                    <View
-                      style={{
-                        marginTop: '3%',
-                      }}>
-                      <Text
-                        style={{
-                          fontWeight: '400',
-                          color: '#777674',
-                          fontSize: 12,
-                        }}>
-                        Nomer Telepon
-                      </Text>
-                      <Text
-                        style={{
-                          fontWeight: '600',
-                          color: '#161414',
-                          fontSize: 14,
-                        }}>
-                        {selectedMarker.profile.telp}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
+                  </MapboxGL.PointAnnotation>
+                ))}
 
-                <Text
-                  style={{
-                    fontWeight: '500',
-                    color: '#4F4D4A',
-                    fontSize: 16,
-                    marginTop: '5%',
-                    marginBottom: '2%',
-                  }}>
-                  Issue
-                </Text>
-
-                <View
-                  style={{
-                    width: '100%',
-                    paddingHorizontal: '3%',
-                    paddingVertical: '3%',
-                    backgroundColor: '#F4F3F1',
-                    borderRadius: 8,
-                  }}>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}>
-                    {/*  */}
-                    <View
-                      style={{
-                        alignItems: 'flex-start',
-                        justifyContent: 'flex-start',
-                      }}>
-                      <Image
-                        source={require('../../assets/images/solveIssue.png')}
-                        style={{width: 35, height: 35}}
-                        resizeMode="contain"
-                      />
-                      <View
-                        style={{
-                          marginLeft: '5%',
-                        }}>
-                        <Text
-                          style={{
-                            fontWeight: '400',
-                            color: '#777674',
-                            fontSize: 12,
-                          }}>
-                          Issue Terselesaikan
-                        </Text>
-                        <Text
-                          style={{
-                            fontWeight: '600',
-                            color: '#161414',
-                            fontSize: 14,
-                          }}>
-                          {selectedMarker.profile.issues?.selesai}/12
-                        </Text>
-                      </View>
-                    </View>
-                    {/*  */}
-
-                    <View
-                      style={{
-                        alignItems: 'flex-start',
-                        justifyContent: 'flex-start',
-                      }}>
-                      <Image
-                        source={require('../../assets/images/issueOnProgress.png')}
-                        style={{width: 35, height: 35}}
-                        resizeMode="contain"
-                      />
-                      <View
-                        style={{
-                          marginLeft: '5%',
-                        }}>
-                        <Text
-                          style={{
-                            fontWeight: '400',
-                            color: '#777674',
-                            fontSize: 12,
-                          }}>
-                          Issue On Progress
-                        </Text>
-                        <Text
-                          style={{
-                            fontWeight: '600',
-                            color: '#161414',
-                            fontSize: 14,
-                          }}>
-                          {selectedMarker.profile.issues?.onProgress}/12
-                        </Text>
-                      </View>
-                    </View>
-                    {/*  */}
-                    <View
-                      style={{
-                        alignItems: 'flex-start',
-                        justifyContent: 'flex-start',
-                      }}>
-                      <Image
-                        source={require('../../assets/images/report.png')}
-                        style={{width: 35, height: 35}}
-                        resizeMode="contain"
-                      />
-                      <View
-                        style={{
-                          marginLeft: '5%',
-                        }}>
-                        <Text
-                          style={{
-                            fontWeight: '400',
-                            color: '#777674',
-                            fontSize: 12,
-                          }}>
-                          Jumlah Report
-                        </Text>
-                        <Text
-                          style={{
-                            fontWeight: '600',
-                            color: '#161414',
-                            fontSize: 14,
-                          }}>
-                          {selectedMarker.profile.issues?.total}/12
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                </View>
-              </View>
-            )}
-            {/* Karyawan / marker lain */}
-            {selectedMarker && !selectedMarker.profile && (
-              <View>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'flex-start',
-                  }}>
-                  <Image
-                    source={require('../../assets/icons/icon-personel.png')}
-                    style={{
-                      marginRight: '2%',
-                      height: 25,
-                      width: 25,
-                    }}
-                  />
-                  <Text style={styles.title}>Profile Personil</Text>
-                </View>
-                <View
-                  style={{
-                    backgroundColor: '#C3C3BF',
-                    borderWidth: 1,
-                    marginBottom: '5%',
-                    borderColor: '#C3C3BF',
-                    marginTop: '2%',
-                  }}
-                />
-
-                <Image
-                  source={require('../../assets/images/sample3.png')}
-                  style={{
-                    width: '100%',
-                    height: height * 0.35,
-                    borderRadius: 8,
-                    marginBottom: '1%',
-                  }}
-                  resizeMode="cover"
-                />
-                <Text
-                  style={{
-                    fontWeight: '500',
-                    fontSize: 18,
-                    color: '#161414',
-                    paddingVertical: '2%',
-                  }}>
-                  {selectedMarker?.name}
-                </Text>
-
-                <View
-                  style={{
-                    flexDirection: 'column',
-                    alignItems: 'flex-start',
-                    paddingVertical: '3%',
-                    paddingBottom: '5%',
-                  }}>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'flex-start',
-                    }}>
-                    <Text
-                      style={{
-                        fontWeight: '400',
-                        fontSize: 16,
-                        color: '#4F4D4A',
-                      }}>
-                      Jabatan:
-                    </Text>
-                    <Text
-                      style={{
-                        fontWeight: '400',
-                        fontSize: 16,
-                        color: '#4F4D4A',
-                      }}>
-                      {' '}
-                      {selectedMarker?.jabatan}
-                    </Text>
-                  </View>
-
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'flex-start',
-                    }}>
-                    <Text
-                      style={{
-                        fontWeight: '400',
-                        fontSize: 16,
-                        color: '#4F4D4A',
-                      }}>
-                      Organisasi:
-                    </Text>
-                    <Text
-                      style={{
-                        fontWeight: '400',
-                        fontSize: 16,
-                        color: '#4F4D4A',
-                      }}>
-                      {' '}
-                      {selectedMarker?.organisasi}
-                    </Text>
-                  </View>
-
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'flex-start',
-                    }}>
-                    <Text
-                      style={{
-                        fontWeight: '400',
-                        fontSize: 16,
-                        color: '#4F4D4A',
-                      }}>
-                      Alamat:
-                    </Text>
-                    <Text
-                      style={{
-                        fontWeight: '400',
-                        fontSize: 16,
-                        color: '#4F4D4A',
-                      }}>
-                      {' '}
-                      {selectedMarker?.address}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            )}
+              {/* User Location */}
+              <MapboxGL.PointAnnotation id="me" coordinate={coordinate}>
+                <View style={styles.marker} />
+              </MapboxGL.PointAnnotation>
+            </MapboxGL.MapView>
           </View>
-        </View>
-      </Modal>
-    </View>
+        )}
+
+        {/* Modal detail marker */}
+        <Modal
+          visible={!!selectedMarker}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setSelectedMarker(null)}>
+          <View style={styles.modalBg}>
+            <View
+              style={{
+                ...styles.bottomSheet,
+                height:
+                  selectedMarker?.type === 'kantor_kepala_desa'
+                    ? height * 0.8
+                    : 'auto',
+              }}>
+              <TouchableOpacity
+                style={styles.closeBtn}
+                onPress={() => setSelectedMarker(null)}>
+                <Text
+                  style={{fontSize: 34, fontWeight: '300', color: '#B4B4AF'}}>
+                  ×
+                </Text>
+              </TouchableOpacity>
+              {/* Profile Detail */}
+
+              {selectedMarker && selectedMarker.profile && (
+                <View>
+                  {/* Gambar carousel */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'flex-start',
+                    }}>
+                    <Image
+                      source={require('../../assets/icons/icon-kantor-kepdes.png')}
+                      style={{
+                        marginRight: '2%',
+                        height: 25,
+                        width: 25,
+                      }}
+                    />
+                    <Text style={styles.title}>
+                      {selectedMarker?.type === 'kantor_kepala_desa'
+                        ? 'Profile Desa'
+                        : selectedMarker.title}
+                    </Text>
+                  </View>
+                  <View
+                    style={{
+                      backgroundColor: '#C3C3BF',
+                      borderWidth: 1,
+                      marginBottom: '5%',
+                      borderColor: '#C3C3BF',
+                      marginTop: '2%',
+                    }}
+                  />
+                  <Image
+                    source={require('../../assets/images/sample1.png')}
+                    style={{
+                      width: '100%',
+                      height: height * 0.2,
+                      borderRadius: 8,
+                      marginBottom: '1%',
+                    }}
+                    resizeMode="cover"
+                  />
+                  {/* FOTO THUMBNAIL */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      gap: 8,
+                      justifyContent: 'center',
+                      marginBottom: '2%',
+                      paddingHorizontal: '2%',
+                    }}>
+                    <Image
+                      source={require('../../assets/images/sample2.png')}
+                      style={styles.thumbPhoto}
+                    />
+                    <Image
+                      source={require('../../assets/images/sample2.png')}
+                      style={styles.thumbPhoto}
+                    />
+                    <Image
+                      source={require('../../assets/images/sample2.png')}
+                      style={styles.thumbPhoto}
+                    />
+                  </View>
+                  {/*  */}
+
+                  <Text style={styles.subtitle}>
+                    {selectedMarker.profile.namaDesa},{' '}
+                    {selectedMarker.profile.kecamatan},{' '}
+                    {selectedMarker.profile.kabupaten}
+                  </Text>
+                  <Text
+                    style={{fontWeight: '400', fontSize: 14, color: '#4F4D4A'}}>
+                    Kecamatan {selectedMarker.profile.kecamatan}
+                  </Text>
+
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'flex-start',
+                      marginTop: '3%',
+                      marginLeft: '2%',
+                    }}>
+                    <View
+                      style={{
+                        alignItems: 'flex-start',
+                        justifyContent: 'flex-start',
+                      }}>
+                      <Image
+                        source={require('../../assets/images/kepdes.png')}
+                        style={{
+                          width: 35,
+                          height: 35,
+                        }}
+                        resizeMode="contain"
+                      />
+                      <View
+                        style={{
+                          marginTop: '3%',
+                        }}>
+                        <Text
+                          style={{
+                            fontWeight: '400',
+                            color: '#777674',
+                            fontSize: 12,
+                          }}>
+                          Kepala Desa
+                        </Text>
+                        <Text
+                          style={{
+                            fontWeight: '600',
+                            color: '#161414',
+                            fontSize: 14,
+                          }}>
+                          {selectedMarker.profile.kepalaDesa}
+                        </Text>
+                      </View>
+                    </View>
+                    <View
+                      style={{
+                        alignItems: 'flex-start',
+                        justifyContent: 'flex-start',
+                        marginLeft: '10%',
+                      }}>
+                      <Image
+                        source={require('../../assets/images/call.png')}
+                        style={{width: 35, height: 35}}
+                        resizeMode="contain"
+                      />
+                      <View
+                        style={{
+                          marginTop: '3%',
+                        }}>
+                        <Text
+                          style={{
+                            fontWeight: '400',
+                            color: '#777674',
+                            fontSize: 12,
+                          }}>
+                          Nomer Telepon
+                        </Text>
+                        <Text
+                          style={{
+                            fontWeight: '600',
+                            color: '#161414',
+                            fontSize: 14,
+                          }}>
+                          {selectedMarker.profile.telp}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <Text
+                    style={{
+                      fontWeight: '500',
+                      color: '#4F4D4A',
+                      fontSize: 16,
+                      marginTop: '5%',
+                      marginBottom: '2%',
+                    }}>
+                    Issue
+                  </Text>
+
+                  <View
+                    style={{
+                      width: '100%',
+                      paddingHorizontal: '3%',
+                      paddingVertical: '3%',
+                      backgroundColor: '#F4F3F1',
+                      borderRadius: 8,
+                    }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}>
+                      {/*  */}
+                      <View
+                        style={{
+                          alignItems: 'flex-start',
+                          justifyContent: 'flex-start',
+                        }}>
+                        <Image
+                          source={require('../../assets/images/solveIssue.png')}
+                          style={{width: 35, height: 35}}
+                          resizeMode="contain"
+                        />
+                        <View
+                          style={{
+                            marginLeft: '5%',
+                          }}>
+                          <Text
+                            style={{
+                              fontWeight: '400',
+                              color: '#777674',
+                              fontSize: 12,
+                            }}>
+                            Issue Terselesaikan
+                          </Text>
+                          <Text
+                            style={{
+                              fontWeight: '600',
+                              color: '#161414',
+                              fontSize: 14,
+                            }}>
+                            {selectedMarker.profile.issues?.selesai}/12
+                          </Text>
+                        </View>
+                      </View>
+                      {/*  */}
+
+                      <View
+                        style={{
+                          alignItems: 'flex-start',
+                          justifyContent: 'flex-start',
+                        }}>
+                        <Image
+                          source={require('../../assets/images/issueOnProgress.png')}
+                          style={{width: 35, height: 35}}
+                          resizeMode="contain"
+                        />
+                        <View
+                          style={{
+                            marginLeft: '5%',
+                          }}>
+                          <Text
+                            style={{
+                              fontWeight: '400',
+                              color: '#777674',
+                              fontSize: 12,
+                            }}>
+                            Issue On Progress
+                          </Text>
+                          <Text
+                            style={{
+                              fontWeight: '600',
+                              color: '#161414',
+                              fontSize: 14,
+                            }}>
+                            {selectedMarker.profile.issues?.onProgress}/12
+                          </Text>
+                        </View>
+                      </View>
+                      {/*  */}
+                      <View
+                        style={{
+                          alignItems: 'flex-start',
+                          justifyContent: 'flex-start',
+                        }}>
+                        <Image
+                          source={require('../../assets/images/report.png')}
+                          style={{width: 35, height: 35}}
+                          resizeMode="contain"
+                        />
+                        <View
+                          style={{
+                            marginLeft: '5%',
+                          }}>
+                          <Text
+                            style={{
+                              fontWeight: '400',
+                              color: '#777674',
+                              fontSize: 12,
+                            }}>
+                            Jumlah Report
+                          </Text>
+                          <Text
+                            style={{
+                              fontWeight: '600',
+                              color: '#161414',
+                              fontSize: 14,
+                            }}>
+                            {selectedMarker.profile.issues?.total}/12
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              )}
+              {/* Karyawan / marker lain */}
+              {selectedMarker && !selectedMarker.profile && (
+                <View>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'flex-start',
+                    }}>
+                    <Image
+                      source={require('../../assets/icons/icon-personel.png')}
+                      style={{
+                        marginRight: '2%',
+                        height: 25,
+                        width: 25,
+                      }}
+                    />
+                    <Text style={styles.title}>Profile Personil</Text>
+                  </View>
+                  <View
+                    style={{
+                      backgroundColor: '#C3C3BF',
+                      borderWidth: 1,
+                      marginBottom: '5%',
+                      borderColor: '#C3C3BF',
+                      marginTop: '2%',
+                    }}
+                  />
+
+                  <Image
+                    source={require('../../assets/images/sample3.png')}
+                    style={{
+                      width: '100%',
+                      height: height * 0.35,
+                      borderRadius: 8,
+                      marginBottom: '1%',
+                    }}
+                    resizeMode="cover"
+                  />
+                  <Text
+                    style={{
+                      fontWeight: '500',
+                      fontSize: 18,
+                      color: '#161414',
+                      paddingVertical: '2%',
+                    }}>
+                    {selectedMarker?.name}
+                  </Text>
+
+                  <View
+                    style={{
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      paddingVertical: '3%',
+                      paddingBottom: '5%',
+                    }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'flex-start',
+                      }}>
+                      <Text
+                        style={{
+                          fontWeight: '400',
+                          fontSize: 16,
+                          color: '#4F4D4A',
+                        }}>
+                        Jabatan:
+                      </Text>
+                      <Text
+                        style={{
+                          fontWeight: '400',
+                          fontSize: 16,
+                          color: '#4F4D4A',
+                        }}>
+                        {' '}
+                        {selectedMarker?.jabatan}
+                      </Text>
+                    </View>
+
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'flex-start',
+                      }}>
+                      <Text
+                        style={{
+                          fontWeight: '400',
+                          fontSize: 16,
+                          color: '#4F4D4A',
+                        }}>
+                        Organisasi:
+                      </Text>
+                      <Text
+                        style={{
+                          fontWeight: '400',
+                          fontSize: 16,
+                          color: '#4F4D4A',
+                        }}>
+                        {' '}
+                        {selectedMarker?.organisasi}
+                      </Text>
+                    </View>
+
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'flex-start',
+                      }}>
+                      <Text
+                        style={{
+                          fontWeight: '400',
+                          fontSize: 16,
+                          color: '#4F4D4A',
+                        }}>
+                        Alamat:
+                      </Text>
+                      <Text
+                        style={{
+                          fontWeight: '400',
+                          fontSize: 16,
+                          color: '#4F4D4A',
+                        }}>
+                        {' '}
+                        {selectedMarker?.address}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+            </View>
+          </View>
+        </Modal>
+      </View>
+    </>
   );
 };
 

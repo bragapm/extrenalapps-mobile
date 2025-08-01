@@ -163,6 +163,30 @@
         }
       }
     },
+    "react-native-biometrics": {
+      "root": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-biometrics",
+      "name": "react-native-biometrics",
+      "platforms": {
+        "ios": {
+          "podspecPath": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-biometrics/react-native-biometrics.podspec",
+          "version": "3.0.1",
+          "configurations": [],
+          "scriptPhases": []
+        },
+        "android": {
+          "sourceDir": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-biometrics/android",
+          "packageImportPath": "import com.rnbiometrics.ReactNativeBiometricsPackage;",
+          "packageInstance": "new ReactNativeBiometricsPackage()",
+          "buildTypes": [],
+          "componentDescriptors": [],
+          "cmakeListsPath": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-biometrics/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cxxModuleCMakeListsModuleName": null,
+          "cxxModuleCMakeListsPath": null,
+          "cxxModuleHeaderName": null,
+          "isPureCxxDependency": false
+        }
+      }
+    },
     "react-native-document-picker": {
       "root": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-document-picker",
       "name": "react-native-document-picker",
@@ -283,6 +307,31 @@
           "libraryName": "RNImagePickerSpec",
           "componentDescriptors": [],
           "cmakeListsPath": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-image-picker/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cxxModuleCMakeListsModuleName": null,
+          "cxxModuleCMakeListsPath": null,
+          "cxxModuleHeaderName": null,
+          "isPureCxxDependency": false
+        }
+      }
+    },
+    "react-native-keychain": {
+      "root": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-keychain",
+      "name": "react-native-keychain",
+      "platforms": {
+        "ios": {
+          "podspecPath": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-keychain/RNKeychain.podspec",
+          "version": "10.0.0",
+          "configurations": [],
+          "scriptPhases": []
+        },
+        "android": {
+          "sourceDir": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-keychain/android",
+          "packageImportPath": "import com.oblador.keychain.KeychainPackage;",
+          "packageInstance": "new KeychainPackage()",
+          "buildTypes": [],
+          "libraryName": "RNKeychainSpec",
+          "componentDescriptors": [],
+          "cmakeListsPath": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/react-native-keychain/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,

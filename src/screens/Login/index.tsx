@@ -19,6 +19,7 @@ import {StackNavigationProp} from '@react-navigation/stack';
 import {useAuthStore, UserInfo} from '../../store/authStore';
 import {loginAPI, postData} from '../../services/apiServices';
 import Toast from '../../components/Toast';
+import * as Keychain from 'react-native-keychain';
 
 // Ganti path sesuai folder assets kamu
 
@@ -111,8 +112,9 @@ const LoginScreen = () => {
         refreshToken: result.data.refresh_token,
         expires: result.data.expires,
         user: {role: userRole, email} as UserInfo,
+        loginSaved: 'Saved',
       });
-
+      await Keychain.setGenericPassword(email, password);
       setToastData({
         type: 'success',
         title: 'Login Berhasil',
