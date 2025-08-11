@@ -126,13 +126,7 @@ function MainTabs() {
 
   const getTabIcon = (focused: boolean, type: string) => (
     <Image
-      source={
-        focused
-          ? icons[type].active
-          : colorScheme !== 'dark'
-          ? icons[type].dark
-          : icons[type].light
-      }
+      source={focused ? icons[type].active : icons[type].dark}
       style={{width: 24, height: 24}}
       resizeMode="contain"
     />

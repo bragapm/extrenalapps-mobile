@@ -68,12 +68,7 @@ const LoginScreen = () => {
       hasError = true;
     }
     const userRole = 'admin';
-    if (!userRole && email.trim()) {
-      setRoleError(
-        "Role tidak dikenali. Masukkan kata 'admin', 'employee', atau 'bod/dept head'.",
-      );
-      hasError = true;
-    }
+
     if (hasError) return;
     setLoading(true);
     try {
@@ -115,6 +110,7 @@ const LoginScreen = () => {
         user: {role: userRole, email} as UserInfo,
         loginSaved: 'Saved',
       });
+      await AsyncStorage.multiSet([['userRole', userRole]]);
       await Keychain.setGenericPassword(email, password);
       setToastData({
         type: 'success',

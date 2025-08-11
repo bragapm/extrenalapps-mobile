@@ -65,14 +65,14 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             justifyContent: 'space-between',
             marginTop: '10%',
             paddingHorizontal: '3%',
-            backgroundColor: '#FFF',
+            backgroundColor: colorScheme === 'dark' ? '#FFF' : '#FFF',
             paddingVertical: '3%',
           }}>
           <View
             style={{
               width: '45%',
               alignItems: 'flex-start',
-              paddingHorizontal: "2%",
+              paddingHorizontal: '2%',
               justifyContent: 'center',
               flexDirection: 'row',
             }}>
@@ -97,7 +97,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             }}>
             <View
               style={{
-                backgroundColor: colors.background,
+                backgroundColor: colorScheme === 'dark' ? '#FFF' : '#FFF',
                 borderRadius: 10,
                 flexDirection: 'row',
                 justifyContent: 'center',
@@ -204,7 +204,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             }}>
             <View
               style={{
-                backgroundColor: colors.background,
+                backgroundColor: colorScheme === 'dark' ? '#FFF' : '#FFF',
                 borderRadius: 10,
                 flexDirection: 'row',
                 justifyContent: 'center',
@@ -271,7 +271,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             }}>
             <View
               style={{
-                backgroundColor: colors.background,
+                backgroundColor: colorScheme === 'dark' ? '#FFF' : '#FFF',
                 borderRadius: 10,
                 flexDirection: 'row',
                 justifyContent: 'center',
@@ -360,7 +360,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               }}>
               <View
                 style={{
-                  backgroundColor: colors.background,
+                  backgroundColor: colorScheme === 'dark' ? '#FFF' : '#FFF',
                   borderRadius: 10,
                   flexDirection: 'row',
                   justifyContent: 'center',

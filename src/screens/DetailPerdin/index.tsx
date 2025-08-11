@@ -318,7 +318,12 @@ const DetailPerdin = () => {
                 <Picker
                   selectedValue={jenisPerdin}
                   onValueChange={setJenisPerdin}
-                  style={styles.picker}>
+                  style={{
+                    height: 52, // tinggi yang lebih besar
+                    width: '100%',
+                    backgroundColor: colorScheme === 'dark' ? '#FFFF' : '#FFFF',
+                    color: colorScheme === 'dark' ? '#000' : '#000',
+                  }}>
                   {jenisPerdinList.map(opt => (
                     <Picker.Item
                       key={opt.value}

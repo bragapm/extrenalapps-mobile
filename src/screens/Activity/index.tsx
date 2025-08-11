@@ -699,91 +699,6 @@ const PieChartSummary = ({data}) => {
 };
 
 // --- FILTER & SORT HEADER ---
-const FilterSortHeader = ({
-  filter,
-  setFilter,
-  sort,
-  setSort,
-  jenisReport,
-  setJenisReport,
-  status,
-  setStatus,
-  tanggal,
-  setTanggal,
-  onDownload,
-  setShowDate,
-  showDate,
-}) => {
-  return (
-    <View style={stylesFSH.container}>
-      {/* Jenis Report */}
-      <View style={stylesFSH.inputBox}>
-        <Picker
-          selectedValue={jenisReport}
-          style={{
-            height: 52, // tinggi yang lebih besar
-            width: '100%',
-          }}
-          onValueChange={setJenisReport}>
-          {JENIS_REPORT.map(item => (
-            <Picker.Item
-              key={item.value}
-              label={item.label}
-              value={item.value}
-            />
-          ))}
-        </Picker>
-      </View>
-      {/* Status */}
-      <View style={stylesFSH.inputBox}>
-        <Picker
-          selectedValue={status}
-          style={{
-            height: 52, // tinggi yang lebih besar
-            width: '100%',
-          }}
-          onValueChange={setStatus}>
-          {STATUS.map(item => (
-            <Picker.Item
-              key={item.value}
-              label={item.label}
-              value={item.value}
-            />
-          ))}
-        </Picker>
-      </View>
-      {/* Tanggal */}
-      <TouchableOpacity
-        style={stylesFSH.inputBox}
-        onPress={() => setShowDate(true)}>
-        <View style={stylesFSH.dateContent}>
-          <Image
-            source={require('../../assets/icons/ic-calendar.png')}
-            style={{width: 18, height: 18, marginRight: 8}}
-            resizeMode="contain"
-          />
-          <Text style={stylesFSH.inputText}>
-            {tanggal ? formatDate(tanggal) : 'Pilih Tanggal'}
-          </Text>
-        </View>
-      </TouchableOpacity>
-
-      {/* Download */}
-      <TouchableOpacity
-        style={stylesFSH.iconBtn}
-        onPress={onDownload}
-        activeOpacity={0.7}>
-        {/* Pakai SVG atau PNG icon, contoh: */}
-        {/* <IconDownload width={22} height={22} /> */}
-        <Image
-          source={require('../../assets/icons/ic-download.png')}
-          style={{width: 22, height: 22}}
-          resizeMode="contain"
-        />
-      </TouchableOpacity>
-    </View>
-  );
-};
 
 // --- FORMAT TANGGAL ---
 function formatDate(date) {
@@ -893,6 +808,96 @@ const Activity = () => {
     return params;
   };
   console.log('PARAMS', buildParams());
+
+  const FilterSortHeader = ({
+    filter,
+    setFilter,
+    sort,
+    setSort,
+    jenisReport,
+    setJenisReport,
+    status,
+    setStatus,
+    tanggal,
+    setTanggal,
+    onDownload,
+    setShowDate,
+    showDate,
+  }) => {
+    return (
+      <View style={stylesFSH.container}>
+        {/* Jenis Report */}
+        <View style={stylesFSH.inputBox}>
+          <Picker
+            selectedValue={jenisReport}
+            style={{
+              height: 52, // tinggi yang lebih besar
+              width: '100%',
+              backgroundColor: colorScheme === 'dark' ? '#FFFF' : '#FFFF',
+              color: colorScheme === 'dark' ? '#000' : '#000',
+            }}
+            onValueChange={setJenisReport}>
+            {JENIS_REPORT.map(item => (
+              <Picker.Item
+                key={item.value}
+                label={item.label}
+                value={item.value}
+              />
+            ))}
+          </Picker>
+        </View>
+        {/* Status */}
+        <View style={stylesFSH.inputBox}>
+          <Picker
+            selectedValue={status}
+            style={{
+              height: 52, // tinggi yang lebih besar
+              width: '100%',
+              backgroundColor: colorScheme === 'dark' ? '#FFFF' : '#FFFF',
+              color: colorScheme === 'dark' ? '#000' : '#000',
+            }}
+            onValueChange={setStatus}>
+            {STATUS.map(item => (
+              <Picker.Item
+                key={item.value}
+                label={item.label}
+                value={item.value}
+              />
+            ))}
+          </Picker>
+        </View>
+        {/* Tanggal */}
+        <TouchableOpacity
+          style={stylesFSH.inputBox}
+          onPress={() => setShowDate(true)}>
+          <View style={stylesFSH.dateContent}>
+            <Image
+              source={require('../../assets/icons/ic-calendar.png')}
+              style={{width: 18, height: 18, marginRight: 8}}
+              resizeMode="contain"
+            />
+            <Text style={stylesFSH.inputText}>
+              {tanggal ? formatDate(tanggal) : 'Pilih Tanggal'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Download */}
+        <TouchableOpacity
+          style={stylesFSH.iconBtn}
+          onPress={onDownload}
+          activeOpacity={0.7}>
+          {/* Pakai SVG atau PNG icon, contoh: */}
+          {/* <IconDownload width={22} height={22} /> */}
+          <Image
+            source={require('../../assets/icons/ic-download.png')}
+            style={{width: 22, height: 22}}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      </View>
+    );
+  };
   useFocusEffect(
     React.useCallback(() => {
       if (mode === 'daily') {

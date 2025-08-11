@@ -110,6 +110,14 @@ const HomeScreen: React.FC = () => {
   const imageHeight = imageWidth * (115 / screenWidth);
 
   const [role, setRole] = useState('');
+  console.log('role', role);
+  useEffect(() => {
+    (async () => {
+      const r = await AsyncStorage.getItem('userRole');
+      console.log('AsyncStorage userRole =', r);
+      setRole(r || '');
+    })();
+  }, []);
   const [summary, setSummary] = useState(dummySummary);
   const userLocation = useUserStore(state => state.location);
   console.log('activeMenu', activeMenu);
@@ -198,13 +206,6 @@ const HomeScreen: React.FC = () => {
       ];
     }
   }, [role]);
-  useEffect(() => {
-    const getRole = async () => {
-      const r = await AsyncStorage.getItem('userRole');
-      setRole(r || '');
-    };
-    getRole();
-  }, []);
 
   return (
     <>

@@ -12,6 +12,7 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  useColorScheme,
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import AppHeader from '../../components/AppHeader';
@@ -158,6 +159,7 @@ const DetailDailyActivity = () => {
   const navigation = useNavigation();
   // const data = dummyData;
   const route = useRoute();
+  const colorScheme = useColorScheme();
   const {showForm = false, data} = route.params || {};
   const id = data?.id;
   console?.log('CEKK DATA', JSON.stringify(data));
@@ -539,7 +541,12 @@ const DetailDailyActivity = () => {
                   enabled={!loadingSubmit}
                   selectedValue={status}
                   onValueChange={setStatus}
-                  style={styles.picker}>
+                  style={{
+                    height: 52, // tinggi yang lebih besar
+                    width: '100%',
+                    backgroundColor: colorScheme === 'dark' ? '#FFFF' : '#FFFF',
+                    color: colorScheme === 'dark' ? '#000' : '#000',
+                  }}>
                   {STATUS_OPTIONS.map(opt => (
                     <Picker.Item
                       key={opt.value}
@@ -624,7 +631,12 @@ const DetailDailyActivity = () => {
                   enabled={!loadingSubmit}
                   selectedValue={jenis}
                   onValueChange={setJenis}
-                  style={styles.picker}>
+                  style={{
+                    height: 52, // tinggi yang lebih besar
+                    width: '100%',
+                    backgroundColor: colorScheme === 'dark' ? '#FFFF' : '#FFFF',
+                    color: colorScheme === 'dark' ? '#000' : '#000',
+                  }}>
                   {JENIS_REPORT_OPTIONS.map(opt => (
                     <Picker.Item
                       key={opt.value}
@@ -675,7 +687,13 @@ const DetailDailyActivity = () => {
                     enabled={!loadingSubmit}
                     selectedValue={startTimeZone}
                     onValueChange={setStartTimeZone}
-                    style={styles.picker}>
+                    style={{
+                      height: 52, // tinggi yang lebih besar
+                      width: '100%',
+                      backgroundColor:
+                        colorScheme === 'dark' ? '#FFFF' : '#FFFF',
+                      color: colorScheme === 'dark' ? '#000' : '#000',
+                    }}>
                     <Picker.Item label="WIB" value="WIB" />
                     <Picker.Item label="WITA" value="WITA" />
                     <Picker.Item label="WIT" value="WIT" />
@@ -713,7 +731,13 @@ const DetailDailyActivity = () => {
                     enabled={!loadingSubmit}
                     selectedValue={endTimeZone}
                     onValueChange={setEndTimeZone}
-                    style={styles.picker}>
+                    style={{
+                      height: 52, // tinggi yang lebih besar
+                      width: '100%',
+                      backgroundColor:
+                        colorScheme === 'dark' ? '#FFFF' : '#FFFF',
+                      color: colorScheme === 'dark' ? '#000' : '#000',
+                    }}>
                     <Picker.Item label="WIB" value="WIB" />
                     <Picker.Item label="WITA" value="WITA" />
                     <Picker.Item label="WIT" value="WIT" />

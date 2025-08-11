@@ -387,7 +387,12 @@ const DetailStakeholder = () => {
                 <Picker
                   selectedValue={sentiment}
                   onValueChange={setSentiment}
-                  style={styles.picker}>
+                  style={{
+                    height: 52, // tinggi yang lebih besar
+                    width: '100%',
+                    backgroundColor: colorScheme === 'dark' ? '#FFFF' : '#FFFF',
+                    color: colorScheme === 'dark' ? '#000' : '#000',
+                  }}>
                   {jenisSentiment.map(opt => (
                     <Picker.Item
                       key={opt.value}

@@ -435,7 +435,11 @@ const DashboardAbsensi = ({
         backgroundColor="transparent"
         barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
       />
-      <View style={[styles.container, {backgroundColor: colors.bgHome}]}>
+      <View
+        style={[
+          styles.container,
+          {backgroundColor: colorScheme === 'dark' ? '#F4F3F1' : '#F4F3F1'},
+        ]}>
         <AppHeader />
 
         <View
@@ -466,7 +470,10 @@ const DashboardAbsensi = ({
         keyExtractor={(item, idx) => item.type + idx}
         renderItem={renderSection}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{paddingBottom: 50}}
+        contentContainerStyle={{
+          paddingBottom: 50,
+          backgroundColor: colorScheme === 'dark' ? '#F4F3F1' : '#F4F3F1',
+        }}
         ListHeaderComponent={ListHeaderComponent}
       />
     </>

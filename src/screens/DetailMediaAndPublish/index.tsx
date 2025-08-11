@@ -421,7 +421,12 @@ const DetailMediaAndPublish = () => {
           <Picker
             selectedValue={item.status}
             onValueChange={(v: TLinkItem['status']) => onChange({status: v})}
-            style={styles.picker}>
+            style={{
+              height: 52, // tinggi yang lebih besar
+              width: '100%',
+              backgroundColor: colorScheme === 'dark' ? '#FFFF' : '#FFFF',
+              color: colorScheme === 'dark' ? '#000' : '#000',
+            }}>
             <Picker.Item label="Positif" value="positive" />
             <Picker.Item label="Negatif" value="negative" />
             <Picker.Item label="Netral" value="netral" />
@@ -529,7 +534,12 @@ const DetailMediaAndPublish = () => {
                 <Picker
                   selectedValue={mediaPartner}
                   onValueChange={setMediaPartner}
-                  style={styles.picker}>
+                  style={{
+                    height: 52, // tinggi yang lebih besar
+                    width: '100%',
+                    backgroundColor: colorScheme === 'dark' ? '#FFFF' : '#FFFF',
+                    color: colorScheme === 'dark' ? '#000' : '#000',
+                  }}>
                   {MEDIA_PARTNERS.map(opt => (
                     <Picker.Item
                       key={opt.value}

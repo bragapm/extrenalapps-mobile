@@ -763,7 +763,10 @@ const DashboardReport = ({role, sections}) => {
         keyExtractor={(item, idx) => item.type + idx}
         renderItem={renderSection}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{paddingBottom: 50}}
+        contentContainerStyle={{
+          paddingBottom: 50,
+          backgroundColor: colorScheme === 'dark' ? '#F4F3F1' : '#F4F3F1',
+        }}
         ListHeaderComponent={ListHeaderComponent}
       />
     </>
