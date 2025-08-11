@@ -79,8 +79,9 @@ const LoginScreen = () => {
     try {
       // Call login langsung dari postData (bukan loginAPI)
       const payload = {email, password, mode: 'json', otp: 'string'};
-      const result = await postData('/auth/login', payload);
 
+      const result = await postData('/auth/login', payload);
+      console.log('RESULT', result);
       // CEK ADA FIELD errors
       if ((result as any).errors && Array.isArray((result as any).errors)) {
         const msg = result.errors[0]?.message || 'Login gagal!';

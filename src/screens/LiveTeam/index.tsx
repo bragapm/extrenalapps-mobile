@@ -124,6 +124,7 @@ const LiveTeam: React.FC = () => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [showLoading, setShowLoading] = useState(true);
   const [selectedMarker, setSelectedMarker] = useState<Marker | null>(null);
+  const [legendVisible, setLegendVisible] = useState(false);
   const userLocation = useUserStore(state => state.location);
 
   const mapRef = useRef<MapboxGL.MapView>(null);
@@ -217,6 +218,17 @@ const LiveTeam: React.FC = () => {
                 />
               </View>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.legendButton}
+              onPress={() => setLegendVisible(true)}>
+              <View style={styles.centerButtonBg}>
+                <Image
+                  source={require('../../assets/icons/ic-legends.png')}
+                  style={{width: 32, height: 32}}
+                  resizeMode="contain"
+                />
+              </View>
+            </TouchableOpacity>
             <MapboxGL.MapView
               onDidFinishLoadingStyle={() => setMapLoaded(true)}
               scaleBarEnabled={false}
@@ -243,17 +255,93 @@ const LiveTeam: React.FC = () => {
                     key={m.id}
                     id={m.id}
                     coordinate={m.coordinate}
+                    anchor={{x: 0.5, y: 1}} // titik referensi di bawah tengah
                     onSelected={() => setSelectedMarker(m)}
                     ref={ref => {
                       annotationRefs.current[m.id] = ref;
                     }}>
-                    <FastImage
-                      source={m.image}
-                      style={{width: 54, height: 54}}
-                      resizeMode={FastImage.resizeMode.contain}
-                      // 3️⃣ panggil refresh agar Mapbox raster ulang child‑view
-                      onLoad={() => annotationRefs.current[m.id]?.refresh()}
-                    />
+                    <View
+                      style={{
+                        alignItems: 'center',
+                        backgroundColor: 'transparent',
+                      }}
+                      collapsable={false}
+                      onLayout={() => annotationRefs.current[m.id]?.refresh()}>
+                      {m?.type === 'employee_nonorganic' ||
+                      m?.type === 'employee_organic' ? (
+                        <View
+                          style={{alignItems: 'center', marginBottom: 12}}
+                          collapsable={false}>
+                          <View
+                            style={{
+                              maxWidth: 180,
+                              paddingHorizontal: 12,
+                              paddingVertical: 6,
+                              backgroundColor: '#FFFFFF',
+                              borderRadius: 10,
+                              borderWidth: 1,
+                              borderColor: '#DADADA',
+                              // shadow iOS
+                              shadowColor: '#000',
+                              shadowOpacity: 0.15,
+                              shadowRadius: 4,
+                              shadowOffset: {width: 0, height: 2},
+                              // shadow Android
+                              elevation: 2,
+                            }}>
+                            <Text
+                              style={{
+                                fontSize: 14, // sedikit lebih besar biar mirip contoh
+                                fontWeight: '600',
+                                color: '#1A1A1A',
+                              }}
+                              numberOfLines={1}
+                              ellipsizeMode="tail">
+                              {m?.name}
+                            </Text>
+                          </View>
+
+                          {/* Border ekor (outline) */}
+                          <View
+                            style={{
+                              position: 'absolute',
+                              bottom: -10, // posisikan tepat di bawah bubble
+                              width: 0,
+                              height: 0,
+                              borderLeftWidth: 10,
+                              borderRightWidth: 10,
+                              borderTopWidth: 10,
+                              borderLeftColor: 'transparent',
+                              borderRightColor: 'transparent',
+                              borderTopColor: '#DADADA',
+                            }}
+                          />
+
+                          {/* Ekor putih */}
+                          <View
+                            style={{
+                              position: 'absolute',
+                              bottom: -9, // 1px di atas border utk efek outline
+                              width: 0,
+                              height: 0,
+                              borderLeftWidth: 9,
+                              borderRightWidth: 9,
+                              borderTopWidth: 9,
+                              borderLeftColor: 'transparent',
+                              borderRightColor: 'transparent',
+                              borderTopColor: '#FFFFFF',
+                            }}
+                          />
+                        </View>
+                      ) : null}
+
+                      <FastImage
+                        source={m.image}
+                        style={{width: 54, height: 54}}
+                        resizeMode={FastImage.resizeMode.contain}
+                        onLoad={() => annotationRefs.current[m.id]?.refresh()}
+                      />
+                    </View>
                   </MapboxGL.PointAnnotation>
                 ))}
 
@@ -705,6 +793,71 @@ const LiveTeam: React.FC = () => {
             </View>
           </View>
         </Modal>
+
+        {/* MODAL LEGEND */}
+        <Modal
+          visible={legendVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setLegendVisible(false)}>
+          <View style={styles.legendBackdrop}>
+            <View style={styles.legendCard}>
+              {/* Header */}
+              <View style={styles.legendHeaderRow}>
+                <Text style={styles.legendTitle}>Legend</Text>
+                <TouchableOpacity onPress={() => setLegendVisible(false)}>
+                  <Text style={styles.legendClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.legendDivider} />
+
+              {/* Land Occupancy */}
+              <Text style={styles.legendSectionTitle}>Land Occupancy</Text>
+              <Text style={styles.legendSectionSub}>Polygon</Text>
+
+              <View style={styles.legendRow}>
+                <View
+                  style={[
+                    styles.legendSquareOutline,
+                    {borderColor: '#1BCB77'},
+                  ]}>
+                  <View style={styles.legendSquareInner} />
+                </View>
+                <Text style={styles.legendLabel}>Desa Positive</Text>
+              </View>
+
+              {/* Site Negative */}
+              <View style={styles.legendRow}>
+                <View
+                  style={[
+                    styles.legendSquareOutline,
+                    {borderColor: '#F28C2E'},
+                  ]}>
+                  <View style={styles.legendSquareInner2} />
+                </View>
+                <Text style={styles.legendLabel}>Site Negative</Text>
+              </View>
+              {/* Karyawan */}
+              <Text style={[styles.legendSectionTitle, {marginTop: 12}]}>
+                Karyawan
+              </Text>
+              <Text style={styles.legendSectionSub}>POI</Text>
+
+              <View style={styles.legendRow}>
+                <View
+                  style={[styles.legendCircle, {backgroundColor: '#1BCB77'}]}
+                />
+                <Text style={styles.legendLabel}>Organic</Text>
+              </View>
+              <View style={styles.legendRow}>
+                <View
+                  style={[styles.legendCircle, {backgroundColor: '#1F6AFD'}]}
+                />
+                <Text style={styles.legendLabel}>Non-Organic</Text>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     </>
   );
@@ -776,7 +929,13 @@ const styles = StyleSheet.create({
   },
   centerButton: {
     position: 'absolute',
-    bottom: 120,
+    bottom: 170,
+    left: 10,
+    zIndex: 10,
+  },
+  legendButton: {
+    position: 'absolute',
+    bottom: 100,
     left: 10,
     zIndex: 10,
   },
@@ -788,6 +947,90 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  legendBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  legendCard: {
+    width: '90%',
+    borderRadius: 16,
+    backgroundColor: '#F4F3F1',
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.15)',
+  },
+
+  // kotak outline seperti ekspektasi
+  legendSquareOutline: {
+    width: 22,
+    height: 22,
+    borderWidth: 3,
+    borderRadius: 5,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  legendSquareInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 2,
+    backgroundColor: '#55D879', // isi putih agar kontras di card abu
+  },
+  legendSquareInner2: {
+    width: 12,
+    height: 12,
+    borderRadius: 2,
+    backgroundColor: '#F3A67A', // isi putih agar kontras di card abu
+  },
+  legendHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  legendTitle: {fontSize: 18, fontWeight: '600', color: '#1A1A1A'},
+  legendClose: {fontSize: 18, color: '#4A4A4A'},
+  legendDivider: {
+    height: 1,
+    backgroundColor: '#3C3C3C',
+    opacity: 0.6,
+    marginBottom: 12,
+  },
+  legendSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1A1A1A',
+  },
+  legendSectionSub: {
+    fontSize: 12,
+    color: '#8B8B87',
+    marginTop: 2,
+    marginBottom: 8,
+  },
+  legendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  legendSquare: {
+    width: 20,
+    height: 20,
+    borderWidth: 3,
+    borderRadius: 4,
+    marginRight: 10,
+    backgroundColor: 'transparent',
+  },
+  legendCircle: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  legendLabel: {fontSize: 14, color: '#1A1A1A'},
 });
 
 export default LiveTeam;

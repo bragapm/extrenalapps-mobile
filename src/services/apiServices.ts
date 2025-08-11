@@ -7,7 +7,7 @@ export const MAPBOX_ACCESS_TOKEN =
 
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  timeout: 50000000,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',

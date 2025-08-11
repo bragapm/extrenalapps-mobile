@@ -70,20 +70,26 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           }}>
           <View
             style={{
-              width: '50%',
+              width: '45%',
               alignItems: 'flex-start',
-              // paddingHorizontal: "2%",
+              paddingHorizontal: "2%",
               justifyContent: 'center',
+              flexDirection: 'row',
             }}>
             <Image
-              source={require('../assets/images/LogoBIB.png')}
-              style={{width: 160, height: 54}}
+              source={require('../assets/images/LogoXreels.png')}
+              style={{width: 70, height: 54}}
+              resizeMode="contain"
+            />
+            <Image
+              source={require('../assets/images/titleXrels.png')}
+              style={{width: 125, height: 55}}
               resizeMode="contain"
             />
           </View>
           <View
             style={{
-              width: '60%',
+              width: '70%',
               alignItems: 'flex-end',
               // paddingHorizontal: "2%",
               flexDirection: 'row',

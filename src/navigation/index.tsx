@@ -43,6 +43,7 @@ import MenuDrawer from '../components/MenuDrawer';
 import {useFeatureStore} from '../store/featureStore';
 import DetailWeeklyActivity from '../screens/DetailWeeklyActivity';
 import DetailStakeholder from '../screens/DetailStakeholder';
+import DetailMediaAndPublish from '../screens/DetailMediaAndPublish';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -56,6 +57,7 @@ export type RootStackParamList = {
   DetailDailyActivity: undefined;
   DetailWeeklyActivity: undefined;
   DetailStakeHolder: undefined;
+  DetailMediaAndPublish: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -190,7 +192,7 @@ function MainTabs() {
           name="liveTeam"
           component={LiveTeam}
           options={{
-            tabBarLabel: 'Live Team',
+            tabBarLabel: 'Maps Tracking',
             tabBarIcon: ({focused}) => getTabIcon(focused, 'liveTeam'),
           }}
           listeners={{
@@ -458,6 +460,10 @@ export default function AppNavigation() {
           component={DetailWeeklyActivity}
         />
         <Stack.Screen name="DetailStakeHolder" component={DetailStakeholder} />
+        <Stack.Screen
+          name="DetailMediaAndPublish"
+          component={DetailMediaAndPublish}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

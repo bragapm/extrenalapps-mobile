@@ -17,6 +17,9 @@ import {
 import Svg, {G, Rect, Text as SvgText, TSpan, Path} from 'react-native-svg';
 import {useThemeStore} from '../../theme/useThemeStore';
 import AppHeader from '../../components/AppHeader';
+import {RootStackParamList} from '../../navigation';
+import {StackNavigationProp} from '@react-navigation/stack';
+import {useNavigation} from '@react-navigation/native';
 
 type MediaAndPublishProps = {
   home?: boolean;
@@ -416,54 +419,63 @@ const AbsensiBadge = ({statusType}) => {
   );
 };
 
-const AbsensiCard = ({item}) => (
-  <View style={styles.absenCard}>
-    <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 3}}>
-      <Text style={styles.absenCardName}>{item.name}</Text>
-    </View>
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}>
-      <View
-        style={{
-          flexDirection: 'row',
-        }}>
-        <Text style={styles.absenCardRole}>{item.role}</Text>
-        <Text style={styles.absenCardRole}>-</Text>
-        <Text style={styles.absenCardRole}>{item.status}</Text>
-      </View>
-      <View>
-        <TouchableOpacity
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-          }}>
-          <Text
-            style={{
-              fontSize: 16,
-              fontWeight: '400',
-              color: '#4F4D4A',
-              marginRight: 2,
-            }}>
-            Lihat
-          </Text>
-          <Image
-            source={require('../../assets/icons/chevRed.png')}
-            style={{width: 12, height: 12}}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-      </View>
-    </View>
-  </View>
-);
-
 const MediaAndPublish: React.FC<MediaAndPublishProps> = ({}) => {
   const {colors} = useThemeStore();
   const colorScheme = useColorScheme();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+
+  const AbsensiCard = ({item}) => (
+    <TouchableOpacity
+      onPress={() =>
+        navigation.navigate('DetailMediaAndPublish', {
+          showForm: false,
+          data: item,
+        })
+      }
+      style={styles.absenCard}>
+      <View
+        style={{flexDirection: 'row', alignItems: 'center', marginBottom: 3}}>
+        <Text style={styles.absenCardName}>{item.name}</Text>
+      </View>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+        <View
+          style={{
+            flexDirection: 'row',
+          }}>
+          <Text style={styles.absenCardRole}>{item.role}</Text>
+          <Text style={styles.absenCardRole}>-</Text>
+          <Text style={styles.absenCardRole}>{item.status}</Text>
+        </View>
+        <View>
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+            }}>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: '400',
+                color: '#4F4D4A',
+                marginRight: 2,
+              }}>
+              Lihat
+            </Text>
+            <Image
+              source={require('../../assets/icons/chevRed.png')}
+              style={{width: 12, height: 12}}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
   return (
     <>
       <StatusBar
@@ -472,10 +484,10 @@ const MediaAndPublish: React.FC<MediaAndPublishProps> = ({}) => {
         barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
       />
       <View style={[styles.container, {backgroundColor: colors.bgHome}]}>
-        <AppHeader 
-        // menu={true} 
-        home={true} 
-        // label={'Publikasi dan Media'} 
+        <AppHeader
+          // menu={true}
+          home={true}
+          // label={'Publikasi dan Media'}
         />
         <ScrollView
           style={{flex: 1, width: '100%'}}
@@ -577,7 +589,13 @@ const MediaAndPublish: React.FC<MediaAndPublishProps> = ({}) => {
             zIndex: 99,
             paddingVertical: '3%',
           }}>
-          <TouchableOpacity style={styles.fabButton}>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('DetailMediaAndPublish', {
+                showForm: true,
+              })
+            }
+            style={styles.fabButton}>
             <Text style={styles.fabButtonText}>Tambah Publikasi</Text>
           </TouchableOpacity>
         </View>
