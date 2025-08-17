@@ -175,15 +175,21 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               flexDirection: 'row',
             }}>
             <Image
-              source={require('../assets/icons/BIB-ICON.png')}
-              style={{width: width * 0.1, height: 30}}
+              source={require('../assets/images/LogoXreels.png')}
+              style={{width: 45, height: 50}}
               resizeMode="contain"
             />
+            {/* <Image
+              source={require('../assets/images/titleXrels.png')}
+              style={{width: 125, height: 55}}
+              resizeMode="contain"
+            /> */}
             <Text
               style={{
                 fontWeight: '600',
                 color: '#161414',
                 fontSize: 13,
+                marginLeft: '2%',
               }}
               numberOfLines={1}
               ellipsizeMode="tail">
