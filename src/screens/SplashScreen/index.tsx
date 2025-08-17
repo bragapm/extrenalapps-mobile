@@ -26,6 +26,7 @@ import ReactNativeBiometrics from 'react-native-biometrics';
 import * as Keychain from 'react-native-keychain';
 import {useAuthStore} from '../../store/authStore';
 import {loginAPI} from '../../services/apiServices';
+import axios from 'axios';
 
 type Props = {
   navigation: StackNavigationProp<RootStackParamList, 'Splash'>;
@@ -218,13 +219,18 @@ const SplashScreen: React.FC<Props> = ({navigation}) => {
                 });
 
                 navigation.replace('Main');
-              } catch (err) {
-                console.log(
-                  '[DEBUG][Biometric] Error saat loginAPI:',
-                  err,
-                  err?.response,
-                );
-                // Login gagal, ke halaman login manual
+              } catch (e: unknown) {
+                if (axios.isAxiosError(e)) {
+                  console.log(
+                    '[DEBUG][Biometric] Error saat loginAPI:',
+                    e.message,
+                    e.response?.status,
+                    e.response?.data,
+                    e?.response,
+                  );
+                } else {
+                  console.log('[DEBUG][Biometric] Error saat loginAPI:', e);
+                }
                 navigation.replace('Login');
               }
             } else {

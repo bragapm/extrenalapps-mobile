@@ -154,7 +154,7 @@ export const logoutAPI = async (refresh_token: string): Promise<any> => {
   return res.data;
 };
 
-export const updateFileMetaDirectus = async (fileIds, data) => {
+export const updateFileMetaDirectus = async (fileIds: any, data: any) => {
   const token = await AsyncStorage.getItem('token');
   if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
 
@@ -190,7 +190,15 @@ curl -X PATCH "https://externalapps.braga.co.id/panel/files" \\
   return res.data;
 };
 
-export const uploadFileDirectus = async ({uri, name, type}) => {
+export const uploadFileDirectus = async ({
+  uri,
+  name,
+  type,
+}: {
+  uri: string;
+  name?: string;
+  type?: string;
+}) => {
   const token = await AsyncStorage.getItem('token');
   if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
 
@@ -219,7 +227,7 @@ export const uploadFileDirectus = async ({uri, name, type}) => {
   return res.data.data.id || res.data.data; // biar aman
 };
 
-export const createDailyActivity = async body => {
+export const createDailyActivity = async (body: any) => {
   const token = await AsyncStorage.getItem('token');
   if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
 
@@ -254,7 +262,7 @@ export const getUsers = async () => {
   const res = await getData('/users');
   return res.data; // array of users
 };
-export const getUserById = async id => {
+export const getUserById = async (id: any) => {
   const res = await getData(`/users/${id}`);
   return res.data;
 };
@@ -264,7 +272,7 @@ export const getDailyActivities = async (params = {}) => {
   return res?.data || [];
 };
 // Fungsi ambil gambar asset pakai Authorization header, return dataURL base64
-export const getImageWithAuth = async uuid => {
+export const getImageWithAuth = async (uuid: any) => {
   const token = await AsyncStorage.getItem('token');
   try {
     const url = `https://externalapps.braga.co.id/panel/assets/${uuid}`;
@@ -292,7 +300,7 @@ export const getImageWithAuth = async uuid => {
   }
 };
 
-export const updateDailyActivity = async (id, body) => {
+export const updateDailyActivity = async (id: any, body: any) => {
   const token = await AsyncStorage.getItem('token');
   if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
 
@@ -309,7 +317,7 @@ export const updateDailyActivity = async (id, body) => {
   return res.data;
 };
 
-export const getDailyActivityDetail = async id => {
+export const getDailyActivityDetail = async (id: any) => {
   const token = await AsyncStorage.getItem('token');
   if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
 
@@ -336,7 +344,7 @@ export const getLeavesRequest = async (params = {}) => {
   return res?.data || [];
 };
 
-export const updateLeaveRequest = async (id, body) => {
+export const updateLeaveRequest = async (id: any, body: any) => {
   const token = await AsyncStorage.getItem('token');
   if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
 
@@ -370,7 +378,7 @@ export const getWeeklyReports = async () => {
   return res?.data || [];
 };
 
-export const getWeeklyActivityDetail = async id => {
+export const getWeeklyActivityDetail = async (id: any) => {
   const token = await AsyncStorage.getItem('token');
   if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
 
@@ -392,7 +400,7 @@ export const getWeeklyActivityDetail = async id => {
   return res?.data?.data;
 };
 
-export const createWeeklyActivity = async body => {
+export const createWeeklyActivity = async (body: any) => {
   const token = await AsyncStorage.getItem('token');
   if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
 
@@ -428,7 +436,7 @@ export const getBusinessTrips = async (params = {}) => {
   const res = await getData('/items/business_trips', params);
   return res?.data || [];
 };
-export const getBusinessTripDetail = async id => {
+export const getBusinessTripDetail = async (id: any) => {
   const token = await AsyncStorage.getItem('token');
   if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
 
@@ -445,7 +453,7 @@ export const getStakeholders = async (params = {}) => {
   const res = await getData('/items/stakeholders?fields=', params);
   return res?.data || [];
 };
-export const getStakeholdersDetail = async id => {
+export const getStakeholdersDetail = async (id: any) => {
   const token = await AsyncStorage.getItem('token');
   if (!token) throw new Error('Token tidak ditemukan. Harus login dulu.');
 
