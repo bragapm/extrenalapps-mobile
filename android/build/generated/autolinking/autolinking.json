@@ -112,7 +112,7 @@
       "platforms": {
         "ios": {
           "podspecPath": "/Users/ramaaa/Documents/WORK/BRAGA/Github/extrenalapps-mobile/node_modules/@rnmapbox/maps/rnmapbox-maps.podspec",
-          "version": "10.1.39",
+          "version": "10.1.41",
           "configurations": [],
           "scriptPhases": []
         },
