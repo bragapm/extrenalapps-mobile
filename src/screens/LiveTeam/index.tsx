@@ -19,6 +19,10 @@ import {useIsFocused} from '@react-navigation/native';
 import {useUserStore} from '../../store/userStore';
 import AppHeader from '../../components/AppHeader';
 import FastImage from 'react-native-fast-image';
+import {
+  ensureLocationPermissionInteractive,
+  getCurrentLocation,
+} from '../../utils/location';
 
 const {width, height} = Dimensions.get('window');
 
@@ -130,6 +134,7 @@ const LiveTeam: React.FC = () => {
   const mapRef = useRef<MapboxGL.MapView>(null);
   const cameraRef = useRef<MapboxGL.Camera>(null);
   const annotationRefs = useRef<AnnotationMap>({});
+  const setUserLocation = useUserStore(state => state.setLocation);
 
   // 2️⃣ preload icon supaya lebih cepat (opsional)
   useEffect(() => {
@@ -202,13 +207,26 @@ const LiveTeam: React.FC = () => {
           <View style={styles.mapContainer}>
             <TouchableOpacity
               style={styles.centerButton}
-              onPress={() => {
-                // trigger camera to user location/default
-                cameraRef.current?.setCamera({
-                  centerCoordinate: coordinate,
-                  zoomLevel: 15,
-                  animationDuration: 600,
-                });
+              onPress={async () => {
+                const ok = await ensureLocationPermissionInteractive();
+                if (!ok) return; // user tolak atau blocked → bisa tekan lagi kapan saja
+
+                try {
+                  const loc = await getCurrentLocation();
+                  setUserLocation(loc); // update store → marker "me" ikut pindah
+                  const target: [number, number] = [
+                    loc.longitude,
+                    loc.latitude,
+                  ];
+                  cameraRef.current?.setCamera({
+                    centerCoordinate: target,
+                    zoomLevel: 15,
+                    animationDuration: 600,
+                  });
+                } catch {
+                  // opsional: beri info gagal ambil lokasi
+                  // Alert.alert('Gagal Ambil Lokasi', 'Pastikan GPS aktif lalu coba lagi.');
+                }
               }}>
               <View style={styles.centerButtonBg}>
                 <Image

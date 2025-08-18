@@ -148,23 +148,27 @@ const SplashScreen: React.FC<Props> = ({navigation}) => {
 
   useEffect(() => {
     const checkLocation = async () => {
-      const isLocationAsked = await AsyncStorage.getItem('isLocationAsked');
-      if (isLocationAsked === 'yes') {
-        setLocationAsked(true);
-        return;
-      }
-      const granted = await getLocationPermission();
-      if (granted) {
-        try {
-          const loc = await getCurrentLocation();
-          setUserLocation(loc); // <-- ini aja cukup
-          await AsyncStorage.setItem('isLocationAsked', 'yes');
+      try {
+        const already = await AsyncStorage.getItem('isLocationAsked');
+        if (already === 'yes') {
           setLocationAsked(true);
-        } catch (err) {
-          setLocationAsked(false);
+          return;
         }
-      } else {
-        setLocationAsked(false);
+
+        const status = await getLocationPermission(); // 'granted' | 'denied' | 'blocked'
+        if (status === 'granted') {
+          try {
+            const loc = await getCurrentLocation();
+            setUserLocation(loc);
+            await AsyncStorage.setItem('isLocationAsked', 'yes');
+          } catch {
+            // abaikan error lokasi, lanjut saja
+          }
+        }
+        // apapun hasil cek, jangan blokir UI
+        setLocationAsked(true);
+      } catch {
+        setLocationAsked(true);
       }
     };
     checkLocation();
