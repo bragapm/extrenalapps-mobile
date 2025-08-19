@@ -17,7 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {RootStackParamList} from '../../navigation';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {useAuthStore, UserInfo} from '../../store/authStore';
-import {loginAPI, postData} from '../../services/apiServices';
+import {loginAPI, postData, refreshTokenAPI} from '../../services/apiServices';
 import Toast from '../../components/Toast';
 import * as Keychain from 'react-native-keychain';
 
@@ -68,30 +68,21 @@ const LoginScreen = () => {
       hasError = true;
     }
     const userRole = 'admin';
-
     if (hasError) return;
+
     setLoading(true);
     try {
-      // Call login langsung dari postData (bukan loginAPI)
+      // 1) LOGIN
       const payload = {email, password, mode: 'json', otp: 'string'};
-
       const result = await postData('/auth/login', payload);
-      console.log('RESULT', result);
-      // CEK ADA FIELD errors
+
       if ((result as any).errors && Array.isArray((result as any).errors)) {
         const msg = result.errors[0]?.message || 'Login gagal!';
-        setToastData({
-          type: 'error',
-          title: 'Login Gagal',
-          message: msg || 'Login gagal!',
-        });
+        setToastData({type: 'error', title: 'Login Gagal', message: msg});
         setToastVisible(true);
-        // setPasswordError(msg);
         return;
       }
-
-      // CEK TOKEN
-      if (!result.data?.access_token) {
+      if (!result.data?.refresh_token) {
         setToastData({
           type: 'error',
           title: 'Login Gagal',
@@ -102,16 +93,25 @@ const LoginScreen = () => {
         return;
       }
 
-      // SUKSES
-      await useAuthStore.getState().setAuth({
-        accessToken: result.data.access_token,
-        refreshToken: result.data.refresh_token,
-        expires: result.data.expires,
-        user: {role: userRole, email} as UserInfo,
-        loginSaved: 'Saved',
+      // 2) TUKAR refresh_token HASIL LOGIN → pasangan token baru
+      const firstRefresh = await refreshTokenAPI(result.data.refresh_token);
+
+      // 3) SIMPAN hanya pasangan dari REFRESH
+      await useAuthStore.getState().setFromRefresh({
+        access_token: firstRefresh.data.access_token,
+        refresh_token: firstRefresh.data.refresh_token,
+        expires: firstRefresh.data.expires,
       });
-      await AsyncStorage.multiSet([['userRole', userRole]]);
+
+      // 4) SIMPAN user info & flag saved
+      await useAuthStore
+        .getState()
+        .setUserAndSaved({role: userRole, email} as UserInfo, 'Saved');
+      await AsyncStorage.setItem('userRole', userRole);
+
+      // (opsional) simpan kredensial di Keychain, sesuai kode Anda
       await Keychain.setGenericPassword(email, password);
+
       setToastData({
         type: 'success',
         title: 'Login Berhasil',
@@ -120,17 +120,14 @@ const LoginScreen = () => {
       setToastVisible(true);
       navigation.replace('Main');
     } catch (err: any) {
-      const msg =
-        err?.message ||
-        err?.response?.data?.errors?.[0]?.message ||
-        'Login gagal, cek email/password!';
       setToastData({
         type: 'error',
         title: 'Login Gagal',
         message: err?.message || 'Login gagal, cek email/password!',
       });
       setToastVisible(true);
-      // setPasswordError(msg);
+    } finally {
+      setLoading(false);
     }
   };
 

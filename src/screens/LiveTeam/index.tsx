@@ -11,6 +11,8 @@ import {
   ActivityIndicator,
   StatusBar,
   useColorScheme,
+  Platform,
+  Alert,
 } from 'react-native';
 import MapboxGL from '@rnmapbox/maps';
 import {useThemeStore} from '../../theme/useThemeStore';
@@ -21,8 +23,11 @@ import AppHeader from '../../components/AppHeader';
 import FastImage from 'react-native-fast-image';
 import {
   ensureLocationPermissionInteractive,
+  ensureLocationPermissionInteractiveWithStatus,
   getCurrentLocation,
+  openAppSettings,
 } from '../../utils/location';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const {width, height} = Dimensions.get('window');
 
@@ -194,6 +199,35 @@ const LiveTeam: React.FC = () => {
     fetchLocationName();
   }, [centerCoord]);
 
+  useEffect(() => {
+    if (!isFocused) return;
+
+    const silentCenterIfGranted = async () => {
+      try {
+        // kalau user sudah pernah kasih izin di Splash (flag 'yes'), kita coba ambil lokasi diam-diam
+        const asked = await AsyncStorage.getItem('isLocationAsked');
+        if (asked === 'yes') {
+          try {
+            const loc = await getCurrentLocation(8000, 0);
+            setUserLocation(loc);
+            setCenterCoord([loc.longitude, loc.latitude]);
+            cameraRef.current?.setCamera({
+              centerCoordinate: [loc.longitude, loc.latitude],
+              zoomLevel: 15,
+              animationDuration: 0,
+            });
+          } catch {
+            // gagal ambil lokasi (GPS off dsb) → abaikan
+          }
+        }
+        // kalau belum pernah, jangan popup di sini (sesuai requirement),
+        // biarkan tombol "user location" yang memicu popup saat ditekan.
+      } catch {}
+    };
+
+    silentCenterIfGranted();
+  }, [isFocused, setUserLocation]);
+
   return (
     <>
       <StatusBar
@@ -208,25 +242,45 @@ const LiveTeam: React.FC = () => {
             <TouchableOpacity
               style={styles.centerButton}
               onPress={async () => {
-                const ok = await ensureLocationPermissionInteractive();
-                if (!ok) return; // user tolak atau blocked → bisa tekan lagi kapan saja
+                const status =
+                  await ensureLocationPermissionInteractiveWithStatus();
 
-                try {
-                  const loc = await getCurrentLocation();
-                  setUserLocation(loc); // update store → marker "me" ikut pindah
-                  const target: [number, number] = [
-                    loc.longitude,
-                    loc.latitude,
-                  ];
-                  cameraRef.current?.setCamera({
-                    centerCoordinate: target,
-                    zoomLevel: 15,
-                    animationDuration: 600,
-                  });
-                } catch {
-                  // opsional: beri info gagal ambil lokasi
-                  // Alert.alert('Gagal Ambil Lokasi', 'Pastikan GPS aktif lalu coba lagi.');
+                if (status === 'granted') {
+                  try {
+                    const loc = await getCurrentLocation();
+                    setUserLocation(loc);
+                    const target: [number, number] = [
+                      loc.longitude,
+                      loc.latitude,
+                    ];
+                    cameraRef.current?.setCamera({
+                      centerCoordinate: target,
+                      zoomLevel: 15,
+                      animationDuration: 600,
+                    });
+                    setCenterCoord(target);
+                  } catch {}
+                  return;
                 }
+
+                if (Platform.OS === 'android' && status === 'blocked') {
+                  // ini sekarang cuma kejadian kalau FINE & COARSE sama-sama BLOCKED (benar-benar 'Don't ask again')
+                  Alert.alert(
+                    'Izin Lokasi Diblokir',
+                    'Aktifkan izin lokasi di Pengaturan untuk menggunakan fitur ini.',
+                    [
+                      {text: 'Batal', style: 'cancel'},
+                      {
+                        text: 'Buka Pengaturan',
+                        onPress: () => openAppSettings(),
+                      },
+                    ],
+                  );
+                  return;
+                }
+                // Selain itu (iOS denied / Android denied biasa) → JANGAN apa-apa.
+                // Sesuai keinginanmu: "Dont allow" hanya menutup dialog saat itu.
+                // User bisa tekan tombol lagi untuk mencoba request lagi.
               }}>
               <View style={styles.centerButtonBg}>
                 <Image

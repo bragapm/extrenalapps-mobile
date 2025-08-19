@@ -17,7 +17,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {useThemeStore} from '../../theme/useThemeStore';
 import {RootStackParamList} from '../../navigation';
-import {getLocationPermission, getCurrentLocation} from '../../utils/location';
+import {
+  getLocationPermission,
+  getCurrentLocation,
+  ensureLocationPermissionInteractive,
+} from '../../utils/location';
 import {useUserStore} from '../../store/userStore';
 import {request, PERMISSIONS, RESULTS} from 'react-native-permissions';
 import {useFeatureStore} from '../../store/featureStore';
@@ -147,32 +151,35 @@ const SplashScreen: React.FC<Props> = ({navigation}) => {
   };
 
   useEffect(() => {
-    const checkLocation = async () => {
+    const askLocationOnAppStart = async () => {
       try {
         const already = await AsyncStorage.getItem('isLocationAsked');
         if (already === 'yes') {
-          setLocationAsked(true);
+          // Sudah pernah granted → coba ambil lokasi diam-diam (tanpa popup) biar store terisi
+          try {
+            const loc = await getCurrentLocation(8000, 0);
+            setUserLocation(loc);
+          } catch {}
           return;
         }
 
-        const status = await getLocationPermission(); // 'granted' | 'denied' | 'blocked'
-        if (status === 'granted') {
+        // MUNCULKAN POPUP IZIN di Splash
+        const ok = await ensureLocationPermissionInteractive();
+        if (ok) {
           try {
             const loc = await getCurrentLocation();
             setUserLocation(loc);
-            await AsyncStorage.setItem('isLocationAsked', 'yes');
-          } catch {
-            // abaikan error lokasi, lanjut saja
-          }
+          } catch {}
+          // tandai agar tidak tanya lagi di Splash berikutnya
+          await AsyncStorage.setItem('isLocationAsked', 'yes');
+        } else {
+          // ditolak → tetap lanjut app tanpa flag
         }
-        // apapun hasil cek, jangan blokir UI
-        setLocationAsked(true);
-      } catch {
-        setLocationAsked(true);
-      }
+      } catch {}
     };
-    checkLocation();
-  }, []);
+
+    askLocationOnAppStart();
+  }, [setUserLocation]);
 
   useEffect(() => {
     const checkLogin = async () => {

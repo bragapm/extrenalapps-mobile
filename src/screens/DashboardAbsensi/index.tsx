@@ -1,5 +1,5 @@
 // DashboardAbsensi.tsx
-import React from 'react';
+import React, {useMemo, useState} from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   ImageBackground,
   StatusBar,
   useColorScheme,
+  TextInput,
+  Switch,
 } from 'react-native';
 import CustomLineChart from '../../components/CustomLineChart'; // Pastikan path benar
 // import {
@@ -27,6 +29,9 @@ import Svg, {Rect, G, Text as SvgText} from 'react-native-svg';
 import {useThemeStore} from '../../theme/useThemeStore.ts';
 import AppHeader from '../../components/AppHeader.tsx';
 import StackedBarChart from '../../components/StackedBarChart.tsx';
+import {useNavigation} from '@react-navigation/native';
+import {StackNavigationProp} from '@react-navigation/stack';
+import {RootStackParamList} from '../../navigation/index.tsx';
 
 type StackedBarChartData = {
   month: string;
@@ -108,6 +113,60 @@ const DashboardAbsensi = ({
   // NOTE: Semua props di atas bisa di-pass dari HomeScreen, tinggal sesuaikan data dummy apa yang kamu mau kirim
   const {colors} = useThemeStore();
   const colorScheme = useColorScheme();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const [useManualTime, setUseManualTime] = useState(false);
+  const [manualTime, setManualTime] = useState(''); // contoh: "06:30" atau "19"
+
+  // Parse "HH" atau "HH:MM" → jam (0-23) | null jika invalid
+  const parseHour = (s: string): number | null => {
+    const trimmed = s.trim();
+    if (!trimmed) return null;
+    // izinkan "H", "HH", "HH:MM"
+    const m = /^([01]?\d|2[0-3])(?::([0-5]\d))?$/.exec(trimmed);
+    if (!m) return null;
+    const hh = Number(m[1]);
+    // const mm = m[2] ? Number(m[2]) : 0; // jika nanti butuh menit
+    return hh; // aturan enable/disable berdasarkan jam (bukan menit)
+  };
+
+  const deviceHour = new Date().getHours();
+  const manualHour = parseHour(manualTime);
+  const effectiveHour =
+    useManualTime && manualHour != null ? manualHour : deviceHour;
+
+  // Disable antara 07:00 - 16:59 (>=7 dan <17)
+  const isButtonDisabled = useMemo(
+    () => effectiveHour >= 7 && effectiveHour < 17,
+    [effectiveHour],
+  );
+
+  const handleGoToAttendance = () => {
+    // Kalau komponen ini ada di dalam Stack yang berada di bawah Tab:
+    // const parentNav = navigation.getParent();
+    // if (parentNav?.navigate) {
+    //   parentNav.navigate('attendance');
+    //   return;
+    // }
+    // Fallback kalau struktur navigasi berbeda:
+    try {
+      navigation.reset({
+        index: 0,
+        routes: [
+          {
+            name: 'Main',
+            params: {
+              screen: 'attendance',
+              params: {activeMenu: 'absen', mode: 'daily'},
+            },
+          },
+        ],
+      });
+    } catch {
+      // Jika tab-nya dibungkus navigator bernama, contoh: "MainTabs"
+      navigation.navigate('MainTabs' as never, {screen: 'attendance'} as never);
+    }
+  };
+
   const renderSection = ({item}) => {
     // Semua logic seperti sebelumnya
     if (item.type === 'summary-admin') {
@@ -476,6 +535,55 @@ const DashboardAbsensi = ({
         }}
         ListHeaderComponent={ListHeaderComponent}
       />
+      {/* <View style={styles.testPanel}>
+        <View style={styles.testRow}>
+          <Text style={styles.testLabel}>Gunakan jam manual untuk testing</Text>
+          <Switch value={useManualTime} onValueChange={setUseManualTime} />
+        </View>
+
+        {useManualTime && (
+          <View style={styles.manualRow}>
+            <TextInput
+              style={styles.timeInput}
+              placeholder="Masukkan jam (HH atau HH:MM)"
+              keyboardType="number-pad"
+              value={manualTime}
+              onChangeText={setManualTime}
+              maxLength={5}
+            />
+            <Text style={styles.currentInfo}>
+              Jam efektif: {manualHour != null ? manualHour : '--'} (device:{' '}
+              {deviceHour})
+            </Text>
+          </View>
+        )}
+
+        {!useManualTime && (
+          <Text style={styles.currentInfo}>Jam device: {deviceHour}</Text>
+        )}
+      </View> */}
+
+      {/* ====== FOOTER / BUTTON ====== */}
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={[
+            styles.btnSubmit,
+            isButtonDisabled && {backgroundColor: '#ccc'},
+          ]}
+          disabled={isButtonDisabled}
+          activeOpacity={isButtonDisabled ? 1 : 0.7}
+          onPress={handleGoToAttendance}>
+          <Text style={styles.submitText}>Cek Absen</Text>
+        </TouchableOpacity>
+
+        {/* <Text style={styles.hintText}>
+          Tombol{' '}
+          {isButtonDisabled
+            ? 'DISABLED (07:00–16:59)'
+            : 'ENABLED (di luar 07:00–16:59)'}{' '}
+          · Sumber jam: {useManualTime ? 'Manual' : 'Device'}
+        </Text> */}
+      </View>
     </>
   );
 };
@@ -486,6 +594,7 @@ const styles = StyleSheet.create({
     // justifyContent: "center",
     alignItems: 'center',
   },
+  hintText: {textAlign: 'center', color: '#666', fontSize: 12},
   statsCard: {
     width: '94%',
     alignSelf: 'center',
@@ -749,7 +858,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  footer: {
+    backgroundColor: '#fff',
+    padding: 16,
+    paddingTop: '5%',
+    borderTopWidth: 1,
+    borderColor: '#eee',
+    width: '100%',
+  },
+  btnSubmit: {
+    backgroundColor: '#D22C32',
+    paddingVertical: 15,
+    borderRadius: 7,
+    marginBottom: 10,
+    alignItems: 'center',
+  },
+  submitText: {color: '#fff', fontSize: 18, fontWeight: '500'},
   badgeText: {fontWeight: '600', fontSize: 15, textTransform: 'capitalize'},
+  testPanel: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+    borderTopWidth: 1,
+    borderColor: '#eee',
+  },
+  testRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  testLabel: {color: '#161414', fontSize: 14, fontWeight: '500'},
+  manualRow: {marginTop: 8},
+  timeInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
+  currentInfo: {marginTop: 6, color: '#666', fontSize: 12},
 });
 
 export default DashboardAbsensi;

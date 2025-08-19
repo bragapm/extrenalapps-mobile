@@ -179,7 +179,11 @@ function MainTabs() {
             tabPress: e => {
               handleTabPress('attendance', navigation);
             },
-            focus: () => setActiveTab('attendance'),
+            focus: () => {
+              setActiveTab('attendance');
+              // ⬇️ pastikan menu default-nya 'absen' setiap kali tab ini fokus
+              setActiveMenu('absen');
+            },
           })}
         />
         <Tab.Screen

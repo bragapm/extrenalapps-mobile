@@ -56,7 +56,7 @@ const menuData: MenuData = {
     items: [
       {key: 'harian', label: 'Aktifitas Harian'},
       {key: 'mingguan', label: 'Mingguan/Bulanan'},
-      {key: 'laporan', label: 'Laporan'},
+      // {key: 'laporan', label: 'Laporan'},
     ],
   },
   attendance: {

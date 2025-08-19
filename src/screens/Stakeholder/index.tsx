@@ -1,235 +1,253 @@
-import React, {useEffect, useState, useRef, useCallback} from 'react';
+import React, {useEffect, useState, useRef, useCallback, useMemo} from 'react';
 import {
   View,
   Text,
   StyleSheet,
   StatusBar,
   useColorScheme,
-  ImageBackground,
   TouchableOpacity,
-  ActivityIndicator,
   Image,
-  Animated,
   ScrollView,
   FlatList,
   Platform,
 } from 'react-native';
-import Svg, {G, Rect, Text as SvgText, TSpan, Path} from 'react-native-svg';
+import Svg, {G, Rect, Text as SvgText, Path} from 'react-native-svg';
 import {useThemeStore} from '../../theme/useThemeStore';
 import AppHeader from '../../components/AppHeader';
 import {getStakeholders, getUsers} from '../../services/apiServices';
 import {RootStackParamList} from '../../navigation';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
+import StackedBarChart from '../../components/StackedBarChart';
 
-type StakeholderProps = {
-  home?: boolean;
-  liveTeam?: boolean;
-  menu?: boolean;
-  location?: string;
-  label?: string;
+type StakeholderProps = {};
+
+// ───────────────────────────────── helpers ─────────────────────────────────
+const ORANGE = '#F36A1D';
+
+type Row = {
+  id: number;
+  organization?: string | null;
+  location?: string | null;
+  sentiment?: 'positive' | 'negative' | 'neutral' | string;
+  position?: string;
+  user_created?: string | number;
 };
 
-const stakeholderData = {
-  labels: ['Desa', 'Desa', 'Desa', 'Desa', 'Desa'],
-  value: [43, 28, 24, 29, 15], // Ganti sesuai data kamu
+function groupCount(rows: Row[], key: keyof Row) {
+  const map = new Map<string, number>();
+  for (const r of rows) {
+    const raw = (r[key] ?? '') as string;
+    const label = (raw && raw.trim()) || 'Tidak diketahui';
+    map.set(label, (map.get(label) || 0) + 1);
+  }
+  // urut alfabet biar stabil
+  return [...map.entries()]
+    .map(([label, count]) => ({label, count}))
+    .sort((a, b) => a.label.localeCompare(b.label, 'id'));
+}
+
+/** Convert ke format StackedBarChart single-series */
+function toStackedSingleSeries(data: {label: string; count: number}[]) {
+  return data.map(d => ({
+    label: d.label,
+    values: [0, d.count],
+    colors: ['#00000000', ORANGE],
+  }));
+}
+
+/** hitung maxY rapi (kelipatan 5) */
+function calcMaxY(counts: number[]) {
+  const max = Math.max(1, ...counts);
+  return Math.max(1, Math.ceil(max / 5) * 5);
+}
+
+function countSentiments(rows: Row[]) {
+  let pos = 0,
+    neg = 0,
+    neu = 0;
+  for (const r of rows) {
+    const s = String(r.sentiment || '').toLowerCase();
+    if (s === 'positive') pos++;
+    else if (s === 'negative') neg++;
+    else neu++;
+  }
+  return {pos, neg, neu, total: pos + neg + neu};
+}
+
+type SentimenStakeholderCardProps = {
+  positif: number;
+  negatif: number;
+  netral: number;
 };
 
-const COLOR_STAKEHOLDER = '#F36A1D';
-
-const SingleBarChart = ({data}) => {
-  const chartWidth = 320;
-  const chartHeight = 200;
-  const paddingLeft = 44;
-  const paddingBottom = 38;
-  const paddingTop = 18;
-  const barWidth = 16;
-  const gap = 30; // jarak antar bar
-  const maxY = 100; // pakai fix max 50 supaya grid rapi, bisa diubah
-
-  return (
-    <View
-      style={{
-        backgroundColor: '#F9F8F6',
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: '#ECECEC',
-        padding: 18,
-      }}>
-      <Text
-        style={{
-          color: '#161414',
-          fontSize: 18,
-          fontWeight: '600',
-          marginBottom: 6,
-        }}>
-        Jumlah Stakeholder
-      </Text>
-      <Svg width={chartWidth} height={chartHeight}>
-        {/* Grid dan Y axis */}
-        {[0, 1, 2, 3, 4, 5].map(i => {
-          const y =
-            paddingTop + (i * (chartHeight - paddingTop - paddingBottom)) / 5;
-          return (
-            <G key={i}>
-              <Rect
-                x={paddingLeft}
-                y={y}
-                width={chartWidth - paddingLeft - 16}
-                height={1}
-                fill="#E4E4E4"
-              />
-              <SvgText
-                x={paddingLeft - 12}
-                y={y + 8}
-                fontSize={13}
-                fill="#A5A5A5"
-                textAnchor="end"
-                fontWeight="400">
-                {maxY - Math.round((i * maxY) / 5)}
-              </SvgText>
-            </G>
-          );
-        })}
-        {/* Bars & label bawah */}
-        {data.labels.map((label, i) => {
-          const baseY = chartHeight - paddingBottom;
-          const valueH =
-            (data.value[i] / maxY) * (chartHeight - paddingTop - paddingBottom);
-          const x = paddingLeft + i * gap + i * barWidth + 8;
-
-          return (
-            <G key={i}>
-              {/* Bar */}
-              <Rect
-                x={x}
-                y={baseY - valueH}
-                width={barWidth}
-                height={valueH}
-                fill={COLOR_STAKEHOLDER}
-                rx={3}
-              />
-              {/* Label bawah */}
-              <SvgText
-                x={x + barWidth / 2}
-                y={baseY + 24}
-                fontSize={15}
-                fill="#555"
-                textAnchor="middle"
-                fontWeight="400">
-                {label}
-              </SvgText>
-            </G>
-          );
-        })}
-      </Svg>
-      {/* Legend */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          marginTop: 14,
-          marginLeft: 8,
-        }}>
-        <View
-          style={{
-            width: 16,
-            height: 16,
-            borderRadius: 5,
-            backgroundColor: COLOR_STAKEHOLDER,
-            marginRight: 9,
-          }}
-        />
-        <Text style={{fontSize: 13, color: '#888', fontWeight: '500'}}>
-          Stakeholder
-        </Text>
-      </View>
-    </View>
-  );
-};
-
+// ─────────────────────────────── Sentimen Pie (tetap) ───────────────────────────────
 const sentimenPieData = [
-  {key: 'Positif', value: 20, color: '#1FD96F'}, // hijau terang
-  {key: 'Negatif', value: 10, color: '#D73A3A'}, // merah
+  {key: 'Positif', value: 20, color: '#1FD96F'},
+  {key: 'Negatif', value: 10, color: '#D73A3A'},
 ];
 
-const PieChartSentimen = ({data, size = 160}) => {
-  const cx = size / 2;
-  const cy = size / 2;
-  const r = size / 2 - 2;
-  const total = data.reduce((sum, item) => sum + item.value, 0);
-  let startAngle = -90;
+const PieChartSentimen = ({
+  data,
+  size = 150,
+  minInsideAngleDeg = 15, // slice < 15° → label di luar
+}: {
+  data: {key: string; value: number; color: string}[];
+  size?: number;
+  minInsideAngleDeg?: number;
+}) => {
+  const cx = size / 2,
+    cy = size / 2,
+    r = size / 2 - 2;
 
-  function describeArc(cx, cy, r, startAngle, endAngle) {
-    const start = {
-      x: cx + r * Math.cos((Math.PI * startAngle) / 180),
-      y: cy + r * Math.sin((Math.PI * startAngle) / 180),
-    };
-    const end = {
-      x: cx + r * Math.cos((Math.PI * endAngle) / 180),
-      y: cy + r * Math.sin((Math.PI * endAngle) / 180),
-    };
-    const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0;
+  const total = data.reduce((s, x) => s + x.value, 0);
+  if (!total) {
+    return (
+      <Svg width={size} height={size}>
+        <Rect x={0} y={0} width={size} height={size} fill="transparent" />
+        <SvgText
+          x={cx}
+          y={cy}
+          fontSize={14}
+          fill="#9CA3AF"
+          textAnchor="middle"
+          alignmentBaseline="middle">
+          Tidak ada data
+        </SvgText>
+      </Svg>
+    );
+  }
+
+  let startAngle = -90; // mulai dari atas (jam 12)
+
+  const toRad = (deg: number) => (Math.PI * deg) / 180;
+  const polar = (radius: number, angleDeg: number) => ({
+    x: cx + radius * Math.cos(toRad(angleDeg)),
+    y: cy + radius * Math.sin(toRad(angleDeg)),
+  });
+
+  const describeArc = (r0: number, a0: number, a1: number) => {
+    const s = polar(r0, a0);
+    const e = polar(r0, a1);
+    const largeArc = a1 - a0 > 180 ? 1 : 0;
     return [
       `M ${cx} ${cy}`,
-      `L ${start.x} ${start.y}`,
-      `A ${r} ${r} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`,
+      `L ${s.x} ${s.y}`,
+      `A ${r0} ${r0} 0 ${largeArc} 1 ${e.x} ${e.y}`,
       'Z',
     ].join(' ');
-  }
+  };
 
   return (
     <Svg width={size} height={size}>
       {data.map((slice, idx) => {
-        const angle = (slice.value / total) * 360;
-        const endAngle = startAngle + angle;
-        const path = describeArc(cx, cy, r, startAngle, endAngle);
-        startAngle += angle;
-        return (
+        const sweep = (slice.value / total) * 360;
+        const endAngle = startAngle + sweep;
+
+        // 1) gambar slice
+        const d = describeArc(r, startAngle, endAngle);
+
+        // 2) posisi label
+        const mid = (startAngle + endAngle) / 2;
+        const isTiny = sweep < minInsideAngleDeg;
+
+        // label di dalam
+        const labelRInside = r * 0.62;
+        const pInside = polar(labelRInside, mid);
+
+        // label di luar (dengan leader line)
+        const labelROnEdge = r * 0.86;
+        const pEdge = polar(labelROnEdge, mid);
+        const labelROut = r * 1.02; // titik text
+        const pOut = polar(labelROut, mid);
+        const anchor =
+          Math.cos(toRad(mid)) > 0
+            ? 'start'
+            : Math.cos(toRad(mid)) < 0
+            ? 'end'
+            : 'middle';
+
+        const pathKey = `slice-${idx}`;
+        const labelKey = `lbl-${idx}`;
+
+        const pathEl = (
           <Path
-            key={idx}
-            d={path}
+            key={pathKey}
+            d={d}
             fill={slice.color}
             stroke="#fff"
             strokeWidth={2}
           />
+        );
+
+        // 3) label element
+        const labelEl = isTiny ? (
+          // Kecil -> label di luar + garis kecil
+          <G key={labelKey}>
+            <Path
+              d={`M ${pEdge.x} ${pEdge.y} L ${pOut.x} ${pOut.y}`}
+              stroke={slice.color}
+              strokeWidth={1.5}
+              fill="none"
+            />
+            <SvgText
+              x={pOut.x}
+              y={pOut.y}
+              fontSize={12}
+              fontWeight="600"
+              fill={slice.color}
+              textAnchor={anchor}
+              alignmentBaseline="middle">
+              {slice.value}
+            </SvgText>
+          </G>
+        ) : (
+          // Cukup besar -> label di dalam slice (kontras putih)
+          <SvgText
+            key={labelKey}
+            x={pInside.x}
+            y={pInside.y}
+            fontSize={14}
+            fontWeight="bold"
+            fill="#fff"
+            textAnchor="middle"
+            alignmentBaseline="middle">
+            {slice.value}
+          </SvgText>
+        );
+
+        startAngle = endAngle; // maju untuk slice berikutnya
+        return (
+          <G key={`g-${idx}`}>
+            {pathEl}
+            {labelEl}
+          </G>
         );
       })}
     </Svg>
   );
 };
 
-const SentimenStakeholderCard = () => {
-  const summary = sentimenPieData.reduce((a, b) => a + b.value, 0);
-  const positif = sentimenPieData.find(x => x.key === 'Positif').value;
-  const negatif = sentimenPieData.find(x => x.key === 'Negatif').value;
+const SentimenStakeholderCard: React.FC<SentimenStakeholderCardProps> = ({
+  positif,
+  negatif,
+  netral,
+}) => {
+  const summary = positif + negatif + netral;
+
+  const pieData = [
+    {key: 'Positif', value: positif, color: '#1FD96F'},
+    {key: 'Negatif', value: negatif, color: '#D73A3A'},
+    {key: 'Netral', value: netral, color: '#9CA3AF'}, // abu utk netral
+  ].filter(d => d.value > 0); // opsional: sembunyikan slice 0
 
   return (
-    <View
-      style={{
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: '#ECECEC',
-        flexDirection: 'row',
-        padding: 24,
-        marginTop: 20,
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}>
+    <View style={styles.sentimenWrap}>
       <View style={{flex: 1, alignItems: 'center'}}>
-        <Text
-          style={{
-            color: '#161414',
-            fontSize: 16,
-            fontWeight: '500',
-            marginBottom: 8,
-            alignSelf: 'flex-start',
-          }}>
-          Sentimen Stakeholder
-        </Text>
-        <PieChartSentimen data={sentimenPieData} size={150} />
+        <Text style={styles.sentimenTitle}>Sentimen Stakeholder</Text>
+        <PieChartSentimen data={pieData} size={150} />
       </View>
+
       <View style={{flex: 1, alignItems: 'flex-start', paddingLeft: 15}}>
         <View
           style={{
@@ -237,111 +255,48 @@ const SentimenStakeholderCard = () => {
             justifyContent: 'flex-end',
             width: '100%',
           }}>
-          <TouchableOpacity
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              paddingHorizontal: 9,
-              paddingVertical: 3,
-              backgroundColor: '#F8F8F8',
-              borderRadius: 7,
-              borderWidth: 1,
-              borderColor: '#ECECEC',
-              marginBottom: 4,
-            }}>
+          <TouchableOpacity style={styles.sentimenDropdown}>
             <Text style={{color: '#777', fontWeight: '500'}}>Desa</Text>
             <Text style={{color: '#BDBDBD', fontSize: 13, marginLeft: 3}}>
               ▼
             </Text>
           </TouchableOpacity>
         </View>
-        <Text
-          style={{
-            color: '#888',
-            fontSize: 15,
-            marginTop: 8,
-          }}>
+
+        <Text style={{color: '#888', fontSize: 15, marginTop: 8}}>
           Summary Data
         </Text>
-        <Text
-          style={{
-            color: '#181818',
-            fontSize: 36,
-            fontWeight: '700',
-            marginBottom: 6,
-          }}>
-          {summary}
-        </Text>
-        {/* Positif & Negatif */}
+        <Text style={styles.sentimenSummary}>{summary}</Text>
+
+        {/* Positif & Negatif & Netral */}
         <View
-          style={{flexDirection: 'row', alignItems: 'center', marginTop: 9}}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              marginBottom: 12,
-            }}>
-            <View
-              style={{
-                width: 4,
-                height: 28,
-                backgroundColor: '#1FD96F',
-                borderRadius: 3,
-                marginRight: 8,
-              }}
-            />
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginTop: 9,
+            flexWrap: 'wrap',
+          }}>
+          <View style={styles.sentimenItem}>
+            <View style={[styles.sentimenBar, {backgroundColor: '#1FD96F'}]} />
             <View>
-              <Text
-                style={{
-                  color: '#4F4D4A',
-                  fontSize: 11,
-                  fontWeight: '400',
-                }}>
-                Positif
-              </Text>
-              <Text
-                style={{
-                  color: '#161414',
-                  fontSize: 12,
-                  fontWeight: '600',
-                }}>
-                {positif}
-              </Text>
+              <Text style={styles.sentimenItemLabel}>Positif</Text>
+              <Text style={styles.sentimenItemValue}>{positif}</Text>
             </View>
           </View>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              marginBottom: 12,
-              marginLeft: '10%',
-            }}>
-            <View
-              style={{
-                width: 4,
-                height: 28,
-                backgroundColor: '#D73A3A',
-                borderRadius: 3,
-                marginRight: 8,
-              }}
-            />
+
+          <View style={[styles.sentimenItem, {marginLeft: '10%'}]}>
+            <View style={[styles.sentimenBar, {backgroundColor: '#D73A3A'}]} />
             <View>
-              <Text
-                style={{
-                  color: '#4F4D4A',
-                  fontSize: 11,
-                  fontWeight: '400',
-                }}>
-                Negatif
-              </Text>
-              <Text
-                style={{
-                  color: '#161414',
-                  fontSize: 12,
-                  fontWeight: '600',
-                }}>
-                {negatif}
-              </Text>
+              <Text style={styles.sentimenItemLabel}>Negatif</Text>
+              <Text style={styles.sentimenItemValue}>{negatif}</Text>
+            </View>
+          </View>
+
+          <View style={[styles.sentimenItem, {marginLeft: '10%'}]}>
+            <View style={[styles.sentimenBar, {backgroundColor: '#9CA3AF'}]} />
+            <View>
+              <Text style={styles.sentimenItemLabel}>Netral</Text>
+              <Text style={styles.sentimenItemValue}>{netral}</Text>
             </View>
           </View>
         </View>
@@ -350,7 +305,7 @@ const SentimenStakeholderCard = () => {
   );
 };
 
-const AbsensiBadge = ({statusType}) => {
+const AbsensiBadge = ({statusType}: {statusType: string}) => {
   let color = '#AAA',
     bg = '#F3F3F3',
     border = 'transparent';
@@ -377,7 +332,6 @@ const AbsensiBadge = ({statusType}) => {
         paddingVertical: 2,
         paddingHorizontal: 8,
         alignSelf: 'flex-start',
-        marginLeft: 0,
         marginTop: -4,
       }}>
       <Text style={{color, fontSize: 13, fontWeight: '500'}}>{statusType}</Text>
@@ -385,24 +339,87 @@ const AbsensiBadge = ({statusType}) => {
   );
 };
 
-const Stakeholder: React.FC<StakeholderProps> = ({}) => {
+// ─────────────────────────────── Screen ───────────────────────────────
+const Stakeholder: React.FC<StakeholderProps> = () => {
   const {colors} = useThemeStore();
   const colorScheme = useColorScheme();
-
-  const [absensiList, setAbsensiList] = useState([]);
-  const [userMap, setUserMap] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
-  const AbsensiCard = ({item, userName}) => (
+  const [rows, setRows] = useState<Row[]>([]);
+  const [userMap, setUserMap] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const sentiment = useMemo(() => countSentiments(rows), [rows]);
+  // Fetch
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      const run = async () => {
+        setLoading(true);
+        setError('');
+        try {
+          const [stakeholdersRes, users] = await Promise.all([
+            getStakeholders(),
+            getUsers(),
+          ]);
+          // NORMALISASI: API mengembalikan { data: [...] }
+          const list: Row[] = Array.isArray(stakeholdersRes?.data)
+            ? stakeholdersRes.data
+            : Array.isArray(stakeholdersRes)
+            ? stakeholdersRes
+            : [];
+          const mapping: Record<string, string> = {};
+          (users || []).forEach((u: any) => {
+            mapping[u.id] = [u.first_name, u.last_name]
+              .filter(Boolean)
+              .join(' ');
+          });
+          if (isActive) {
+            setRows(list);
+            setUserMap(mapping);
+          }
+        } catch (e) {
+          if (isActive) setError('Gagal memuat data stakeholder');
+        }
+        if (isActive) setLoading(false);
+      };
+      run();
+      return () => {
+        isActive = false;
+      };
+    }, []),
+  );
+
+  // ==== DATA UNTUK CHART ====
+  const perLocation = useMemo(() => groupCount(rows, 'location'), [rows]);
+  const perOrganization = useMemo(
+    () => groupCount(rows, 'organization'),
+    [rows],
+  );
+
+  const locationChartData = useMemo(
+    () => toStackedSingleSeries(perLocation),
+    [perLocation],
+  );
+  const orgChartData = useMemo(
+    () => toStackedSingleSeries(perOrganization),
+    [perOrganization],
+  );
+
+  const maxYLocation = useMemo(
+    () => calcMaxY(perLocation.map(x => x.count)),
+    [perLocation],
+  );
+  const maxYOrg = useMemo(
+    () => calcMaxY(perOrganization.map(x => x.count)),
+    [perOrganization],
+  );
+
+  const AbsensiCard = ({item, userName}: {item: Row; userName?: string}) => (
     <TouchableOpacity
       style={styles.absenCard}
       onPress={() =>
-        navigation.navigate('DetailStakeHolder', {
-          showForm: false,
-          data: item,
-        })
+        navigation.navigate('DetailStakeHolder', {showForm: false, data: item})
       }>
       <AbsensiBadge
         statusType={
@@ -423,20 +440,14 @@ const Stakeholder: React.FC<StakeholderProps> = ({}) => {
           alignItems: 'center',
           justifyContent: 'space-between',
         }}>
-        <View
-          style={{
-            flexDirection: 'row',
-          }}>
+        <View style={{flexDirection: 'row'}}>
           <Text style={styles.absenCardRole}>{item.position}</Text>
-          <Text style={styles.absenCardRole}>-</Text>
+          <Text style={styles.absenCardRole}> - </Text>
           <Text style={styles.absenCardRole}>{item.organization}</Text>
         </View>
         <View>
           <TouchableOpacity
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-            }}>
+            style={{flexDirection: 'row', alignItems: 'center'}}>
             <Text
               style={{
                 fontSize: 16,
@@ -457,45 +468,6 @@ const Stakeholder: React.FC<StakeholderProps> = ({}) => {
     </TouchableOpacity>
   );
 
-  useFocusEffect(
-    useCallback(() => {
-      let isActive = true;
-
-      const fetchData = async () => {
-        setLoading(true);
-        setError('');
-        try {
-          const [stakeholders, users] = await Promise.all([
-            getStakeholders(),
-            getUsers(),
-          ]);
-
-          const userMapping = {};
-          users.forEach(u => {
-            userMapping[u.id] = [u.first_name, u.last_name]
-              .filter(Boolean)
-              .join(' ');
-          });
-
-          if (isActive) {
-            setUserMap(userMapping);
-            setAbsensiList(stakeholders);
-          }
-        } catch (e) {
-          if (isActive) setError('Gagal memuat data stakeholder');
-        }
-        if (isActive) setLoading(false);
-      };
-
-      fetchData();
-
-      // Cleanup function
-      return () => {
-        isActive = false;
-      };
-    }, []),
-  );
-
   return (
     <>
       <StatusBar
@@ -504,11 +476,7 @@ const Stakeholder: React.FC<StakeholderProps> = ({}) => {
         barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
       />
       <View style={[styles.container, {backgroundColor: colors.bgHome}]}>
-        <AppHeader
-          // menu={true}
-          home={true}
-          // label={'Stakeholder'}
-        />
+        <AppHeader home />
         <ScrollView
           style={{flex: 1, width: '100%'}}
           contentContainerStyle={{alignItems: 'center', paddingBottom: 40}}
@@ -523,7 +491,6 @@ const Stakeholder: React.FC<StakeholderProps> = ({}) => {
             <Text style={{color: '#181818', fontSize: 27, fontWeight: '500'}}>
               Summary Stakeholder
             </Text>
-
             <Text
               style={{
                 color: '#7C7672',
@@ -533,6 +500,7 @@ const Stakeholder: React.FC<StakeholderProps> = ({}) => {
               }}>
               Catat dan kelola aktivitas harian Anda dengan mudah.
             </Text>
+
             <View
               style={{
                 width: '100%',
@@ -542,10 +510,59 @@ const Stakeholder: React.FC<StakeholderProps> = ({}) => {
                 paddingVertical: '2%',
                 marginTop: '3%',
               }}>
-              <SingleBarChart data={stakeholderData} />
+              {/* Chart 1: per Location */}
+              <View style={styles.barChartBox}>
+                <Text style={styles.chartTitle}>Jumlah Stakeholder</Text>
+                <View style={{marginTop: '10%'}}>
+                  <StackedBarChart
+                    data={locationChartData}
+                    maxY={maxYLocation}
+                    height={250}
+                    // barWidth={24}
+                    // chartWidthPerBar={200}
+                    // labelColor="#333"
+                  />
+                </View>
+                <View style={styles.legendRow}>
+                  <View style={styles.legendItem}>
+                    <View
+                      style={[styles.legendDot, {backgroundColor: ORANGE}]}
+                    />
+                    <Text style={styles.legendText}>Total Stakeholder</Text>
+                  </View>
+                </View>
+              </View>
 
-              <SentimenStakeholderCard />
+              {/* Chart 2: per Organization */}
+              <View style={styles.barChartBox}>
+                <Text style={styles.chartTitle}>
+                  Jumlah Stakeholder by Instansi
+                </Text>
+                <View style={{marginTop: '10%'}}>
+                  <StackedBarChart
+                    data={orgChartData}
+                    maxY={maxYOrg}
+                    height={250}
+                  />
+                </View>
+                <View style={styles.legendRow}>
+                  <View style={styles.legendItem}>
+                    <View
+                      style={[styles.legendDot, {backgroundColor: ORANGE}]}
+                    />
+                    <Text style={styles.legendText}>Total Stakeholder</Text>
+                  </View>
+                </View>
+              </View>
+
+              <SentimenStakeholderCard
+                positif={sentiment.pos}
+                negatif={sentiment.neg}
+                netral={sentiment.neu}
+              />
             </View>
+
+            {/* List */}
             <Text
               style={{
                 color: '#181818',
@@ -555,7 +572,6 @@ const Stakeholder: React.FC<StakeholderProps> = ({}) => {
               }}>
               Summary Stakeholder
             </Text>
-
             <Text
               style={{
                 color: '#7C7672',
@@ -565,6 +581,7 @@ const Stakeholder: React.FC<StakeholderProps> = ({}) => {
               }}>
               Catat dan kelola aktivitas harian Anda dengan mudah.
             </Text>
+
             <View style={styles.filterRow}>
               <TouchableOpacity style={styles.filterBtn}>
                 <Text style={{color: '#222', fontWeight: '500'}}>Filter</Text>
@@ -587,14 +604,15 @@ const Stakeholder: React.FC<StakeholderProps> = ({}) => {
                 />
               </TouchableOpacity>
             </View>
+
             <View style={{width: '100%', marginTop: 10, marginBottom: '10%'}}>
               <FlatList
-                data={absensiList}
+                data={rows}
                 keyExtractor={item => String(item.id)}
                 renderItem={({item}) => (
                   <AbsensiCard
                     item={item}
-                    userName={userMap[item.user_created]}
+                    userName={userMap[String(item.user_created)]}
                   />
                 )}
                 scrollEnabled={false}
@@ -602,6 +620,8 @@ const Stakeholder: React.FC<StakeholderProps> = ({}) => {
             </View>
           </View>
         </ScrollView>
+
+        {/* FAB */}
         <View
           style={{
             position: 'absolute',
@@ -712,6 +732,140 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.3,
   },
+  fabButton: {
+    backgroundColor: '#D33838',
+    borderRadius: 9,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    shadowColor: '#000',
+    shadowOpacity: 0.07,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  fabButtonText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+  legendRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap', // Biar auto wrap!
+    alignItems: 'center',
+    marginTop: 8,
+    width: '100%',
+    // justifyContent: 'flex-start', // optional
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16,
+    marginBottom: 4,
+  },
+  legendDot: {width: 14, height: 14, borderRadius: 3, marginRight: 5},
+  legendText: {color: '#666', fontSize: 13},
+  barChartBox: {
+    marginBottom: 16,
+    backgroundColor: '#F7F7F7',
+    borderRadius: 12,
+    padding: 12,
+  },
+  chartTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 6,
+    color: '#232323',
+  },
+
+  // Sentimen styles ringkas
+  sentimenWrap: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#ECECEC',
+    flexDirection: 'row',
+    padding: 24,
+    marginTop: 20,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sentimenTitle: {
+    color: '#161414',
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 8,
+    alignSelf: 'flex-start',
+  },
+  sentimenDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: '#ECECEC',
+    marginBottom: 4,
+  },
+  sentimenSummary: {
+    color: '#181818',
+    fontSize: 36,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  sentimenItem: {flexDirection: 'row', alignItems: 'center', marginBottom: 12},
+  sentimenBar: {width: 4, height: 28, borderRadius: 3, marginRight: 8},
+
+  filterRow: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+    marginTop: 10,
+    marginBottom: 9,
+    alignItems: 'center',
+  },
+  filterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DEDEDE',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    backgroundColor: '#FFF',
+    flex: 1,
+  },
+  downloadBtn: {
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DEDEDE',
+    padding: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 42,
+    height: 42,
+  },
+  absenCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 11,
+    padding: 15,
+    marginBottom: 13,
+    borderWidth: 0,
+    shadowColor: '#EEE',
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  absenCardName: {
+    fontWeight: '700',
+    fontSize: 18,
+    color: '#191818',
+    marginRight: 7,
+  },
+  absenCardRole: {fontSize: 14, color: '#7B7B7B', fontWeight: '400'},
   fabButton: {
     backgroundColor: '#D33838',
     borderRadius: 9,

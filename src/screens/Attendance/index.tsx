@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   View,
   Text,
@@ -580,6 +580,11 @@ const Attendance: React.FC = () => {
     }
   };
 
+  const currentHour = new Date().getHours();
+  const isButtonDisabled = useMemo(() => {
+    return currentHour >= 7 && currentHour < 17; // disable antara 07:00 - 16:59
+  }, [currentHour]);
+
   return (
     <>
       <StatusBar
@@ -781,7 +786,13 @@ const Attendance: React.FC = () => {
         </ScrollView>
         <View style={styles.bottomBtnWrap}>
           {activeMenu === 'absen' ? (
-            <TouchableOpacity style={styles.absenButton} onPress={handleAbsen}>
+            <TouchableOpacity
+              style={[
+                styles.absenButton,
+                isButtonDisabled && {backgroundColor: '#ccc'},
+              ]}
+              disabled={isButtonDisabled}
+              onPress={handleAbsen}>
               <Text style={styles.absenButtonText}>
                 {isCheckedIn ? 'Check Out' : 'Check In'}
               </Text>
@@ -924,7 +935,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    shadowColor: '#DF2C2C',
+    // shadowColor: '#DF2C2C',
     shadowOpacity: 0.14,
     shadowRadius: 5,
     elevation: 3,

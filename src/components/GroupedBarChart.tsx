@@ -6,7 +6,7 @@ const COLOR_OPEN = '#2996F5'; // biru
 const COLOR_CLOSE = '#20D372'; // hijau
 
 const GroupedBarChart = ({
-  data = '',
+  data = [],
   height = 350,
   maxY = 30,
   labelColor = '#888',
@@ -18,12 +18,22 @@ const GroupedBarChart = ({
   paddingBottom = 30,
   groupGap = 12, // JARAK antar group, KECIL BANGET
   barGap = 0, // SUPAYA DEMPET TOTAL!
+  // ⬇️ Tambahan: minimal tinggi bar saat value > 0
+  minBarHeight = 25,
 }) => {
   // Width satu group = 2 bar (tanpa barGap)
   const groupWidth = 2 * barWidth + barGap;
   const chartWidth = data.length * groupWidth + (data.length - 1) * groupGap;
   const svgWidth = chartWidth + paddingLeft + paddingRight;
   const CHART_HEIGHT = height - paddingTop - paddingBottom;
+
+  // Helper: hitung tinggi & y dengan minimal height bila value > 0
+  const getBarDims = (value: number) => {
+    const scaled = (value / maxY) * CHART_HEIGHT;
+    const useHeight = value > 0 ? Math.max(scaled, minBarHeight) : 0;
+    const y = paddingTop + CHART_HEIGHT - useHeight;
+    return {height: useHeight, y};
+  };
 
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -50,14 +60,12 @@ const GroupedBarChart = ({
           const x0 = paddingLeft + i * (groupWidth + groupGap);
 
           // BAR OPEN (KIRI)
-          const openHeight = (bar.open / maxY) * CHART_HEIGHT;
+          const {height: openHeight, y: yOpen} = getBarDims(bar.open);
           const xOpen = x0;
-          const yOpen = paddingTop + CHART_HEIGHT - openHeight;
 
           // BAR CLOSE (KANAN)
-          const closeHeight = (bar.close / maxY) * CHART_HEIGHT;
+          const {height: closeHeight, y: yClose} = getBarDims(bar.close);
           const xClose = x0 + barWidth + barGap; // barGap = 0 (megang bar kanan)
-          const yClose = paddingTop + CHART_HEIGHT - closeHeight;
 
           return (
             <G key={bar.label}>
@@ -79,6 +87,7 @@ const GroupedBarChart = ({
                 fill={COLOR_CLOSE}
                 rx={barRadius}
               />
+
               {/* LABEL ATAS */}
               {bar.open > 0 && (
                 <SvgText
@@ -104,6 +113,7 @@ const GroupedBarChart = ({
                   {bar.close}
                 </SvgText>
               )}
+
               {/* LABEL BAWAH */}
               <SvgText
                 x={x0 + groupWidth / 2}

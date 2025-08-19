@@ -40,6 +40,7 @@ import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {
   deleteData,
   getDailyActivities,
+  getDailyActivitiesSummary,
   getUsers,
   getWeeklyReports,
 } from '../../services/apiServices';
@@ -771,6 +772,8 @@ const Activity = () => {
   const [status, setStatus] = React.useState('');
   const [tanggal, setTanggal] = React.useState(null);
   const [dailyActivities, setDailyActivities] = React.useState([]);
+  const [summaryRows, setSummaryRows] = React.useState<any[]>([]);
+  console.log('dailyActivities', JSON.stringify(dailyActivities));
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
   const [users, setUsers] = React.useState([]);
@@ -796,7 +799,7 @@ const Activity = () => {
   const buildParams = () => {
     const params = {};
     if (status) params['filter[status][_eq]'] = status;
-    if (jenisReport) params['filter[report_type][_eq]'] = jenisReport;
+    if (jenisReport) params['filter[report_type][name][_eq]'] = jenisReport;
     if (tanggal)
       params['filter[date][_eq]'] =
         typeof tanggal === 'string'
@@ -808,6 +811,51 @@ const Activity = () => {
     return params;
   };
   console.log('PARAMS', buildParams());
+
+  const buildBarsFromSummary = React.useCallback((rows: any[]) => {
+    // Accumulate per report type
+    const acc: Record<string, {open: number; close: number}> = {};
+
+    rows.forEach(r => {
+      const label = r.report_type_name || `Type ${r.report_type_id || '-'}`;
+      if (!acc[label]) acc[label] = {open: 0, close: 0};
+
+      // normalisasi status
+      const st = String(r.status || '').toLowerCase();
+      if (st === 'open') acc[label].open += r.count;
+      if (st === 'close' || st === 'closed') acc[label].close += r.count;
+
+      // NOTE: status lain (approved, in_progress, draft, reject, waiting) di-skip
+      // kalau mau dimasukin juga, ganti komponen chart jadi multi-series.
+    });
+
+    // Convert ke array yang dipakai GroupedBarChart
+    return Object.entries(acc).map(([label, v]) => ({
+      label,
+      open: v.open,
+      close: v.close,
+    }));
+  }, []);
+
+  const bars = React.useMemo(
+    () => buildBarsFromSummary(summaryRows),
+    [summaryRows, buildBarsFromSummary],
+  );
+
+  console.log('BARS CEK', JSON.stringify(bars));
+  const chartMaxY = React.useMemo(() => {
+    const maxVal = Math.max(0, ...bars.map(b => Math.max(b.open, b.close)));
+    if (maxVal <= 5) return 6;
+    if (maxVal <= 10) return 12;
+    return Math.ceil((maxVal + 2) / 5) * 5; // bulatkan ke atas kelipatan 5
+  }, [bars]);
+
+  const buildSummaryParams = () => {
+    const p = buildParams();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const {sort, ...rest} = p;
+    return rest;
+  };
 
   const FilterSortHeader = ({
     filter,
@@ -903,9 +951,16 @@ const Activity = () => {
       if (mode === 'daily') {
         setLoading(true);
         setError(null);
-        getDailyActivities(buildParams())
-          .then(setDailyActivities)
-          .catch(err => setError(err.message || 'Gagal load data'))
+
+        Promise.all([
+          getDailyActivities(buildParams()),
+          getDailyActivitiesSummary(buildSummaryParams()),
+        ])
+          .then(([list, summary]) => {
+            setDailyActivities(list);
+            setSummaryRows(summary); // <== ISI summaryRows
+          })
+          .catch(err => setError(err?.message || 'Gagal load data'))
           .finally(() => setLoading(false));
       } else if (mode === 'weekly') {
         setLoadingWeekly(true);
@@ -926,7 +981,7 @@ const Activity = () => {
       const map = {};
       data.forEach(user => {
         // ganti key & value ini sesuai response user kamu
-        map[user.id] = user.name || user.fullname || user.email || '-';
+        map[user.id] = `${user.first_name} ${user.last_name}`;
       });
       setUsersMap(map);
     });
@@ -1224,7 +1279,7 @@ const Activity = () => {
                   </Text>
 
                   <GroupedBarChart
-                    data={activityData}
+                    data={bars}
                     maxY={30} // set maxY biar sesuai nilai maksimal
                     height={300} // bisa diubah sesuai kebutuhan, biasanya 120-150
                   />
