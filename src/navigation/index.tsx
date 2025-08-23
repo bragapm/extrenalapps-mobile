@@ -44,6 +44,7 @@ import {useFeatureStore} from '../store/featureStore';
 import DetailWeeklyActivity from '../screens/DetailWeeklyActivity';
 import DetailStakeholder from '../screens/DetailStakeholder';
 import DetailMediaAndPublish from '../screens/DetailMediaAndPublish';
+import DetailPlanWorker from '../screens/DetailPlanWorker';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -58,6 +59,7 @@ export type RootStackParamList = {
   DetailWeeklyActivity: undefined;
   DetailStakeHolder: undefined;
   DetailMediaAndPublish: undefined;
+  DetailPlanWorker: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -447,6 +449,7 @@ export default function AppNavigation() {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Main" component={MainTabs} />
         <Stack.Screen name="DetailAttendance" component={DetailAttendance} />
+        <Stack.Screen name="DetailPlanWorker" component={DetailPlanWorker} />
         <Stack.Screen name="DetailCuti" component={DetailCuti} />
         <Stack.Screen name="DetailPerdin" component={DetailPerdin} />
         <Stack.Screen

@@ -1,4 +1,4 @@
-import React, {useState, useRef} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -13,85 +13,95 @@ import {
 } from 'react-native';
 import Modal from 'react-native-modal';
 import {Calendar, LocaleConfig} from 'react-native-calendars';
+import {RootStackParamList} from '../../navigation';
+import {StackNavigationProp} from '@react-navigation/stack';
+import {useIsFocused, useNavigation} from '@react-navigation/native';
+import {initNotes, getNotes, NotesByDate} from '../../utils/dummyStore';
 
-// Calendar Locale
+// Locale
 LocaleConfig.locales['id'] = {
   monthNames: [
-    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli',
-    'Agustus', 'September', 'Oktober', 'November', 'Desember',
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
   ],
   monthNamesShort: [
-    'Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mei',
+    'Jun',
+    'Jul',
+    'Agu',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des',
   ],
-  dayNames: ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'],
-  dayNamesShort: ['Min','Sen','Sel','Rab','Kam','Jum','Sab'],
+  dayNames: ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'],
+  dayNamesShort: ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'],
   today: 'Hari ini',
 };
 LocaleConfig.defaultLocale = 'id';
 
-const notesData = {
-  '2025-07-02': [
-    { title: 'Business Development Discussion', desc: 'A discussion on business development strategies with the team. The app has seamlessly adjusted the time for all members.', user: 'Priya', },
-    { title: 'Business Development Discussion', desc: 'A discussion on business development strategies with the team. The app has seamlessly adjusted the time for all members.', user: 'Priya', },
-  ],
-  '2025-07-09': [
-    { title: 'POC : Angel | Juli' },
-    { title: 'POC : Angel | Juli 2' },
-  ],
-  '2025-07-16': [
-    { title: 'POC : Angel | Juli' },
-    { title: 'POC : Angel | Juli 2' },
-  ],
-  '2025-07-23': [
-    { title: 'POC : Angel | Juli' },
-    { title: 'POC : Angel | Juli 2' },
-  ],
-  '2025-07-30': [
-    { title: 'POC : Angel | Juli' },
-    { title: 'POC : Angel | Juli 2' },
-  ],
-};
-
-const eventDates = Object.keys(notesData);
 const today = new Date();
 const yyyy = today.getFullYear();
 const mm = String(today.getMonth() + 1).padStart(2, '0');
 const dd = String(today.getDate()).padStart(2, '0');
 const todayStr = `${yyyy}-${mm}-${dd}`;
 
-function pad2(n) {
-  return n < 10 ? `0${n}` : n;
+function pad2(n: number) {
+  return n < 10 ? `0${n}` : `${n}`;
 }
 
 export default function PlanCalendar() {
-  // Controlled month & year (always sync header & Calendar)
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const isFocused = useIsFocused();
+
+  // data notes (dummy) dari local store
+  const [notesData, setNotesData] = useState<NotesByDate>({});
+  useEffect(() => {
+    initNotes().then(setNotesData);
+  }, []);
+  // refresh saat screen fokus (habis submit dari form)
+  useEffect(() => {
+    if (isFocused) {
+      getNotes().then(setNotesData);
+    }
+  }, [isFocused]);
+
+  const eventDates = useMemo(() => Object.keys(notesData), [notesData]);
+
+  // state kalender
   const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth()); // 0-based
+  const [month, setMonth] = useState(today.getMonth());
   const [selected, setSelected] = useState(todayStr);
   const [modalVisible, setModalVisible] = useState(false);
 
-  // Generate "YYYY-MM-01"
-  const getMonthDateString = (y, m) => `${y}-${pad2(m + 1)}-01`;
-
-  // Forcing Calendar to re-render on month change (with key)
+  const getMonthDateString = (y: number, m: number) => `${y}-${pad2(m + 1)}-01`;
   const [calendarKey, setCalendarKey] = useState(0);
 
-  // PanResponder for swipe gesture di seluruh screen
   const screenPanResponder = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dx) > 24,
-      onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dx > 50) {
-          changeMonth(-1); // swipe right (bulan sebelumnya)
-        } else if (gestureState.dx < -50) {
-          changeMonth(1);  // swipe left (bulan berikutnya)
-        }
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 24,
+      onPanResponderRelease: (_, g) => {
+        if (g.dx > 50) changeMonth(-1);
+        else if (g.dx < -50) changeMonth(1);
       },
-    })
+    }),
   ).current;
 
-  // Next/Prev bulan (sync header & Calendar)
-  const changeMonth = diff => {
+  const changeMonth = (diff: number) => {
     let newMonth = month + diff;
     let newYear = year;
     if (newMonth > 11) {
@@ -106,9 +116,8 @@ export default function PlanCalendar() {
     setCalendarKey(k => k + 1);
   };
 
-  // Custom header, always reflect state
   const renderHeader = () => {
-    const monthNames = LocaleConfig.locales['id'].monthNames;
+    const monthNames = LocaleConfig.locales['id'].monthNames!;
     return (
       <View style={styles.header}>
         <TouchableOpacity
@@ -137,16 +146,14 @@ export default function PlanCalendar() {
     );
   };
 
-  // Sync header kalau user swipe di calendar bawaan
-  const handleMonthChange = dateObj => {
+  const handleMonthChange = (dateObj: any) => {
     const [y, m] = dateObj.dateString.split('-');
     setYear(Number(y));
     setMonth(Number(m) - 1);
     setCalendarKey(k => k + 1);
   };
 
-  // Custom day cell
-  const renderDay = ({date, state}) => {
+  const renderDay = ({date, state}: any) => {
     const dateStr = date.dateString;
     const isEvent = eventDates.includes(dateStr);
     const isSelected = selected === dateStr;
@@ -172,8 +179,7 @@ export default function PlanCalendar() {
             style={[
               styles.dayText,
               state === 'disabled' && {color: '#e0e4e9'},
-              isEvent && {color: 'white', fontWeight: 'bold'},
-              isSelected && {color: 'white', fontWeight: 'bold'},
+              (isEvent || isSelected) && {color: 'white', fontWeight: 'bold'},
             ]}>
             {date.day}
           </Text>
@@ -199,10 +205,7 @@ export default function PlanCalendar() {
   };
 
   return (
-    <View
-      style={styles.wrapper}
-      {...screenPanResponder.panHandlers} // <-- GESTURE DI SINI
-    >
+    <View style={styles.wrapper} {...screenPanResponder.panHandlers}>
       <ScrollView
         style={{flex: 1}}
         contentContainerStyle={{paddingBottom: 120}}>
@@ -244,7 +247,8 @@ export default function PlanCalendar() {
           firstDay={1}
         />
       </ScrollView>
-      {/* Modal detail notes & FAB button */}
+
+      {/* Modal detail */}
       <Modal
         isVisible={modalVisible}
         onBackdropPress={() => setModalVisible(false)}
@@ -278,6 +282,7 @@ export default function PlanCalendar() {
                   })}
               </Text>
             </View>
+
             <View
               style={{
                 backgroundColor: '#FFFFFF',
@@ -287,7 +292,7 @@ export default function PlanCalendar() {
                 height: 600,
               }}>
               <ScrollView style={{marginTop: 8}}>
-                {notesData[selected]?.length > 0 ? (
+                {notesData[selected]?.length ? (
                   notesData[selected].map((note, idx) => (
                     <ImageBackground
                       key={idx}
@@ -321,25 +326,10 @@ export default function PlanCalendar() {
                 )}
               </ScrollView>
             </View>
-            <View
-              style={{
-                backgroundColor: '#FFFFFF',
-                flex: 1,
-                width: '100%',
-                borderTopLeftRadius: 20,
-                borderTopRightRadius: 20,
-              }}></View>
-            <ScrollView
-              style={{marginTop: 8}}
-              contentContainerStyle={{
-                backgroundColor: '#FFFFFF',
-                flex: 1,
-                width: '100%',
-                borderTopLeftRadius: 20,
-                borderTopRightRadius: 20,
-              }}></ScrollView>
           </View>
         </View>
+
+        {/* CTA di modal */}
         <View
           style={{
             position: 'absolute',
@@ -351,11 +341,15 @@ export default function PlanCalendar() {
             zIndex: 99,
             paddingVertical: '3%',
           }}>
-          <TouchableOpacity style={styles.fabButton}>
+          <TouchableOpacity
+            style={styles.fabButton}
+            onPress={() => navigation.navigate('DetailPlanWorker')}>
             <Text style={styles.fabButtonText}>Buat Rencana Kerja</Text>
           </TouchableOpacity>
         </View>
       </Modal>
+
+      {/* CTA bawah */}
       <View
         style={{
           position: 'absolute',
@@ -367,7 +361,9 @@ export default function PlanCalendar() {
           zIndex: 99,
           paddingVertical: '3%',
         }}>
-        <TouchableOpacity style={styles.fabButton}>
+        <TouchableOpacity
+          style={styles.fabButton}
+          onPress={() => navigation.navigate('DetailPlanWorker')}>
           <Text style={styles.fabButtonText}>Buat Rencana Kerja</Text>
         </TouchableOpacity>
       </View>
@@ -398,20 +394,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: -2,
   },
-  yearText: {
-    fontSize: 16,
-    color: '#B2B9C6',
-    textAlign: 'center',
-  },
-  arrowButton: {
-    padding: 6,
-    borderRadius: 20,
-  },
-  arrowIcon: {
-    width: 26,
-    height: 26,
-    tintColor: '#B2B9C6',
-  },
+  yearText: {fontSize: 16, color: '#B2B9C6', textAlign: 'center'},
+  arrowButton: {padding: 6, borderRadius: 20},
+  arrowIcon: {width: 26, height: 26, tintColor: '#B2B9C6'},
   eventSquare: {
     minWidth: 34,
     minHeight: 34,
@@ -448,11 +433,7 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 5,
   },
-  noteTagBGImage: {
-    borderRadius: 8,
-    width: '100%',
-    height: '100%',
-  },
+  noteTagBGImage: {borderRadius: 8, width: '100%', height: '100%'},
   noteTagText: {
     color: '#0A67FE',
     fontSize: 10,
@@ -525,10 +506,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginVertical: '2%',
   },
-  notesCardBGImage: {
-    borderRadius: 16,
-    resizeMode: 'stretch',
-  },
+  notesCardBGImage: {borderRadius: 16, resizeMode: 'stretch'},
   cardTitle: {
     fontSize: 19,
     fontWeight: 'bold',
@@ -536,27 +514,10 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     marginRight: 32,
   },
-  cardDesc: {
-    fontSize: 14,
-    color: '#222',
-    marginBottom: 10,
-  },
-  cardUserRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  cardUserIcon: {
-    width: 20,
-    height: 20,
-    tintColor: '#b0b0b0',
-    marginRight: 6,
-  },
-  cardUserText: {
-    fontSize: 15,
-    color: '#626262',
-    fontWeight: '500',
-  },
+  cardDesc: {fontSize: 14, color: '#222', marginBottom: 10},
+  cardUserRow: {flexDirection: 'row', alignItems: 'center', marginTop: 10},
+  cardUserIcon: {width: 20, height: 20, tintColor: '#b0b0b0', marginRight: 6},
+  cardUserText: {fontSize: 15, color: '#626262', fontWeight: '500'},
   cardMoreBtn: {
     position: 'absolute',
     right: 16,
@@ -564,11 +525,7 @@ const styles = StyleSheet.create({
     zIndex: 5,
     padding: 2,
   },
-  cardMoreText: {
-    fontSize: 22,
-    color: '#888',
-    fontWeight: 'bold',
-  },
+  cardMoreText: {fontSize: 22, color: '#888', fontWeight: 'bold'},
   redDot: {
     width: 13,
     height: 13,
