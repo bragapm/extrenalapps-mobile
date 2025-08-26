@@ -755,7 +755,38 @@ const Attendance: React.FC = () => {
                     }
                     renderItem={renderItemCuti}
                     ListEmptyComponent={
-                      <Text style={{margin: 20}}>Tidak ada data cuti</Text>
+                      <View
+                        style={{
+                          alignItems: 'center',
+                          marginVertical: 42,
+                          backgroundColor: '#FFF',
+                          borderRadius: 10,
+                          paddingVertical: '5%',
+                          paddingHorizontal: '2%',
+                        }}>
+                        <Image
+                          source={require('../../assets/images/404.png')}
+                          style={{
+                            width: 96,
+                            height: 96,
+                            marginBottom: 12,
+                            opacity: 0.7,
+                          }}
+                          resizeMode="contain"
+                        />
+                        <Text
+                          style={{
+                            fontSize: 17,
+                            color: '#999',
+                            fontWeight: '600',
+                            marginBottom: 4,
+                          }}>
+                          Data Tidak di Temukan
+                        </Text>
+                        <Text style={{fontSize: 13, color: '#A5A5A5'}}>
+                          Silahkan coba lagi
+                        </Text>
+                      </View>
                     }
                     scrollEnabled={false}
                   />

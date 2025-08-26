@@ -17,6 +17,7 @@ import {RootStackParamList} from '../../navigation';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {useIsFocused, useNavigation} from '@react-navigation/native';
 import {initNotes, getNotes, NotesByDate} from '../../utils/dummyStore';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 // Locale
 LocaleConfig.locales['id'] = {
@@ -87,7 +88,7 @@ export default function PlanCalendar() {
   const [month, setMonth] = useState(today.getMonth());
   const [selected, setSelected] = useState(todayStr);
   const [modalVisible, setModalVisible] = useState(false);
-
+  const insets = useSafeAreaInsets();
   const getMonthDateString = (y: number, m: number) => `${y}-${pad2(m + 1)}-01`;
   const [calendarKey, setCalendarKey] = useState(0);
 
@@ -250,6 +251,8 @@ export default function PlanCalendar() {
 
       {/* Modal detail */}
       <Modal
+        presentationStyle="overFullScreen" // <— penting di iOS
+        statusBarTranslucent
         isVisible={modalVisible}
         onBackdropPress={() => setModalVisible(false)}
         onSwipeComplete={() => setModalVisible(false)}
@@ -339,7 +342,7 @@ export default function PlanCalendar() {
             backgroundColor: '#FFFFFF',
             paddingHorizontal: 14,
             zIndex: 99,
-            paddingVertical: '3%',
+            paddingVertical: '5%',
           }}>
           <TouchableOpacity
             style={styles.fabButton}

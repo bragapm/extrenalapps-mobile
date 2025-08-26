@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
+  Pressable,
   StyleSheet,
   Dimensions,
   Modal,
@@ -14,6 +15,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import MapboxGL from '@rnmapbox/maps';
 import {useThemeStore} from '../../theme/useThemeStore';
 import {MAPBOX_ACCESS_TOKEN} from '../../services/apiServices';
@@ -127,6 +129,7 @@ interface Marker {
 
 type AnnotationMap = Record<string, MapboxGL.PointAnnotation | null>;
 const LiveTeam: React.FC = () => {
+  const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const {colors} = useThemeStore();
   const isFocused = useIsFocused(); // untuk pastikan hanya render saat aktif
@@ -430,6 +433,8 @@ const LiveTeam: React.FC = () => {
           visible={!!selectedMarker}
           animationType="slide"
           transparent
+          presentationStyle="overFullScreen" // <— penting di iOS
+          statusBarTranslucent
           onRequestClose={() => setSelectedMarker(null)}>
           <View style={styles.modalBg}>
             <View

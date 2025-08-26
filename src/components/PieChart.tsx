@@ -1,6 +1,6 @@
 import React from 'react';
 import {View, ViewStyle} from 'react-native';
-import Svg, {Path, Text as SvgText} from 'react-native-svg';
+import Svg, {Path, Text as SvgText, Circle} from 'react-native-svg';
 
 export type PieData = {
   value: number;
@@ -11,13 +11,14 @@ export type PieData = {
 export type PieChartProps = {
   data: PieData[];
   size?: number;
-  fontSize?: number;
-  fontColor?: string;
-  strokeColor?: string;
-  strokeWidth?: number;
+  fontSize?: number; // ukuran angka di dalam slice
+  fontColor?: string; // warna angka
+  strokeColor?: string; // warna RING LUAR (bukan garis antar-slice)
+  strokeWidth?: number; // tebal RING LUAR
   style?: ViewStyle;
 };
 
+/** Buat path sector pie (dari pusat). */
 function describeArc(
   cx: number,
   cy: number,
@@ -34,6 +35,7 @@ function describeArc(
     y: cy + r * Math.sin((Math.PI * endAngle) / 180),
   };
   const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0;
+  // sweep-flag = 1 agar mengikuti arah jarum jam
   return [
     `M ${cx} ${cy}`,
     `L ${start.x} ${start.y}`,
@@ -44,62 +46,66 @@ function describeArc(
 
 const PieChart: React.FC<PieChartProps> = ({
   data,
-  size = 140,
-  fontSize = 18,
+  size = 160,
+  fontSize = 16,
   fontColor = '#fff',
-  strokeColor = '#fff',
+  strokeColor = '#E6E6E6', // ring luar tipis
   strokeWidth = 3,
   style,
 }) => {
   const cx = size / 2;
   const cy = size / 2;
-  const r = size / 2 - strokeWidth / 2;
+  // beri padding kecil agar ring tidak “ketok” tepi SVG
+  const r = size / 2 - 4;
   const total = data.reduce((sum, d) => sum + d.value, 0);
   let startAngle = -90;
 
-  // posisi value di tengah slice
-  const getTextPosition = (
+  const getTextPos = (
     start: number,
     end: number,
     radius: number,
   ): {x: number; y: number} => {
     const angle = ((start + end) / 2) * (Math.PI / 180);
-    const x = cx + radius * 0.65 * Math.cos(angle);
-    const y = cy + radius * 0.65 * Math.sin(angle);
+    const x = cx + radius * 0.62 * Math.cos(angle);
+    const y = cy + radius * 0.62 * Math.sin(angle);
     return {x, y};
   };
 
   return (
     <View style={style}>
       <Svg width={size} height={size}>
+        {/* slice tanpa stroke supaya tidak muncul “tanda +” di tengah */}
         {data.map((slice, idx) => {
           const angle = (slice.value / total) * 360;
           const endAngle = startAngle + angle;
           const path = describeArc(cx, cy, r, startAngle, endAngle);
-          const {x, y} = getTextPosition(startAngle, endAngle, r);
-          const value = slice.value;
+          const {x, y} = getTextPos(startAngle, endAngle, r);
           startAngle += angle;
           return (
             <React.Fragment key={idx}>
-              <Path
-                d={path}
-                fill={slice.color}
-                stroke={strokeColor}
-                strokeWidth={strokeWidth}
-              />
+              <Path d={path} fill={slice.color} />
               <SvgText
                 x={x}
                 y={y + fontSize / 3}
                 fontSize={fontSize}
-                fontWeight="bold"
+                fontWeight="700"
                 fill={fontColor}
-                textAnchor="middle"
-                alignmentBaseline="middle">
-                {value}
+                textAnchor="middle">
+                {slice.value}
               </SvgText>
             </React.Fragment>
           );
         })}
+
+        {/* ring luar tipis (outline abu-abu) */}
+        <Circle
+          cx={cx}
+          cy={cy}
+          r={r}
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth={strokeWidth}
+        />
       </Svg>
     </View>
   );

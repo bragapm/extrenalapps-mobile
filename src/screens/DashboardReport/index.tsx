@@ -1,3 +1,4 @@
+// src/screens/DashboardReport.tsx
 import React from 'react';
 import {
   View,
@@ -6,21 +7,27 @@ import {
   StyleSheet,
   FlatList,
   Dimensions,
-  ImageBackground,
   StatusBar,
   useColorScheme,
   Image,
 } from 'react-native';
+import {Picker} from '@react-native-picker/picker';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import Svg, {
+  G,
+  Rect,
+  Text as SvgText,
+  TSpan,
+  Path,
+  Circle,
+} from 'react-native-svg';
+
 import {useThemeStore} from '../../theme/useThemeStore';
 import AppHeader from '../../components/AppHeader';
-import HistoryAttendance from '../../components/HistoryAttendance';
-import {dummyLiveAbsensi, dummyWorkPlanner} from '../../data/dummy';
-import Svg, {G, Rect, Text as SvgText, TSpan, Path} from 'react-native-svg';
-import {constants} from 'crypto';
 import StackedBarChart from '../../components/StackedBarChart';
 import GroupedBarChart from '../../components/GroupedBarChart';
-import PieChart from '../../components/PieChart';
 
+/* ===== Dummy data ===== */
 const employeePerformanceDummy = [
   {label: 'Land\nDispute', open: 4, close: 2},
   {label: 'Land\nDispute', open: 5, close: 3},
@@ -29,87 +36,71 @@ const employeePerformanceDummy = [
   {label: 'Land\nDispute', open: 6, close: 3},
 ];
 
-const PIE_COLORS = [
-  '#94DB26', // Land Dispute (hijau terang)
-  '#E2DF34', // Land Compensation (kuning)
-  '#F45D2F', // Land Use (merah-oranye)
-  '#DF3B32', // Land Tenure (merah tua)
+const PIE_COLORS = ['#94DB26', '#E2DF34', '#F45D2F', '#DF3B32'];
+
+const pieDataPretty = [
+  {label: 'General', value: 20, color: PIE_COLORS[0]},
+  {label: 'Collaboration', value: 20, color: PIE_COLORS[1]},
+  {label: 'Land Dispute', value: 20, color: PIE_COLORS[2]},
+  {label: 'Environment', value: 20, color: PIE_COLORS[3]},
 ];
 
-const pieDataDummy = [
-  {key: 'Land Dispute', value: 20, color: PIE_COLORS[0]},
-  {key: 'Land Compensation', value: 40, color: PIE_COLORS[1]},
-  {key: 'Land Use', value: 40, color: PIE_COLORS[2]},
-  {key: 'Land Tenure', value: 20, color: PIE_COLORS[3]},
-];
-const pieData = [
-  {value: 20, color: PIE_COLORS[0], label: 'Land Dispute'},
-  {value: 10, color: PIE_COLORS[1], label: 'Land Compensation'},
-  {value: 60, color: PIE_COLORS[2], label: 'Land Use'},
-  {value: 10, color: PIE_COLORS[3], label: 'Land Tenure'},
-];
-
-const barChartData = [
-  {label: 'Priya', values: [6, 3], colors: ['#1B7EDF', '#20D372']}, // [hadir, tidak hadir]
+const stackedBarData = [
+  {label: 'Priya', values: [6, 3], colors: ['#1B7EDF', '#20D372']},
   {label: 'Nair', values: [12, 5], colors: ['#1B7EDF', '#20D372']},
   {label: 'Ilam', values: [9, 3], colors: ['#1B7EDF', '#20D372']},
   {label: 'Aprilia', values: [8, 3], colors: ['#1B7EDF', '#20D372']},
   {label: 'Tintin', values: [9, 3], colors: ['#1B7EDF', '#20D372']},
 ];
 
-const BAR_CHART_COLORS = {
-  selesai: '#FFD9A2', // kuning muda
-  ongoing: '#FF8727', // orange terang
-};
+const BAR_CHART_COLORS = {selesai: '#FFD9A2', ongoing: '#FF8727'};
 
+/* ===== Filter options ===== */
+const JENIS_REPORT = [
+  {label: 'Semua', value: ''},
+  {label: 'Report Urgent', value: 'urgent'},
+  {label: 'Warning Report', value: 'warning'},
+  {label: 'Daily Report', value: 'daily'},
+];
+
+const STATUS = [
+  {label: 'Semua', value: ''},
+  {label: 'Open', value: 'open'},
+  {label: 'Closed', value: 'closed'},
+  {label: 'In Progress', value: 'in_progress'},
+  {label: 'Approved', value: 'approved'},
+  {label: 'Draft', value: 'draft'},
+  {label: 'Reject', value: 'reject'},
+];
+
+/* ===== Helpers ===== */
+function formatDate(d?: string | Date | null) {
+  if (!d) return '';
+  const date = typeof d === 'string' ? new Date(d) : d;
+  return `${String(date.getDate()).padStart(2, '0')} ${date.toLocaleString(
+    'id-ID',
+    {month: 'long'},
+  )} ${date.getFullYear()}`;
+}
+
+/* ---------- Simple bar (Report Status) ---------- */
 const BarChart = ({data}) => {
-  const chartWidth = 320; // Lebarkan biar label muat
+  const chartWidth = 320;
   const chartHeight = 230;
   const paddingLeft = 24;
   const paddingBottom = 56;
   const paddingTop = 28;
   const barWidth = 12;
-  const groupGap = 54; // jarak antar kategori
-  const barGap = 10; // jarak antar bar dalam kategori
+  const groupGap = 54;
+  const barGap = 10;
   const maxY = Math.max(...data.map(d => Math.max(d.selesai, d.ongoing)), 32);
 
   return (
-    <View
-      style={{
-        backgroundColor: '#F9F8F6',
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: '#ECECEC',
-        marginTop: 22,
-        padding: 20,
-      }}>
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          marginBottom: 10,
-        }}>
-        <Text style={{fontSize: 19, fontWeight: 'bold', color: '#1A1919'}}>
-          Report Status
-        </Text>
-        <TouchableOpacity
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 2,
-            paddingHorizontal: 10,
-            paddingVertical: 3,
-            backgroundColor: '#F8F8F8',
-            borderRadius: 7,
-            borderWidth: 1,
-            borderColor: '#ECECEC',
-          }}>
-          <Text style={{color: '#989898', fontWeight: '500'}}>Filter</Text>
-          <Text style={{color: '#BDBDBD', fontSize: 13}}>▼</Text>
-        </TouchableOpacity>
+    <View style={stylesCard.wrap}>
+      <View style={stylesCard.headerRow}>
+        <Text style={stylesCard.headerTitle}>Report Status</Text>
       </View>
       <Svg width={chartWidth} height={chartHeight}>
-        {/* Garis grid dan Y-axis */}
         {[0, 1, 2, 3, 4, 5].map(i => {
           const y =
             paddingTop + (i * (chartHeight - paddingTop - paddingBottom)) / 5;
@@ -134,22 +125,17 @@ const BarChart = ({data}) => {
             </G>
           );
         })}
-        {/* Bars & Label */}
         {data.map((d, i) => {
           const baseY = chartHeight - paddingBottom;
           const selesaiH =
             (d.selesai / maxY) * (chartHeight - paddingTop - paddingBottom);
           const ongoingH =
             (d.ongoing / maxY) * (chartHeight - paddingTop - paddingBottom);
-          // Kelompok bar di tengah label, jadi label bukan di satu bar
           const groupX =
             paddingLeft + i * groupGap + i * barWidth + i * barGap + 8;
-          // Untuk label multi line
           const [label1, label2] = d.label.split(' ');
-
           return (
             <G key={i}>
-              {/* Selesai (kiri) */}
               <Rect
                 x={groupX}
                 y={baseY - selesaiH}
@@ -158,7 +144,6 @@ const BarChart = ({data}) => {
                 fill={BAR_CHART_COLORS.selesai}
                 rx={4}
               />
-              {/* On Going (kanan) */}
               <Rect
                 x={groupX + barWidth + barGap}
                 y={baseY - ongoingH}
@@ -167,7 +152,6 @@ const BarChart = ({data}) => {
                 fill={BAR_CHART_COLORS.ongoing}
                 rx={4}
               />
-              {/* Label bawah, di tengah antara dua bar */}
               <SvgText
                 x={groupX + barWidth + barGap / 2}
                 y={baseY + 22}
@@ -186,50 +170,172 @@ const BarChart = ({data}) => {
           );
         })}
       </Svg>
-      {/* Legend */}
+
       <View style={{flexDirection: 'row', alignItems: 'center', marginTop: 18}}>
-        {/* Selesai */}
-        <View
-          style={{flexDirection: 'row', alignItems: 'center', marginRight: 26}}>
-          <View
-            style={{
-              width: 18,
-              height: 18,
-              borderRadius: 5,
-              backgroundColor: BAR_CHART_COLORS.selesai,
-              marginRight: 7,
-            }}
-          />
-          <Text style={{fontSize: 16, color: '#888', fontWeight: '500'}}>
-            Selesai
-          </Text>
-        </View>
-        {/* On Going */}
-        <View style={{flexDirection: 'row', alignItems: 'center'}}>
-          <View
-            style={{
-              width: 18,
-              height: 18,
-              borderRadius: 5,
-              backgroundColor: BAR_CHART_COLORS.ongoing,
-              marginRight: 7,
-            }}
-          />
-          <Text style={{fontSize: 16, color: '#888', fontWeight: '500'}}>
-            On Going
-          </Text>
-        </View>
+        <LegendBlock label="Selesai" color={BAR_CHART_COLORS.selesai} />
+        <LegendBlock label="On Going" color={BAR_CHART_COLORS.ongoing} />
       </View>
     </View>
   );
 };
 
+const LegendBlock = ({label, color}) => (
+  <View style={{flexDirection: 'row', alignItems: 'center', marginRight: 26}}>
+    <View
+      style={{
+        width: 18,
+        height: 18,
+        borderRadius: 5,
+        backgroundColor: color,
+        marginRight: 7,
+      }}
+    />
+    <Text style={{fontSize: 16, color: '#888', fontWeight: '500'}}>
+      {label}
+    </Text>
+  </View>
+);
+
+/* ---------- Pretty Pie (sesuai gambar #1) ---------- */
+const PrettyPieChart = ({
+  data,
+  size = 160,
+  strokeColor = '#FFFFFF',
+  strokeWidth = 5,
+}: {
+  data: {label: string; value: number; color: string}[];
+  size?: number;
+  strokeColor?: string;
+  strokeWidth?: number;
+}) => {
+  const width = size;
+  const height = size;
+  const cx = width / 2;
+  const cy = height / 2;
+  const r = (size / 2) * 0.9; // beri margin sedikit
+  const total = data.reduce((s, d) => s + d.value, 0);
+
+  const polar = (angle: number) => {
+    const rad = ((angle - 90) * Math.PI) / 180;
+    return {x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad)};
+  };
+
+  const pathArc = (start: number, end: number) => {
+    const startPt = polar(end);
+    const endPt = polar(start);
+    const large = end - start <= 180 ? '0' : '1';
+    return `M ${cx} ${cy} L ${startPt.x} ${startPt.y} A ${r} ${r} 0 ${large} 0 ${endPt.x} ${endPt.y} Z`;
+  };
+
+  let acc = 0;
+  return (
+    <Svg width={width} height={height}>
+      {/* outline lembut */}
+      <Circle cx={cx} cy={cy} r={r} fill="#F9F9F9" />
+      {data.map((d, i) => {
+        const start = acc;
+        const sweep = (d.value / total) * 360;
+        const end = acc + sweep;
+        acc = end;
+
+        // posisi angka di tengah slice
+        const mid = start + sweep / 2;
+        const rad = ((mid - 90) * Math.PI) / 180;
+        const tx = cx + r * 0.6 * Math.cos(rad);
+        const ty = cy + r * 0.6 * Math.sin(rad);
+
+        return (
+          <G key={i}>
+            <Path
+              d={pathArc(start, end)}
+              fill={d.color}
+              stroke={strokeColor}
+              strokeWidth={strokeWidth}
+            />
+            <SvgText
+              x={tx}
+              y={ty + 4}
+              textAnchor="middle"
+              fontSize={14}
+              fill="#FFFFFF"
+              fontWeight="700">
+              {d.value}
+            </SvgText>
+          </G>
+        );
+      })}
+    </Svg>
+  );
+};
+
+/* ================== DASHBOARD ================== */
 const DashboardReport = ({role, sections}) => {
-  const screenWidth = Dimensions.get('window').width;
-  const imageWidth = screenWidth * 0.85;
-  const imageHeight = imageWidth * (115 / screenWidth);
   const {colors} = useThemeStore();
   const colorScheme = useColorScheme();
+
+  // filter state
+  const [jenisReport, setJenisReport] = React.useState('');
+  const [status, setStatus] = React.useState('');
+  const [tanggal, setTanggal] = React.useState<string | null>(null);
+  const [showDate, setShowDate] = React.useState(false);
+
+  const FilterBar = () => (
+    <View style={filterStyles.container}>
+      {/* Tanggal */}
+      <TouchableOpacity
+        style={[filterStyles.inputBox, {flexGrow: 1}]}
+        onPress={() => setShowDate(true)}
+        activeOpacity={0.8}>
+        <Image
+          source={require('../../assets/icons/ic-calendar.png')}
+          style={{width: 18, height: 18, marginRight: 8}}
+        />
+        <Text style={filterStyles.inputText}>
+          {tanggal ? formatDate(tanggal) : 'Tanggal'}
+        </Text>
+        <Text style={filterStyles.chev}>▾</Text>
+      </TouchableOpacity>
+
+      {/* Jenis Report */}
+      <View style={[filterStyles.inputBox, {flexGrow: 1}]}>
+        <Picker
+          selectedValue={jenisReport}
+          onValueChange={setJenisReport}
+          style={filterStyles.picker}>
+          {JENIS_REPORT.map(opt => (
+            <Picker.Item key={opt.value} label={opt.label} value={opt.value} />
+          ))}
+        </Picker>
+        <Text style={filterStyles.chev}>▾</Text>
+      </View>
+
+      {/* Status */}
+      <View style={[filterStyles.inputBox, {flexGrow: 1}]}>
+        <Picker
+          selectedValue={status}
+          onValueChange={setStatus}
+          style={filterStyles.picker}>
+          {STATUS.map(opt => (
+            <Picker.Item key={opt.value} label={opt.label} value={opt.value} />
+          ))}
+        </Picker>
+        <Text style={filterStyles.chev}>▾</Text>
+      </View>
+
+      {/* Download */}
+      <TouchableOpacity
+        style={filterStyles.iconBtn}
+        onPress={() => {
+          /* export here */
+        }}>
+        <Image
+          source={require('../../assets/icons/ic-download.png')}
+          style={{width: 22, height: 22}}
+          resizeMode="contain"
+        />
+      </TouchableOpacity>
+    </View>
+  );
 
   const ListHeaderComponent = (
     <>
@@ -240,7 +346,6 @@ const DashboardReport = ({role, sections}) => {
       />
       <View style={[styles.container, {backgroundColor: colors.bgHome}]}>
         <AppHeader />
-
         <View
           style={{
             width: '100%',
@@ -263,497 +368,122 @@ const DashboardReport = ({role, sections}) => {
   );
 
   const renderSection = ({item}) => {
-    if (item.type === 'report-admin') {
-      return (
-        <View style={styles.summaryCard}>
-          <View style={styles.summaryHeader}>
-            <Text style={styles.summaryTitle}>Laporan</Text>
-            <TouchableOpacity>
-              <Text style={styles.summaryDetail}>Lihat detail &gt;</Text>
-            </TouchableOpacity>
-          </View>
-          {/* <StackedBarChart
-            data={employeePerformanceDummy}
-            maxY={14}
-            height={250}
-          /> */}
+    if (item.type !== 'report-admin') return null;
 
-          <View
-            style={{
-              backgroundColor: '#F9F8F6',
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: '#ECECEC',
-              marginTop: 22,
-              padding: 20,
-            }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                marginBottom: 10,
-              }}>
-              <Text
-                style={{fontSize: 19, fontWeight: 'bold', color: '#1A1919'}}>
-                Report Issue Summary
-              </Text>
-              <TouchableOpacity
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 2,
-                  paddingHorizontal: 10,
-                  paddingVertical: 3,
-                  backgroundColor: '#F8F8F8',
-                  borderRadius: 7,
-                  borderWidth: 1,
-                  borderColor: '#ECECEC',
-                }}>
-                <Text style={{color: '#989898', fontWeight: '500'}}>
-                  Filter
-                </Text>
-                <Text style={{color: '#BDBDBD', fontSize: 13}}>▼</Text>
-              </TouchableOpacity>
-            </View>
-            <GroupedBarChart
-              data={employeePerformanceDummy}
-              maxY={10} // set maxY biar sesuai nilai maksimal
-              height={250} // bisa diubah sesuai kebutuhan, biasanya 120-150
-            />
-          </View>
+    const total = pieDataPretty.reduce((s, d) => s + d.value, 0);
 
-          <View
-            style={{
-              backgroundColor: '#F9F8F6',
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: '#ECE8E1',
-              padding: 18,
-              marginTop: 12,
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}>
-            <View
-              style={{
-                width: '100%',
-                alignItems: 'center',
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-              }}>
-              <Text
-                style={{
-                  color: '#161414',
-                  fontSize: 16,
-                  marginTop: 5,
-                  fontWeight: '600',
-                  paddingBottom: '5%',
-                }}>
-                Report Summary
-              </Text>
-              <TouchableOpacity
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 2,
-                  paddingHorizontal: 9,
-                  paddingVertical: 3,
-                  backgroundColor: '#F8F8F8',
-                  borderRadius: 7,
-                  borderWidth: 1,
-                  borderColor: '#ECECEC',
-                }}>
-                <Text style={{color: '#989898', fontWeight: '500'}}>
-                  Tahunan
-                </Text>
-                <Text style={{color: '#BDBDBD', fontSize: 13}}>▼</Text>
-              </TouchableOpacity>
-            </View>
-            {/* Pie Chart */}
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                width: '100%',
-              }}>
-              <PieChart data={pieData} size={140} />
-              <View
-                style={{
-                  flex: 1,
-                  marginLeft: 15,
-                  justifyContent: 'center',
-                }}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    flexWrap: 'wrap',
-                    width: 185, // Atur lebar supaya muat 2 kolom
-                  }}>
-                  {/* Kolom 1 - Summary Data & Land Dispute + Land Use */}
-                  <View style={{width: '50%'}}>
-                    <Text
-                      style={{
-                        color: '#4F4D4A',
-                        fontSize: 11,
-                        marginBottom: 2,
-                        fontWeight: '400',
-                      }}>
-                      Summary Data
-                    </Text>
-                    <Text
-                      style={{
-                        color: '#161414',
-                        fontSize: 24,
-                        fontWeight: '700',
-                        marginBottom: 8,
-                      }}>
-                      48
-                    </Text>
-                    {/* Land Dispute */}
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        marginBottom: 12,
-                      }}>
-                      <View
-                        style={{
-                          width: 4,
-                          height: 28,
-                          backgroundColor: '#90D637',
-                          borderRadius: 3,
-                          marginRight: 8,
-                        }}
-                      />
-                      <View>
-                        <Text
-                          style={{
-                            color: '#4F4D4A',
-                            fontSize: 13,
-                            fontWeight: '400',
-                          }}>
-                          Land Dispute
-                        </Text>
-                        <Text
-                          style={{
-                            color: '#161414',
-                            fontSize: 16,
-                            fontWeight: '600',
-                          }}>
-                          {pieDataDummy[0].value}
-                        </Text>
-                      </View>
-                    </View>
-                    {/* Land Use */}
-                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                      <View
-                        style={{
-                          width: 4,
-                          height: 28,
-                          backgroundColor: '#DBD733',
-                          borderRadius: 3,
-                          marginRight: 8,
-                        }}
-                      />
-                      <View>
-                        <Text
-                          style={{
-                            color: '#4F4D4A',
-                            fontSize: 13,
-                            fontWeight: '400',
-                          }}>
-                          Land Use
-                        </Text>
-                        <Text
-                          style={{
-                            color: '#161414',
-                            fontSize: 16,
-                            fontWeight: '600',
-                          }}>
-                          {pieDataDummy[2].value}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                  {/* Kolom 2 - Land Compensation & Land Tenure */}
-                  <View style={{width: '50%', paddingLeft: 10}}>
-                    {/* Land Compensation */}
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        marginTop: 42,
-                        marginBottom: 12,
-                      }}>
-                      <View
-                        style={{
-                          width: 4,
-                          height: 28,
-                          backgroundColor: '#E44C41',
-                          borderRadius: 3,
-                          marginRight: 8,
-                        }}
-                      />
-                      <View>
-                        <Text
-                          style={{
-                            color: '#4F4D4A',
-                            fontSize: 13,
-                            fontWeight: '400',
-                          }}>
-                          Land Compensation
-                        </Text>
-                        <Text
-                          style={{
-                            color: '#161414',
-                            fontSize: 16,
-                            fontWeight: '600',
-                          }}>
-                          {pieDataDummy[1].value}
-                        </Text>
-                      </View>
-                    </View>
-                    {/* Land Tenure */}
-                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                      <View
-                        style={{
-                          width: 4,
-                          height: 28,
-                          backgroundColor: '#EF5934',
-                          borderRadius: 3,
-                          marginRight: 8,
-                        }}
-                      />
-                      <View>
-                        <Text
-                          style={{
-                            color: '#4F4D4A',
-                            fontSize: 13,
-                            fontWeight: '400',
-                          }}>
-                          Land Tenure
-                        </Text>
-                        <Text
-                          style={{
-                            color: '#161414',
-                            fontSize: 16,
-                            fontWeight: '600',
-                          }}>
-                          {pieDataDummy[3].value}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'flex-start',
-                marginTop: 20,
-                width: '100%',
-                flexWrap: 'wrap',
-              }}>
-              {/* Land Dispute */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  marginRight: 18,
-                  marginVertical: '2%',
-                }}>
-                <View
-                  style={{
-                    width: 18,
-                    height: 18,
-                    borderRadius: 5,
-                    backgroundColor: '#94DB26', // hijau terang
-                    marginRight: 7,
-                  }}
-                />
-                <Text style={{fontSize: 15, color: '#555', fontWeight: '500'}}>
-                  Land Dispute
-                </Text>
-              </View>
-              {/* Land Compensation */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  marginRight: 18,
-                }}>
-                <View
-                  style={{
-                    width: 18,
-                    height: 18,
-                    borderRadius: 5,
-                    backgroundColor: '#E2DF34', // kuning
-                    marginRight: 7,
-                  }}
-                />
-                <Text style={{fontSize: 15, color: '#555', fontWeight: '500'}}>
-                  Land Compensation
-                </Text>
-              </View>
-              {/* Land Use */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  marginRight: 18,
-                }}>
-                <View
-                  style={{
-                    width: 18,
-                    height: 18,
-                    borderRadius: 5,
-                    backgroundColor: '#F45D2F', // orange
-                    marginRight: 7,
-                  }}
-                />
-                <Text style={{fontSize: 15, color: '#555', fontWeight: '500'}}>
-                  Land Use
-                </Text>
-              </View>
-              {/* Land Tenure */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  marginRight: 0,
-                }}>
-                <View
-                  style={{
-                    width: 18,
-                    height: 18,
-                    borderRadius: 5,
-                    backgroundColor: '#DF3B32', // merah tua
-                    marginRight: 7,
-                  }}
-                />
-                <Text style={{fontSize: 15, color: '#555', fontWeight: '500'}}>
-                  Land Tenure
-                </Text>
-              </View>
-            </View>
-          </View>
-          <View
-            style={{
-              backgroundColor: '#F9F8F6',
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: '#ECECEC',
-              marginTop: 22,
-              padding: 20,
-            }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                marginBottom: 10,
-              }}>
-              <Text
-                style={{fontSize: 19, fontWeight: 'bold', color: '#1A1919'}}>
-                Report Status
-              </Text>
-              <TouchableOpacity
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 2,
-                  paddingHorizontal: 10,
-                  paddingVertical: 3,
-                  backgroundColor: '#F8F8F8',
-                  borderRadius: 7,
-                  borderWidth: 1,
-                  borderColor: '#ECECEC',
-                }}>
-                <Text style={{color: '#989898', fontWeight: '500'}}>
-                  Filter
-                </Text>
-                <Text style={{color: '#BDBDBD', fontSize: 13}}>▼</Text>
-              </TouchableOpacity>
-            </View>
-            <StackedBarChart
-              data={barChartData}
-              maxY={14}
-              height={250}
-              chartWidthPerBar={80}
-              // barWidth={24}        // Opsional, lebar bar
-              // chartWidthPerBar={42} // Opsional, jarak antar bar
-              // labelColor="#333"     // Opsional, warna label bawah
-            />
-          </View>
+    return (
+      <View style={styles.summaryCard}>
+        <View style={styles.summaryHeader}>
+          <Text style={styles.summaryTitle}>Laporan</Text>
+          <TouchableOpacity>
+            <Text style={styles.summaryDetail}>Lihat detail &gt;</Text>
+          </TouchableOpacity>
         </View>
-      );
-    }
-    if (item.type === 'work-planner-admin') {
-      const badgeColors = {
-        perjadin: {border: '#545454', text: '#545454', bg: '#fff'},
-        sakit: {border: '#FDB813', text: '#FDB813', bg: '#fff'},
-        cuti: {border: '#21C067', text: '#21C067', bg: '#fff'},
-        hadir: {border: '#2996F5', text: '#2996F5', bg: '#fff'},
-      };
-      return (
-        <View style={styles.card}>
-          <View style={styles.headerRow}>
-            <Text style={styles.headerText}>Rencana Kerja - Hari Ini</Text>
-            <TouchableOpacity>
-              <Text style={styles.detailLink}>Lihat detail &gt;</Text>
-            </TouchableOpacity>
+
+        {/* FILTER di atas Report Issue Summary */}
+        <FilterBar />
+
+        {/* Report Issue Summary */}
+        <View style={stylesCard.wrap}>
+          <View style={stylesCard.headerRow}>
+            <Text style={stylesCard.headerTitle}>Report Issue Summary</Text>
           </View>
-          <FlatList
-            data={dummyWorkPlanner}
-            keyExtractor={(item, idx) => item.name + idx}
-            renderItem={({item}) => {
-              const color =
-                badgeColors[item.statusType] || badgeColors['hadir'];
-              return (
-                <View style={styles.itemRow}>
-                  <View>
-                    <Text style={styles.nameText}>
-                      {' '}
-                      {item.name.length > 27
-                        ? item.name.slice(0, 27) + '...'
-                        : item.name}
-                    </Text>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        marginTop: 3,
-                      }}>
-                      <Image
-                        source={require('../../assets/icons/ic-stackeHolder-disable.png')}
-                        style={{width: 18, height: 18, marginRight: 6}}
-                        resizeMode="contain"
-                      />
-                      <Text style={styles.jabatanText}>
-                        {item.jabatan} - iSafe Number
-                      </Text>
-                    </View>
-                  </View>
-                  <View
-                    style={{
-                      alignSelf: 'flex-end',
-                    }}>
-                    <TouchableOpacity>
-                      <Text style={styles.detailPlanner}>
-                        Lihat detail &gt;
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              );
-            }}
-            ItemSeparatorComponent={() => <View style={{height: 12}} />}
+          <GroupedBarChart
+            data={employeePerformanceDummy}
+            maxY={10}
+            height={250}
           />
         </View>
-      );
-    }
-    return null;
+
+        {/* ===== Report Summary — match gambar #1 ===== */}
+        <View style={styles.summaryOuter}>
+          <Text style={styles.summaryOuterTitle}>Report Summary</Text>
+
+          {/* inner bordered area */}
+          <View style={styles.summaryInner}>
+            {/* Legend top (horizontal) */}
+            <View style={styles.topLegendRow}>
+              {pieDataPretty.map(d => (
+                <View key={d.label} style={styles.topLegendItem}>
+                  <View
+                    style={[styles.topLegendDot, {backgroundColor: d.color}]}
+                  />
+                  <Text style={styles.topLegendText}>{d.label}</Text>
+                </View>
+              ))}
+            </View>
+
+            <View style={{flexDirection: 'row', width: '100%', marginTop: 8}}>
+              {/* Pie */}
+              <View style={{flex: 1, alignItems: 'center'}}>
+                <PrettyPieChart data={pieDataPretty} size={180} />
+              </View>
+
+              {/* Right side: Summary list 2 kolom */}
+              <View style={{flex: 1, paddingLeft: 6}}>
+                <Text style={{color: '#6B6B6B', fontSize: 13, marginBottom: 2}}>
+                  Summary Data
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 34,
+                    fontWeight: '800',
+                    color: '#111',
+                    marginBottom: 10,
+                  }}>
+                  {total}
+                </Text>
+
+                <View style={{flexDirection: 'row', flexWrap: 'wrap'}}>
+                  {pieDataPretty.map((d, idx) => (
+                    <View
+                      key={d.label + idx}
+                      style={{width: '50%', paddingRight: 8, marginBottom: 12}}>
+                      <View
+                        style={{flexDirection: 'row', alignItems: 'center'}}>
+                        <View
+                          style={[styles.sideBar, {backgroundColor: d.color}]}
+                        />
+                        <Text style={styles.sideLabel} numberOfLines={2}>
+                          {d.label}
+                        </Text>
+                      </View>
+                      <Text style={styles.sideValue}>{d.value}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Bottom legend (big, 4 items) */}
+          <View style={styles.bottomLegendRow}>
+            {pieDataPretty.map(d => (
+              <View key={'b-' + d.label} style={styles.bottomLegendItem}>
+                <View
+                  style={[styles.bottomLegendDot, {backgroundColor: d.color}]}
+                />
+                <Text style={styles.bottomLegendText}>{d.label}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Bar lain */}
+        <View style={stylesCard.wrap}>
+          <View style={stylesCard.headerRow}>
+            <Text style={stylesCard.headerTitle}>Report Status</Text>
+          </View>
+          <StackedBarChart
+            data={stackedBarData}
+            maxY={14}
+            height={250}
+            chartWidthPerBar={80}
+          />
+        </View>
+      </View>
+    );
   };
 
   return (
@@ -763,22 +493,32 @@ const DashboardReport = ({role, sections}) => {
         keyExtractor={(item, idx) => item.type + idx}
         renderItem={renderSection}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingBottom: 50,
-          backgroundColor: colorScheme === 'dark' ? '#F4F3F1' : '#F4F3F1',
-        }}
+        contentContainerStyle={{paddingBottom: 50, backgroundColor: '#F4F3F1'}}
         ListHeaderComponent={ListHeaderComponent}
+      />
+
+      {/* Date picker */}
+      <DateTimePickerModal
+        isVisible={showDate}
+        mode="date"
+        date={tanggal ? new Date(tanggal) : new Date()}
+        onConfirm={d => {
+          setShowDate(false);
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          setTanggal(`${y}-${m}-${day}`);
+        }}
+        onCancel={() => setShowDate(false)}
       />
     </>
   );
 };
 
+/* ===== styles ===== */
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    // justifyContent: "center",
-    alignItems: 'center',
-  },
+  container: {flex: 1, alignItems: 'center'},
+
   summaryCard: {
     width: '94%',
     alignSelf: 'center',
@@ -799,48 +539,131 @@ const styles = StyleSheet.create({
   },
   summaryTitle: {fontSize: 17, fontWeight: 'bold', color: '#232323'},
   summaryDetail: {color: '#161414', fontSize: 14, fontWeight: '500'},
-  card: {
-    width: '94%',
-    alignSelf: 'center',
-    // backgroundColor: '#FFF',
-    borderRadius: 18,
-    padding: 5,
-    marginTop: 22,
+
+  /* Report Summary (card sesuai gambar #1) */
+  summaryOuter: {
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#ECECEC',
+    padding: 12,
+    marginTop: 12,
+  },
+  summaryOuterTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1919',
+    marginBottom: 6,
+  },
+  summaryInner: {
+    borderWidth: 1,
+    borderColor: '#E6E6E6',
+    borderRadius: 10,
+    padding: 12,
+  },
+
+  topLegendRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     marginBottom: 8,
-    shadowColor: '#000',
-    // shadowOpacity: 0.04,
-    // shadowOffset: {width: 0, height: 1},
-    // elevation: 1,
+  },
+  topLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 14,
+    marginBottom: 6,
+  },
+  topLegendDot: {width: 14, height: 14, borderRadius: 3, marginRight: 6},
+  topLegendText: {fontSize: 15, color: '#4A4A4A', fontWeight: '500'},
+
+  sideBar: {width: 3, height: 22, borderRadius: 2, marginRight: 8},
+  sideLabel: {fontSize: 14, color: '#555', fontWeight: '500', flex: 1},
+  sideValue: {
+    fontSize: 13,
+    color: '#888',
+    marginLeft: 11,
+    marginTop: 2,
+    fontWeight: '600',
+  },
+
+  bottomLegendRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    paddingTop: 10,
+  },
+  bottomLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 18,
+    marginTop: 6,
+  },
+  bottomLegendDot: {width: 22, height: 22, borderRadius: 6, marginRight: 8},
+  bottomLegendText: {fontSize: 17, color: '#666', fontWeight: '600'},
+});
+
+const stylesCard = StyleSheet.create({
+  wrap: {
+    backgroundColor: '#F9F8F6',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#ECECEC',
+    marginTop: 12,
+    padding: 20,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
-  headerText: {fontSize: 18, fontWeight: 'bold', color: '#222'},
-  detailLink: {color: '#161414', fontSize: 15, fontWeight: '500'},
-  itemRow: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 6,
-    paddingVertical: 20,
-    paddingHorizontal: 16,
+  headerTitle: {fontSize: 19, fontWeight: 'bold', color: '#1A1919'},
+});
+
+/** Styles filter bar */
+const filterStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    flexWrap: 'wrap', // biar otomatis 2 baris saat sempit
+    gap: 10,
+    alignItems: 'center',
+    width: '100%',
+    marginTop: 6,
+    marginBottom: 8,
+  },
+  inputBox: {
+    minWidth: 120,
+    height: 44,
+    flexBasis: '28%',
+    flexShrink: 1,
+    borderWidth: 1,
+    borderColor: '#B4B4B4',
+    borderRadius: 10,
+    backgroundColor: '#FFF',
+    paddingLeft: 12,
+    paddingRight: 32,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    position: 'relative',
   },
-  nameText: {fontSize: 18, fontWeight: '600', color: '#161414'},
-  jabatanText: {color: '#888', fontSize: 15, marginLeft: 5, fontWeight: '500'},
-  badge: {
-    borderWidth: 2,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 4,
-    alignItems: 'center',
+  picker: {flex: 1, height: 52, color: '#333', backgroundColor: 'transparent'},
+  inputText: {fontSize: 15, color: '#353535'},
+  chev: {
+    position: 'absolute',
+    right: 10,
+    top: 10,
+    fontSize: 16,
+    color: '#9E9E9E',
+  },
+  iconBtn: {
+    height: 44,
+    width: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#B4B4B4',
+    backgroundColor: '#FFF',
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  badgeText: {fontWeight: '600', fontSize: 15, textTransform: 'capitalize'},
-  detailPlanner: {color: '#161414', fontSize: 14, fontWeight: '400'},
 });
 
 export default DashboardReport;

@@ -858,10 +858,6 @@ const Activity = () => {
   };
 
   const FilterSortHeader = ({
-    filter,
-    setFilter,
-    sort,
-    setSort,
     jenisReport,
     setJenisReport,
     status,
@@ -870,21 +866,15 @@ const Activity = () => {
     setTanggal,
     onDownload,
     setShowDate,
-    showDate,
   }) => {
     return (
       <View style={stylesFSH.container}>
-        {/* Jenis Report */}
-        <View style={stylesFSH.inputBox}>
+        {/* BARIS 1 */}
+        <View style={[stylesFSH.inputBox, stylesFSH.half]}>
           <Picker
             selectedValue={jenisReport}
-            style={{
-              height: 52, // tinggi yang lebih besar
-              width: '100%',
-              backgroundColor: colorScheme === 'dark' ? '#FFFF' : '#FFFF',
-              color: colorScheme === 'dark' ? '#000' : '#000',
-            }}
-            onValueChange={setJenisReport}>
+            onValueChange={setJenisReport}
+            style={stylesFSH.picker}>
             {JENIS_REPORT.map(item => (
               <Picker.Item
                 key={item.value}
@@ -894,17 +884,12 @@ const Activity = () => {
             ))}
           </Picker>
         </View>
-        {/* Status */}
-        <View style={stylesFSH.inputBox}>
+
+        <View style={[stylesFSH.inputBox, stylesFSH.half]}>
           <Picker
             selectedValue={status}
-            style={{
-              height: 52, // tinggi yang lebih besar
-              width: '100%',
-              backgroundColor: colorScheme === 'dark' ? '#FFFF' : '#FFFF',
-              color: colorScheme === 'dark' ? '#000' : '#000',
-            }}
-            onValueChange={setStatus}>
+            onValueChange={setStatus}
+            style={stylesFSH.picker}>
             {STATUS.map(item => (
               <Picker.Item
                 key={item.value}
@@ -914,35 +899,35 @@ const Activity = () => {
             ))}
           </Picker>
         </View>
-        {/* Tanggal */}
-        <TouchableOpacity
-          style={stylesFSH.inputBox}
-          onPress={() => setShowDate(true)}>
-          <View style={stylesFSH.dateContent}>
+
+        {/* BARIS 2 */}
+        <View style={stylesFSH.row}>
+          <TouchableOpacity
+            style={[stylesFSH.inputBox, stylesFSH.flex1]}
+            onPress={() => setShowDate(true)}>
+            <View style={stylesFSH.dateContent}>
+              <Image
+                source={require('../../assets/icons/ic-calendar.png')}
+                style={{width: 18, height: 18, marginRight: 8}}
+                resizeMode="contain"
+              />
+              <Text numberOfLines={1} style={stylesFSH.inputText}>
+                {tanggal ? formatDate(tanggal) : 'Pilih Tanggal'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={stylesFSH.iconBtn}
+            onPress={onDownload}
+            activeOpacity={0.7}>
             <Image
-              source={require('../../assets/icons/ic-calendar.png')}
-              style={{width: 18, height: 18, marginRight: 8}}
+              source={require('../../assets/icons/ic-download.png')}
+              style={{width: 22, height: 22}}
               resizeMode="contain"
             />
-            <Text style={stylesFSH.inputText}>
-              {tanggal ? formatDate(tanggal) : 'Pilih Tanggal'}
-            </Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Download */}
-        <TouchableOpacity
-          style={stylesFSH.iconBtn}
-          onPress={onDownload}
-          activeOpacity={0.7}>
-          {/* Pakai SVG atau PNG icon, contoh: */}
-          {/* <IconDownload width={22} height={22} /> */}
-          <Image
-            source={require('../../assets/icons/ic-download.png')}
-            style={{width: 22, height: 22}}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
@@ -1602,45 +1587,56 @@ const styles = StyleSheet.create({
 
 const stylesFSH = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10, // spacing antar box
-    alignItems: 'center',
-    justifyContent: 'space-between',
     width: '90%',
     marginTop: 10,
     marginBottom: 10,
   },
+
+  // baris 1: dua kolom
+  half: {
+    flexBasis: '48%', // masing-masing ± setengah
+    flexGrow: 1,
+  },
+
+  // baris 2: tanggal + icon
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    width: '100%',
+    marginTop: 10,
+  },
+
+  flex1: {flex: 1},
+
   inputBox: {
+    height: 44,
     flexDirection: 'row',
     alignItems: 'center',
     borderColor: '#B4B4B4',
     borderWidth: 1.2,
     borderRadius: 10,
     backgroundColor: '#FFF',
-    width: 175, // <== width fix, jangan flex
-    height: 44,
-    marginRight: 0,
-    marginBottom: 10, // biar rapih kalau wrap
+    paddingHorizontal: 10,
     overflow: 'hidden',
+    marginBottom: 10,
   },
+
   picker: {
     flex: 1,
-    width: '100%', // penting! biar picker isi parent
+    width: '100%',
+    height: 52,
     color: '#333',
-    height: 44,
     backgroundColor: 'transparent',
   },
-  inputText: {
-    fontSize: 16,
-    color: '#353535',
-  },
+
   dateContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: '5%',
+    justifyContent: 'flex-start',
+    flex: 1,
   },
+
   iconBtn: {
     height: 44,
     width: 44,
@@ -1650,7 +1646,6 @@ const stylesFSH = StyleSheet.create({
     backgroundColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 0,
   },
 });
 
