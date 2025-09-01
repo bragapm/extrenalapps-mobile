@@ -27,6 +27,8 @@ const LOGO = require('../../assets/icons/uGemsIcon.png');
 const GOOGLE = require('../../assets/icons/googleLogin.png');
 const APPLE = require('../../assets/icons/applLogin.png');
 const ISAFE = require('../../assets/icons/i-safeLogin.png');
+const EYE = require('../../assets/icons/eye.png');
+const EYE_OFF = require('../../assets/icons/eye-off.png');
 
 const getRole = (input = '') => {
   const value = input.trim().toLowerCase();
@@ -41,6 +43,7 @@ const getRole = (input = '') => {
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [roleError, setRoleError] = useState('');
@@ -174,17 +177,27 @@ const LoginScreen = () => {
           ) : null}
           {roleError ? <Text style={styles.errorText}>{roleError}</Text> : null}
 
-          <TextInput
-            placeholder="Password"
-            style={styles.input}
-            placeholderTextColor="#999"
-            secureTextEntry
-            value={password}
-            onChangeText={text => {
-              setPassword(text);
-              setPasswordError('');
-            }}
-          />
+          <View style={styles.passwordContainer}>
+            <TextInput
+              placeholder="Password"
+              style={styles.passwordInput}
+              placeholderTextColor="#999"
+              secureTextEntry={!showPassword} // 👈 toggle
+              value={password}
+              onChangeText={text => {
+                setPassword(text);
+                setPasswordError('');
+              }}
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.eyeIcon}>
+              <Image
+                source={showPassword ? EYE_OFF : EYE}
+                style={{width: 22, height: 22, tintColor: '#666'}}
+              />
+            </TouchableOpacity>
+          </View>
           {passwordError ? (
             <Text style={styles.errorText}>{passwordError}</Text>
           ) : null}
@@ -355,6 +368,25 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 13,
     textAlign: 'center',
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderColor: '#DDD',
+    borderWidth: 1,
+    borderRadius: 6,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+  },
+  passwordInput: {
+    flex: 1,
+    height: 46,
+    fontSize: 16,
+    color: '#222',
+  },
+  eyeIcon: {
+    padding: 6,
   },
   errorText: {color: 'red', fontSize: 13, marginBottom: 8, marginLeft: 2},
 });

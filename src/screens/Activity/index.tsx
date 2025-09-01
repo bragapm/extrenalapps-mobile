@@ -47,21 +47,23 @@ import {
 import ActionDrawer from '../../components/ActionDrawer';
 
 const JENIS_REPORT = [
-  {label: 'Semua', value: ''},
-  {label: 'Report Urgent', value: 'Report Urgent'},
-  {label: 'Warning Report', value: 'Warning Report'},
-  {label: 'Daily Report', value: 'Daily Report'},
+  {label: 'Semua Jenis Report', value: ''},
+  {label: 'Test A', value: 'Test A'},
+  {label: 'Test B', value: 'Test B'},
+  {label: 'Test C Edit', value: 'Test C Edit'},
+  {label: 'Data C', value: 'Data C'},
+  {label: 'Arham', value: 'arham'},
 ];
 
 const STATUS = [
-  {label: 'Semua', value: ''},
-  {label: 'Approved', value: 'approved'},
-  {label: 'In Progress', value: 'in_progress'},
-  {label: 'Draft', value: 'draft'},
-  {label: 'Reject', value: 'reject'},
-  {label: 'Open', value: 'open'},
-  {label: 'Waiting', value: 'waiting'},
-  {label: 'Closed', value: 'closed'},
+  {label: 'Semua Status', value: ''},
+  {label: 'Approved', value: 'Approved'},
+  {label: 'In Progress', value: 'In Progress'},
+  {label: 'Draft', value: 'Draft'},
+  {label: 'Reject', value: 'Reject'},
+  // {label: 'Open', value: 'open'},
+  // {label: 'Waiting', value: 'waiting'},
+  // {label: 'Closed', value: 'closed'},
 ];
 const COLOR_WEEKLY_M1 = '#FFE2BB';
 const COLOR_WEEKLY_M2 = '#FF832A';
