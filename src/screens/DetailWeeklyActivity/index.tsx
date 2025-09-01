@@ -41,14 +41,14 @@ import {WebView} from 'react-native-webview';
 const {width} = Dimensions.get('window');
 const IMAGE_ASPECT = 1.85; // 16:9
 
+// ====== UTIL DATE/TIME ======
 function parseTimeToDate(str) {
   if (!str) return new Date();
-  // format: "HH:mm WIB"
   const [time] = str.split(' ');
   const [hour, minute] = time.split(':');
   const now = new Date();
   now.setHours(Number(hour), Number(minute), 0, 0);
-  return new Date(now); // harus new Date supaya re-render
+  return new Date(now);
 }
 function formatRangeDate(start, end) {
   if (!start || !end) return '';
@@ -63,7 +63,6 @@ function formatRangeDate(start, end) {
     opts,
   )} ${e.getFullYear()}`;
 }
-
 function formatTime(dt) {
   if (!dt) return '';
   const jam = dt.getHours().toString().padStart(2, '0');
@@ -72,14 +71,21 @@ function formatTime(dt) {
 }
 function formatDateShort(date) {
   if (!date) return '';
-  // Kalau date masih string “2025-07-20”
   const d = new Date(date);
-  // Biar 2 digit hari, 3 huruf bulan, 4 digit tahun
   const day = d.getDate().toString().padStart(2, '0');
-  const month = d.toLocaleString('id-ID', {month: 'short'}); // contoh: "Feb"
+  const month = d.toLocaleString('id-ID', {month: 'short'});
   const year = d.getFullYear();
   return `${day} ${month} ${year}`;
 }
+function formatDate(d) {
+  if (!d) return '';
+  const tgl = new Date(d);
+  return `${tgl.getDate()} ${tgl.toLocaleString('id-ID', {
+    month: 'short',
+  })} ${tgl.getFullYear()}`;
+}
+
+// ====== BADGE & OPTIONS (tetap) ======
 const StatusMiniBadge = ({status = 'Open'}) => {
   const color =
     status === 'Open'
@@ -144,20 +150,8 @@ const OverlayImageInfo = ({
   rightTop,
   rightBot,
   align = 'both',
-}) => (
-  <>
-    {/* Kiri Bawah */}
-    {/* <View style={styles1.imgOverlayLeft}>
-      <Text style={styles1.overlayText}>{leftTop}</Text>
-      <Text style={styles1.overlaySubText}>{leftBot}</Text>
-    </View> */}
-    {/* Kanan Bawah */}
-    {/* <View style={styles1.imgOverlayRight}>
-      <Text style={styles1.overlayTextRight}>{rightTop}</Text>
-      <Text style={styles1.overlaySubTextRight}>{rightBot}</Text>
-    </View> */}
-  </>
-);
+}) => <></>;
+
 const STATUS_OPTIONS = [
   {label: 'Approved', value: 'approved'},
   {label: 'In Progress', value: 'in_progress'},
@@ -175,11 +169,11 @@ const JENIS_REPORT_OPTIONS = [
 
 const DetailWeeklyActivity = () => {
   const navigation = useNavigation();
-  // const data = dummyData;
   const route = useRoute();
   const {showForm = false, data} = route.params || {};
   const id = data?.id;
   console?.log('CEKK DATA', JSON.stringify(data));
+
   const [media, setMedia] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -192,14 +186,30 @@ const DetailWeeklyActivity = () => {
   const [judul, setJudul] = useState('-');
   const [jenis, setJenis] = useState(JENIS_REPORT_OPTIONS[0].value);
   const [deskripsi, setDeskripsi] = useState('');
+
+  // ====== RANGE STATE: start & end ======
   const [dateRange, setDateRange] = useState({start: null, end: null});
-  const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
+
+  // Window 7 hari (inklusif). Start = End - (DAYS_WINDOW - 1)
+  const DAYS_WINDOW = 7;
+
+  const stripTime = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const shiftDays = (date, days) => {
+    const dt = stripTime(date);
+    dt.setDate(dt.getDate() + days);
+    return dt;
+  };
+  const setEndAndBackfillStart = end => {
+    const endClean = stripTime(end);
+    const startClean = shiftDays(endClean, -(DAYS_WINDOW - 1));
+    setDateRange({start: startClean, end: endClean});
+  };
+
   const [picName, setPicName] = useState('');
   const [startTime, setStartTime] = useState(new Date());
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [startTimeZone, setStartTimeZone] = useState('WIB');
-
   const [endTime, setEndTime] = useState(new Date());
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [endTimeZone, setEndTimeZone] = useState('WIB');
@@ -216,21 +226,18 @@ const DetailWeeklyActivity = () => {
   ]);
   const [kesimpulan, setKesimpulan] = useState('');
 
-  const [allDaily, setAllDaily] = useState([]); // Semua data dari API
-  const [filteredDaily, setFilteredDaily] = useState([]); // Yang match range
-  const [selectedDaily, setSelectedDaily] = useState([]); // Id yang dipilih (multi)
+  const [allDaily, setAllDaily] = useState([]);
+  const [filteredDaily, setFilteredDaily] = useState([]);
+  const [selectedDaily, setSelectedDaily] = useState([]);
 
   useEffect(() => {
     getDailyActivities().then(setAllDaily);
   }, []);
 
   function getWeekOfMonth(date) {
-    // Dapatkan minggu ke berapa dalam bulan
-    // date = Date object
     const tanggal = new Date(date);
     const startOfMonth = new Date(tanggal.getFullYear(), tanggal.getMonth(), 1);
-    // index hari mulai dari Senin (1) biar sesuai kalender Indo
-    const dayOfWeekStart = startOfMonth.getDay() || 7; // 0: Minggu, 1: Senin, dst
+    const dayOfWeekStart = startOfMonth.getDay() || 7;
     const dayOfMonth = tanggal.getDate();
     return Math.ceil((dayOfMonth + dayOfWeekStart - 1) / 7);
   }
@@ -239,16 +246,16 @@ const DetailWeeklyActivity = () => {
     if (!dateStart) return '-';
     const date = new Date(dateStart);
     const mingguKe = getWeekOfMonth(date);
-    const month = date.toLocaleString('id-ID', {month: 'long'}); // e.g. "Juli"
+    const month = date.toLocaleString('id-ID', {month: 'long'});
     const year = date.getFullYear();
     const tgl = date.getDate();
-    // Format tgl: 21 Juli 2025
     const tglStr = `${tgl} ${month} ${year}`;
     return `W${mingguKe} ${month} ${year}: ${tglStr}`;
   }
+
+  // Filter daily ketika range valid
   useEffect(() => {
     if (dateRange.start && dateRange.end) {
-      // Filter hanya daily activity dalam range tanggal
       const start = new Date(dateRange.start).setHours(0, 0, 0, 0);
       const end = new Date(dateRange.end).setHours(23, 59, 59, 999);
       const filtered = allDaily.filter(item => {
@@ -257,26 +264,24 @@ const DetailWeeklyActivity = () => {
         return dt >= start && dt <= end;
       });
       setFilteredDaily(filtered);
-      setSelectedDaily(filtered.map(item => item.id)); // default: semua
+      setSelectedDaily(filtered.map(item => item.id));
     } else {
       setFilteredDaily([]);
       setSelectedDaily([]);
     }
   }, [dateRange, allDaily]);
+
   useEffect(() => {
     let isMounted = true;
     const fetchDetail = async () => {
       setLoadingDetail(true);
       try {
-        console.log(
-          '[getWeeklyActivityDetail] getWeeklyActivityDetail id:',
-          id,
-        ); // <--- tambahkan disini
+        console.log('[getWeeklyActivityDetail] id:', id);
         const res = await getWeeklyActivityDetail(id);
-        console.log('[getWeeklyActivityDetail] Response:', res); // <--- tambahkan disini
+        console.log('[getWeeklyActivityDetail] Response:', res);
         if (isMounted) setDetail(res);
       } catch (e) {
-        console.log('[getWeeklyActivityDetail] ERROR:', e); // <--- tambahkan disini
+        console.log('[getWeeklyActivityDetail] ERROR:', e);
         setDetail(null);
       } finally {
         setLoadingDetail(false);
@@ -289,7 +294,6 @@ const DetailWeeklyActivity = () => {
   }, [id]);
 
   const handleAddMedia = () => setModalVisible(true);
-
   const handleCamera = async () => {
     setModalVisible(false);
     try {
@@ -300,13 +304,12 @@ const DetailWeeklyActivity = () => {
         cropperToolbarTitle: 'Crop Foto',
         includeBase64: false,
       });
-      if (img) setMedia(m => [...m, {id: String(Date.now()), uri: img.path}]); // <-- ADA id
+      if (img) setMedia(m => [...m, {id: String(Date.now()), uri: img.path}]);
     } catch (e) {
       console.log('Camera error:', e);
       alert('Gagal buka kamera: ' + (e.message || e));
     }
   };
-
   const handleFile = async () => {
     setModalVisible(false);
     try {
@@ -318,10 +321,9 @@ const DetailWeeklyActivity = () => {
         includeBase64: false,
         mediaType: 'photo',
       });
-      if (img) setMedia(m => [...m, {id: String(Date.now()), uri: img.path}]); // <-- ADA id
+      if (img) setMedia(m => [...m, {id: String(Date.now()), uri: img.path}]);
     } catch (e) {}
   };
-
   const handleDocument = async () => {
     setModalVisible(false);
     try {
@@ -331,106 +333,24 @@ const DetailWeeklyActivity = () => {
       setMedia(m => [
         ...m,
         {
-          id: String(Date.now()), // <-- ADA id
+          id: String(Date.now()),
           uri: res.uri,
           name: res.name,
           type: res.type,
           isFile: true,
         },
       ]);
-    } catch (e) {
-      // cancel, do nothing
-    }
+    } catch (e) {}
   };
-
   const handleRemoveMedia = idx => setMedia(media.filter((_, i) => i !== idx));
-
-  function formatDate(d) {
-    if (!d) return '';
-    const tgl = new Date(d);
-    return `${tgl.getDate()} ${tgl.toLocaleString('id-ID', {
-      month: 'short',
-    })} ${tgl.getFullYear()}`;
-  }
-
-  const handleSubmit = async () => {
-    setLoadingSubmit(true);
-    try {
-      // Upload file dokumen, sama persis
-      const uploadedIds = [];
-      for (const file of media) {
-        if (!file.isServerFile) {
-          const id = await uploadFileDirectus({
-            uri: file.uri,
-            name: file.name || 'photo.jpg',
-            type:
-              file.type ||
-              (file.isFile ? 'application/octet-stream' : 'image/jpeg'),
-          });
-          await updateFileMetaDirectus([id], {
-            filename_download: file.name || 'Lampiran_Weekly_Activity.jpg',
-          });
-          uploadedIds.push(id);
-        } else {
-          uploadedIds.push(file.id);
-        }
-      }
-      const documents = uploadedIds.map(id => ({directus_files_id: id}));
-      const autoTitle = autoGenerateTitle(dateRange.start);
-      // Body yang sesuai dengan permintaan
-      const body = {
-        summary: kesimpulan, // Diambil dari input textarea kesimpulan
-        documents,
-        title: autoTitle,
-        daily_activities: selectedDaily, // Array id daily yang udah ke filter/selected
-        date_start: dateRange.start
-          ? dateRange.start.toISOString().slice(0, 10)
-          : null,
-        date_end: dateRange.end
-          ? dateRange.end.toISOString().slice(0, 10)
-          : null,
-      };
-
-      console.log('POST WEEKLY BODY:', JSON.stringify(body, null, 2));
-      // Lanjut POST ke API lo (ganti createDailyActivity ke endpoint weekly_activities jika beda)
-      await createWeeklyActivity(body);
-
-      // sukses
-      Alert.alert('Sukses', 'Berhasil create data weekly activity', [
-        {text: 'OK', onPress: () => navigation.goBack()},
-      ]);
-    } catch (err) {
-      Alert.alert('Error', err?.message || 'Unknown error');
-    } finally {
-      setLoadingSubmit(false);
-    }
-  };
-
-  const [userList, setUserList] = useState([]);
-  const [loadingUsers, setLoadingUsers] = useState(false);
-
-  useEffect(() => {
-    setLoadingUsers(true);
-    getUsers()
-      .then(users => setUserList(users))
-      .catch(() => setUserList([]))
-      .finally(() => setLoadingUsers(false));
-  }, []);
-
-  // Biar support single atau array
-  const [assetUrls, setAssetUrls] = useState([]); // [data:image/jpeg;base64,...]
-  const documentList = Array.isArray(detail?.documents)
-    ? detail.documents.map(doc => doc.directus_files_id)
-    : [];
 
   useEffect(() => {
     if (!detail || !detail.documents || detail.documents.length === 0) return;
     let isMounted = true;
     const fetchAllImages = async () => {
       try {
-        const token = await AsyncStorage.getItem('token'); // HARUS token
+        const token = await AsyncStorage.getItem('token');
         const promises = detail.documents.map(doc => {
-          // PDF gausah fetch, return null aja biar slotnya tetep
           if (
             typeof doc.directus_files_id === 'string' &&
             doc.directus_files_id.endsWith('.pdf')
@@ -452,15 +372,25 @@ const DetailWeeklyActivity = () => {
     };
   }, [detail]);
 
+  const [userList, setUserList] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  useEffect(() => {
+    setLoadingUsers(true);
+    getUsers()
+      .then(users => setUserList(users))
+      .catch(() => setUserList([]))
+      .finally(() => setLoadingUsers(false));
+  }, []);
+
+  const [assetUrls, setAssetUrls] = useState([]);
   useEffect(() => {
     if (!showForm && userList?.length && detail?.pics) {
-      // Ambil nama-nama PIC (bisa array)
       const names = (detail.pics || [])
         .map(picObj => {
           const user = userList.find(u => u?.id === picObj.directus_users_id);
           return user
             ? `${user?.first_name} ${user.last_name}`
-            : picObj.directus_users_id; // fallback ke id
+            : picObj.directus_users_id;
         })
         .filter(Boolean);
       setPicName(names.join(', '));
@@ -469,25 +399,22 @@ const DetailWeeklyActivity = () => {
 
   useEffect(() => {
     if (showForm && detail) {
-      // GUNAKAN detail, BUKAN data!
       setTanggal(detail.date ? new Date(detail.date) : new Date());
       setStatus(detail.status || STATUS_OPTIONS[0].value);
       setLokasi(detail.location || '');
       setPIC(
         Array.isArray(detail.pics) && detail.pics.length > 0
-          ? detail.pics.map(x => x.directus_users_id) // kalau multi
+          ? detail.pics.map(x => x.directus_users_id)
           : '',
       );
       setJudul(detail.title || '-');
       setJenis(detail.report_type || JENIS_REPORT_OPTIONS[0].value);
       setDeskripsi(detail.description || '');
-
-      setStartTime(detail.start_time ? new Date() : new Date()); // <- Kalau ada, parse sesuai format backend (di sini null)
+      setStartTime(detail.end_time ? new Date() : new Date());
       setStartTimeZone('WIB');
-      setEndTime(detail.end_time ? new Date() : new Date()); // <- Kalau ada, parse sesuai format backend (di sini null)
+      setEndTime(detail.end_time ? new Date() : new Date());
       setEndTimeZone('WIB');
 
-      // Lampiran/media dari detail.documents
       if (detail.documents && Array.isArray(detail.documents)) {
         setMedia(
           detail.documents.map(doc => ({
@@ -502,6 +429,64 @@ const DetailWeeklyActivity = () => {
     }
   }, [showForm, detail]);
 
+  const handleSubmit = async () => {
+    setLoadingSubmit(true);
+    try {
+      const uploadedIds = [];
+      for (const file of media) {
+        if (!file.isServerFile) {
+          const id = await uploadFileDirectus({
+            uri: file.uri,
+            name: file.name || 'photo.jpg',
+            type:
+              file.type ||
+              (file.isFile ? 'application/octet-stream' : 'image/jpeg'),
+          });
+          await updateFileMetaDirectus([id], {
+            filename_download: file.name || 'Lampiran_Weekly_Activity.jpg',
+          });
+          uploadedIds.push(id);
+        } else {
+          uploadedIds.push(file.id);
+        }
+      }
+      const documents = uploadedIds.map(id => ({directus_files_id: id}));
+      const autoTitle = autoGenerateTitle(dateRange.start);
+
+      const body = {
+        summary: kesimpulan,
+        documents,
+        title: autoTitle,
+        daily_activities: selectedDaily,
+        date_start: dateRange.start
+          ? dateRange.start.toISOString().slice(0, 10)
+          : null,
+        date_end: dateRange.end
+          ? dateRange.end.toISOString().slice(0, 10)
+          : null,
+      };
+
+      console.log('POST WEEKLY BODY:', JSON.stringify(body, null, 2));
+      await createWeeklyActivity(body);
+
+      Alert.alert('Sukses', 'Berhasil create data weekly activity', [
+        {text: 'OK', onPress: () => navigation.goBack()},
+      ]);
+    } catch (err) {
+      Alert.alert('Error', err?.message || 'Unknown error');
+    } finally {
+      setLoadingSubmit(false);
+    }
+  };
+
+  function getUploaderName() {
+    if (!userList?.length || !detail?.user_created) return '-';
+    const user = userList.find(u => u.id === detail.user_created);
+    if (!user) return detail.user_created || '-';
+    return [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
+  }
+
+  // ===================== RENDER =====================
   if (!showForm) {
     if (loadingDetail) {
       return (
@@ -524,12 +509,7 @@ const DetailWeeklyActivity = () => {
           }}>
           <Image
             source={require('../../assets/images/404.png')}
-            style={{
-              width: 96,
-              height: 96,
-              marginBottom: 12,
-              opacity: 0.7,
-            }}
+            style={{width: 96, height: 96, marginBottom: 12, opacity: 0.7}}
             resizeMode="contain"
           />
           <Text
@@ -547,50 +527,6 @@ const DetailWeeklyActivity = () => {
         </View>
       );
     }
-    if (!detail) {
-      return (
-        <View
-          style={{
-            alignItems: 'center',
-            marginVertical: 42,
-            backgroundColor: '#FFF',
-            borderRadius: 10,
-            paddingVertical: '5%',
-            paddingHorizontal: '2%',
-          }}>
-          <Image
-            source={require('../../assets/images/404.png')}
-            style={{
-              width: 96,
-              height: 96,
-              marginBottom: 12,
-              opacity: 0.7,
-            }}
-            resizeMode="contain"
-          />
-          <Text
-            style={{
-              fontSize: 17,
-              color: '#999',
-              fontWeight: '600',
-              marginBottom: 4,
-            }}>
-            Data Tidak di Temukan
-          </Text>
-          <Text style={{fontSize: 13, color: '#A5A5A5'}}>
-            Silahkan coba lagi
-          </Text>
-        </View> 
-      );
-    }
-  }
-
-  function getUploaderName() {
-    if (!userList?.length || !detail?.user_created) return '-';
-    const user = userList.find(u => u.id === detail.user_created);
-    if (!user) return detail.user_created || '-';
-    // Handle kalau first_name/last_name kosong/null
-    return [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
   }
 
   return (
@@ -607,35 +543,18 @@ const DetailWeeklyActivity = () => {
 
             <ScrollView
               contentContainerStyle={{padding: 20, paddingBottom: 120}}>
-              {/* ======= Tanggal Kerja (Date Range) ======= */}
+              {/* ======= Tanggal Kerja (Single Picker: pilih tanggal selesai, start auto 7 hari ke belakang) ======= */}
               <Text style={styles.inputLabel}>Tanggal kerja</Text>
-              <View style={{flexDirection: 'row', gap: 8, marginBottom: 12}}>
-                <TouchableOpacity
-                  style={[styles.rangeInput, {flex: 1}]}
-                  onPress={() => setShowStartPicker(true)}>
-                  <Text style={styles.inputText}>
-                    {dateRange.start ? formatDate(dateRange.start) : 'Mulai'}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.rangeInput, {flex: 1}]}
-                  onPress={() => setShowEndPicker(true)}>
-                  <Text style={styles.inputText}>
-                    {dateRange.end ? formatDate(dateRange.end) : 'Selesai'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              {showStartPicker && (
-                <DateTimePicker
-                  value={dateRange.start || new Date()}
-                  mode="date"
-                  display="default"
-                  onChange={(e, d) => {
-                    setShowStartPicker(false);
-                    if (d) setDateRange(r => ({...r, start: d}));
-                  }}
-                />
-              )}
+              <TouchableOpacity
+                style={[styles.rangeInput, {marginBottom: 12}]}
+                onPress={() => setShowEndPicker(true)}>
+                <Text style={styles.inputText}>
+                  {dateRange.end
+                    ? formatRangeDate(dateRange.start, dateRange.end)
+                    : 'Pilih tanggal selesai'}
+                </Text>
+              </TouchableOpacity>
+
               {showEndPicker && (
                 <DateTimePicker
                   value={dateRange.end || new Date()}
@@ -643,7 +562,7 @@ const DetailWeeklyActivity = () => {
                   display="default"
                   onChange={(e, d) => {
                     setShowEndPicker(false);
-                    if (d) setDateRange(r => ({...r, end: d}));
+                    if (d) setEndAndBackfillStart(d);
                   }}
                 />
               )}
@@ -653,11 +572,10 @@ const DetailWeeklyActivity = () => {
               <View style={styles.recapBox}>
                 <ScrollView style={{maxHeight: 120}}>
                   {filteredDaily.length ? (
-                    filteredDaily.map((item, idx) => (
+                    filteredDaily.map(item => (
                       <TouchableOpacity
                         key={item.id}
                         onPress={() => {
-                          // Toggle select/unselect
                           setSelectedDaily(sel =>
                             sel.includes(item.id)
                               ? sel.filter(id => id !== item.id)
@@ -745,7 +663,6 @@ const DetailWeeklyActivity = () => {
                       </TouchableOpacity>
                     </View>
                   ))}
-                  {/* Tombol tambah */}
                   <TouchableOpacity
                     style={styles.mediaAddBtn}
                     onPress={handleAddMedia}>
@@ -755,6 +672,7 @@ const DetailWeeklyActivity = () => {
                   </TouchableOpacity>
                 </ScrollView>
               </View>
+
               <UploadPickerModal
                 visible={modalVisible}
                 onClose={() => setModalVisible(false)}
@@ -816,9 +734,7 @@ const DetailWeeklyActivity = () => {
                         const fileId = doc.directus_files_id;
                         const isPdf =
                           typeof fileId === 'string' && fileId.endsWith('.pdf');
-                        // Untuk gambar: pakai assetUrls (hasil base64), untuk PDF: tetap pakai URL
                         if (!isPdf && !assetUrls[idx]) {
-                          // Kasus: error saat fetch image atau index assetUrls kosong/null
                           return (
                             <View
                               key={fileId}
@@ -840,7 +756,6 @@ const DetailWeeklyActivity = () => {
                             </View>
                           );
                         }
-
                         return (
                           <View
                             key={fileId}
@@ -892,7 +807,7 @@ const DetailWeeklyActivity = () => {
                   </View>
                 )}
 
-              {/* Info Pengunggah & Tanggal */}
+              {/* Info pengunggah & tanggal */}
               <View style={{marginHorizontal: 18, marginBottom: 4}}>
                 <Text
                   style={{
@@ -979,15 +894,8 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     minHeight: 80,
   },
-  recapItem: {
-    color: '#232323',
-    fontSize: 16,
-    marginBottom: 10,
-  },
-  recapEmpty: {
-    color: '#777',
-    fontStyle: 'italic',
-  },
+  recapItem: {color: '#232323', fontSize: 16, marginBottom: 10},
+  recapEmpty: {color: '#777', fontStyle: 'italic'},
   textArea: {
     borderWidth: 1.2,
     borderColor: '#D2D2D2',
@@ -1011,15 +919,20 @@ const styles = StyleSheet.create({
     marginBottom: 22,
     minHeight: 55,
   },
-  uploadText: {
-    fontSize: 17,
-    color: '#A4A4A4',
-    fontWeight: '500',
-  },
-  uploadIcon: {
-    width: 28,
-    height: 28,
-    tintColor: '#B7B7B7',
+  uploadText: {fontSize: 17, color: '#A4A4A4', fontWeight: '500'},
+  uploadIcon: {width: 28, height: 28, tintColor: '#B7B7B7'},
+
+  bottomBtnGroup: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#fff',
+    paddingHorizontal: 18,
+    paddingBottom: 18,
+    paddingTop: 9,
+    borderTopColor: '#eee',
+    borderTopWidth: 1,
   },
   btnSubmit: {
     backgroundColor: '#D22C32',
@@ -1038,22 +951,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelText: {color: '#D22C32', fontSize: 18, fontWeight: '600'},
-  bottomBtnGroup: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#fff',
-    paddingHorizontal: 18,
-    paddingBottom: 18,
-    paddingTop: 9,
-    borderTopColor: '#eee',
-    borderTopWidth: 1,
-  },
-  inputText: {
-    fontSize: 16,
-    color: '#181818',
-  },
+
+  inputText: {fontSize: 16, color: '#181818'},
   inputLabel: {
     fontSize: 14,
     color: '#4B4749',
@@ -1082,10 +981,7 @@ const styles = StyleSheet.create({
     marginBottom: 11,
     width: '100%',
   },
-  picker: {
-    height: 52, // tinggi yang lebih besar
-    width: '100%', // <--- WAJIB
-  },
+  picker: {height: 52, width: '100%'},
 
   mediaBox: {
     borderWidth: 1.5,
@@ -1102,11 +998,7 @@ const styles = StyleSheet.create({
     marginBottom: 7,
     marginLeft: 5,
   },
-  mediaItemWrap: {
-    marginRight: 9,
-    position: 'relative',
-    marginVertical: '10%',
-  },
+  mediaItemWrap: {marginRight: 9, position: 'relative', marginVertical: '10%'},
   mediaThumb: {
     width: 54,
     height: 54,
@@ -1139,35 +1031,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAF4F4',
     borderStyle: 'dashed',
   },
-  bottomBtnGroup: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#fff',
-    paddingHorizontal: 18,
-    paddingBottom: 18,
-    paddingTop: 9,
-    borderTopColor: '#eee',
-    borderTopWidth: 1,
-  },
-  btnSubmit: {
-    backgroundColor: '#D22C32',
-    paddingVertical: 15,
-    borderRadius: 7,
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  submitText: {color: '#fff', fontSize: 18, fontWeight: '600'},
-  btnCancel: {
-    borderWidth: 1.5,
-    borderColor: '#D22C32',
-    backgroundColor: '#fff',
-    paddingVertical: 14,
-    borderRadius: 7,
-    alignItems: 'center',
-  },
-  cancelText: {color: '#D22C32', fontSize: 18, fontWeight: '600'},
 });
 
 const styles1 = StyleSheet.create({
@@ -1189,11 +1052,7 @@ const styles1 = StyleSheet.create({
     backgroundColor: '#EEE',
     position: 'relative',
   },
-  headerImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 18,
-  },
+  headerImage: {width: '100%', height: '100%', borderRadius: 18},
   imgOverlayLeft: {
     position: 'absolute',
     left: 12,
@@ -1221,11 +1080,7 @@ const styles1 = StyleSheet.create({
     fontSize: 14,
     marginBottom: 1,
   },
-  overlaySubText: {
-    color: '#fff',
-    fontSize: 13,
-    opacity: 0.89,
-  },
+  overlaySubText: {color: '#fff', fontSize: 13, opacity: 0.89},
   overlayTextRight: {
     color: '#fff',
     fontWeight: '600',
@@ -1248,11 +1103,7 @@ const styles1 = StyleSheet.create({
     backgroundColor: '#EEE',
     position: 'relative',
   },
-  smallImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 0,
-  },
+  smallImage: {width: '100%', height: '100%'},
   detailCard: {
     backgroundColor: '#fff',
     borderRadius: 14,
@@ -1268,24 +1119,14 @@ const styles1 = StyleSheet.create({
     shadowOffset: {width: 0, height: 1},
   },
   fieldRow: {
-    // flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'flex-start',
     borderBottomColor: '#E2E2E2',
     borderBottomWidth: 1,
     paddingVertical: 10,
   },
-  fieldLabel: {
-    color: '#787878',
-    fontSize: 14,
-    flex: 1,
-  },
-  fieldValue: {
-    fontSize: 14,
-    color: '#363636',
-    flex: 1,
-    textAlign: 'right',
-  },
+  fieldLabel: {color: '#787878', fontSize: 14, flex: 1},
+  fieldValue: {fontSize: 14, color: '#363636', flex: 1, textAlign: 'right'},
   fieldLink: {
     fontSize: 14,
     color: '#1976D2',
