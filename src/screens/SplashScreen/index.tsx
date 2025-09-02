@@ -309,14 +309,23 @@ const SplashScreen: React.FC<Props> = ({navigation}) => {
           style={styles.background}
           resizeMode="cover">
           <View style={styles.overlay} />
-          <View style={[styles.logoRow, {marginTop: '10%'}]}>
+          <View style={[styles.logoWrap, {marginTop: '2%'}]}>
             <Image
-              source={require('../../assets/images/LogoBIB.png')}
-              style={{width: 250, height: 54}}
+              source={require('../../assets/images/LogoXreels2.png')}
+              style={{width: 70, height: 85}}
+              resizeMode="contain"
+            />
+            <Image
+              source={require('../../assets/images/titleXrels.png')}
+              style={{
+                width: 200,
+                height: 80,
+                tintColor: '#FFFFFF',
+                marginLeft: '2%',
+              }}
               resizeMode="contain"
             />
           </View>
-
           <View style={styles.bottomArea}>
             {/* <Text style={styles.desc}>{ONBOARDING_STEPS[step].desc}</Text> */}
             {/* <TouchableOpacity
@@ -378,10 +387,20 @@ const SplashScreen: React.FC<Props> = ({navigation}) => {
           </View>
 
           {/* Logo & Judul */}
-          <View style={styles.logoRow}>
+          <View style={[styles.logoWrap, {marginTop: '2%'}]}>
             <Image
-              source={require('../../assets/images/LogoBIB.png')}
-              style={{width: 250, height: 54}}
+              source={require('../../assets/images/LogoXreels2.png')}
+              style={{width: 70, height: 85}}
+              resizeMode="contain"
+            />
+            <Image
+              source={require('../../assets/images/titleXrels.png')}
+              style={{
+                width: 200,
+                height: 80,
+                tintColor: '#FFFFFF',
+                marginLeft: '2%',
+              }}
               resizeMode="contain"
             />
           </View>
@@ -489,6 +508,16 @@ const styles = StyleSheet.create({
     paddingVertical: '5%',
     marginBottom: '5%',
     alignItems: 'center',
+  },
+  logoWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginLeft: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    // backgroundColor: 'rgba(0,0,0,0.55)', // badge gelap di belakang logo & title
+    borderRadius: 12,
   },
 });
 
