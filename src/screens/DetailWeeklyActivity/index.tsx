@@ -16,40 +16,24 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import AppHeader from '../../components/AppHeader';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import {Picker} from '@react-native-picker/picker';
-import UploadPickerModal from '../../components/UploadPickerModal';
-import ImagePicker from 'react-native-image-crop-picker';
 import DocumentPicker from 'react-native-document-picker';
 import {
   BASE_URL,
-  createDailyActivity,
   createWeeklyActivity,
   getDailyActivities,
-  getDailyActivityDetail,
-  getImageWithAuth,
-  getUsers,
   getWeeklyActivityDetail,
-  updateDailyActivity,
+  getUsers,
   updateFileMetaDirectus,
   uploadFileDirectus,
 } from '../../services/apiServices';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import InputMultiSelect from '../../components/InputMultiSelect';
 import {WebView} from 'react-native-webview';
 
 const {width} = Dimensions.get('window');
 const IMAGE_ASPECT = 1.85; // 16:9
 
 // ====== UTIL DATE/TIME ======
-function parseTimeToDate(str) {
-  if (!str) return new Date();
-  const [time] = str.split(' ');
-  const [hour, minute] = time.split(':');
-  const now = new Date();
-  now.setHours(Number(hour), Number(minute), 0, 0);
-  return new Date(now);
-}
 function formatRangeDate(start, end) {
   if (!start || !end) return '';
   const s = new Date(start);
@@ -62,12 +46,6 @@ function formatRangeDate(start, end) {
     'id-ID',
     opts,
   )} ${e.getFullYear()}`;
-}
-function formatTime(dt) {
-  if (!dt) return '';
-  const jam = dt.getHours().toString().padStart(2, '0');
-  const menit = dt.getMinutes().toString().padStart(2, '0');
-  return `${jam}:${menit}`;
 }
 function formatDateShort(date) {
   if (!date) return '';
@@ -85,73 +63,7 @@ function formatDate(d) {
   })} ${tgl.getFullYear()}`;
 }
 
-// ====== BADGE & OPTIONS (tetap) ======
-const StatusMiniBadge = ({status = 'Open'}) => {
-  const color =
-    status === 'Open'
-      ? '#258CFB'
-      : status === 'Waiting'
-      ? '#FFD600'
-      : '#EA684A';
-  const border = color;
-  const bg =
-    status === 'Open'
-      ? '#E7F3FF'
-      : status === 'Waiting'
-      ? '#FFF9E4'
-      : '#FFF1ED';
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: bg,
-        borderColor: border,
-        borderWidth: 1,
-        borderRadius: 5,
-        paddingHorizontal: 8,
-        paddingVertical: 3,
-        alignSelf: 'flex-start',
-        marginBottom: 7,
-      }}>
-      <Text style={{fontSize: 13, color, fontWeight: '500'}}>{status}</Text>
-    </View>
-  );
-};
-
-const STATUS_LABEL = {
-  approved: 'Approved',
-  in_progress: 'In Progress',
-  open: 'Open',
-  reject: 'Rejected',
-  closed: 'Closed',
-  waiting: 'Waiting',
-  draft: 'Draft',
-};
-
-const FieldItem = ({label, value, bold, isLink}) => (
-  <View style={styles1.fieldRow}>
-    <Text style={styles1.fieldLabel}>{label}</Text>
-    {isLink ? (
-      <Text
-        style={styles1.fieldLink}
-        onPress={() => Linking.openURL(value.url)}>
-        {value?.text}
-      </Text>
-    ) : (
-      <Text style={[styles1.fieldValue]}>{value}</Text>
-    )}
-  </View>
-);
-
-const OverlayImageInfo = ({
-  leftTop,
-  leftBot,
-  rightTop,
-  rightBot,
-  align = 'both',
-}) => <></>;
-
+// ====== OPTIONS ======
 const STATUS_OPTIONS = [
   {label: 'Approved', value: 'approved'},
   {label: 'In Progress', value: 'in_progress'},
@@ -167,33 +79,70 @@ const JENIS_REPORT_OPTIONS = [
   {label: 'Weekly Report', value: 3},
 ];
 
+const PPT_MIMES = [
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+];
+
+function isAllowedDoc(file: {name?: string; type?: string}) {
+  const name = (file?.name || '').toLowerCase();
+  const type = (file?.type || '').toLowerCase();
+  const byExt =
+    name.endsWith('.pdf') || name.endsWith('.ppt') || name.endsWith('.pptx');
+  const byMime = type === 'application/pdf' || PPT_MIMES.includes(type);
+  return byExt || byMime;
+}
+function isPdfByNameOrMime(file: {name?: string; type?: string; uri?: string}) {
+  const name = (file?.name || '').toLowerCase();
+  const type = (file?.type || '').toLowerCase();
+  return (
+    name.endsWith('.pdf') ||
+    type === 'application/pdf' ||
+    (typeof file?.uri === 'string' && file.uri.endsWith('.pdf'))
+  );
+}
+function isPptByNameOrMime(file: {name?: string; type?: string; uri?: string}) {
+  const name = (file?.name || '').toLowerCase();
+  const type = (file?.type || '').toLowerCase();
+  return (
+    name.endsWith('.ppt') ||
+    name.endsWith('.pptx') ||
+    PPT_MIMES.includes(type) ||
+    (typeof file?.uri === 'string' &&
+      (file.uri.endsWith('.ppt') || file.uri.endsWith('.pptx')))
+  );
+}
+
 const DetailWeeklyActivity = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const {showForm = false, data} = route.params || {};
   const id = data?.id;
-  console?.log('CEKK DATA', JSON.stringify(data));
 
-  const [media, setMedia] = useState([]);
-  const [modalVisible, setModalVisible] = useState(false);
-
-  const [tanggal, setTanggal] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [media, setMedia] = useState<
+    {
+      id: string;
+      uri: string;
+      name?: string;
+      type?: string;
+      isServerFile?: boolean;
+    }[]
+  >([]);
+  const [tanggal] = useState(new Date());
   const [status, setStatus] = useState(STATUS_OPTIONS[0].value);
   const [lokasi, setLokasi] = useState('');
-  const [showPicPicker, setShowPicPicker] = useState(false);
   const [pic, setPIC] = useState([]);
   const [judul, setJudul] = useState('-');
   const [jenis, setJenis] = useState(JENIS_REPORT_OPTIONS[0].value);
   const [deskripsi, setDeskripsi] = useState('');
 
-  // ====== RANGE STATE: start & end ======
-  const [dateRange, setDateRange] = useState({start: null, end: null});
+  // ====== RANGE STATE: start & end (window 7 hari) ======
+  const [dateRange, setDateRange] = useState<{
+    start: Date | null;
+    end: Date | null;
+  }>({start: null, end: null});
   const [showEndPicker, setShowEndPicker] = useState(false);
-
-  // Window 7 hari (inklusif). Start = End - (DAYS_WINDOW - 1)
   const DAYS_WINDOW = 7;
-
   const stripTime = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const shiftDays = (date, days) => {
     const dt = stripTime(date);
@@ -206,29 +155,17 @@ const DetailWeeklyActivity = () => {
     setDateRange({start: startClean, end: endClean});
   };
 
-  const [picName, setPicName] = useState('');
-  const [startTime, setStartTime] = useState(new Date());
-  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
-  const [startTimeZone, setStartTimeZone] = useState('WIB');
-  const [endTime, setEndTime] = useState(new Date());
-  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
-  const [endTimeZone, setEndTimeZone] = useState('WIB');
   const [loadingSubmit, setLoadingSubmit] = useState(false);
-  const [detail, setDetail] = useState(null);
+  const [detail, setDetail] = useState<any>(null);
   const [loadingDetail, setLoadingDetail] = useState(true);
 
-  const [rekapan, setRekapan] = useState([
-    '5 Jul 2025 - Report A | Judul Report',
-    '5 Jul 2025 - Report A | Judul Report',
-    '5 Jul 2025 - Report A | Judul Report',
-    '5 Jul 2025 - Report A | Judul Report',
-    '5 Jul 2025 - Report A | Judul Report',
-  ]);
   const [kesimpulan, setKesimpulan] = useState('');
+  const [allDaily, setAllDaily] = useState<any[]>([]);
+  const [filteredDaily, setFilteredDaily] = useState<any[]>([]);
+  const [selectedDaily, setSelectedDaily] = useState<string[]>([]);
 
-  const [allDaily, setAllDaily] = useState([]);
-  const [filteredDaily, setFilteredDaily] = useState([]);
-  const [selectedDaily, setSelectedDaily] = useState([]);
+  const [userList, setUserList] = useState<any[]>([]);
+  const [picName, setPicName] = useState('');
 
   useEffect(() => {
     getDailyActivities().then(setAllDaily);
@@ -241,15 +178,13 @@ const DetailWeeklyActivity = () => {
     const dayOfMonth = tanggal.getDate();
     return Math.ceil((dayOfMonth + dayOfWeekStart - 1) / 7);
   }
-
   function autoGenerateTitle(dateStart) {
     if (!dateStart) return '-';
     const date = new Date(dateStart);
     const mingguKe = getWeekOfMonth(date);
     const month = date.toLocaleString('id-ID', {month: 'long'});
     const year = date.getFullYear();
-    const tgl = date.getDate();
-    const tglStr = `${tgl} ${month} ${year}`;
+    const tglStr = `${date.getDate()} ${month} ${year}`;
     return `W${mingguKe} ${month} ${year}: ${tglStr}`;
   }
 
@@ -271,17 +206,15 @@ const DetailWeeklyActivity = () => {
     }
   }, [dateRange, allDaily]);
 
+  // Ambil detail bila mode review
   useEffect(() => {
     let isMounted = true;
     const fetchDetail = async () => {
       setLoadingDetail(true);
       try {
-        console.log('[getWeeklyActivityDetail] id:', id);
         const res = await getWeeklyActivityDetail(id);
-        console.log('[getWeeklyActivityDetail] Response:', res);
         if (isMounted) setDetail(res);
       } catch (e) {
-        console.log('[getWeeklyActivityDetail] ERROR:', e);
         setDetail(null);
       } finally {
         setLoadingDetail(false);
@@ -293,96 +226,14 @@ const DetailWeeklyActivity = () => {
     };
   }, [id]);
 
-  const handleAddMedia = () => setModalVisible(true);
-  const handleCamera = async () => {
-    setModalVisible(false);
-    try {
-      const img = await ImagePicker.openCamera({
-        width: 800,
-        height: 800,
-        cropping: true,
-        cropperToolbarTitle: 'Crop Foto',
-        includeBase64: false,
-      });
-      if (img) setMedia(m => [...m, {id: String(Date.now()), uri: img.path}]);
-    } catch (e) {
-      console.log('Camera error:', e);
-      alert('Gagal buka kamera: ' + (e.message || e));
-    }
-  };
-  const handleFile = async () => {
-    setModalVisible(false);
-    try {
-      const img = await ImagePicker.openPicker({
-        width: 800,
-        height: 800,
-        cropping: true,
-        cropperToolbarTitle: 'Crop Foto',
-        includeBase64: false,
-        mediaType: 'photo',
-      });
-      if (img) setMedia(m => [...m, {id: String(Date.now()), uri: img.path}]);
-    } catch (e) {}
-  };
-  const handleDocument = async () => {
-    setModalVisible(false);
-    try {
-      const res = await DocumentPicker.pickSingle({
-        type: [DocumentPicker.types.allFiles],
-      });
-      setMedia(m => [
-        ...m,
-        {
-          id: String(Date.now()),
-          uri: res.uri,
-          name: res.name,
-          type: res.type,
-          isFile: true,
-        },
-      ]);
-    } catch (e) {}
-  };
-  const handleRemoveMedia = idx => setMedia(media.filter((_, i) => i !== idx));
-
+  // Users untuk mapping PIC & uploader
   useEffect(() => {
-    if (!detail || !detail.documents || detail.documents.length === 0) return;
-    let isMounted = true;
-    const fetchAllImages = async () => {
-      try {
-        const token = await AsyncStorage.getItem('token');
-        const promises = detail.documents.map(doc => {
-          if (
-            typeof doc.directus_files_id === 'string' &&
-            doc.directus_files_id.endsWith('.pdf')
-          ) {
-            return null;
-          }
-          return getImageWithAuth(doc.directus_files_id, token);
-        });
-        const results = await Promise.all(promises);
-        if (isMounted) setAssetUrls(results);
-      } catch (e) {
-        if (isMounted) setAssetUrls([]);
-        console.log('Error fetching asset images:', e);
-      }
-    };
-    fetchAllImages();
-    return () => {
-      isMounted = false;
-    };
-  }, [detail]);
-
-  const [userList, setUserList] = useState([]);
-  const [loadingUsers, setLoadingUsers] = useState(false);
-  useEffect(() => {
-    setLoadingUsers(true);
     getUsers()
       .then(users => setUserList(users))
-      .catch(() => setUserList([]))
-      .finally(() => setLoadingUsers(false));
+      .catch(() => setUserList([]));
   }, []);
 
-  const [assetUrls, setAssetUrls] = useState([]);
+  // Tampilkan PIC name pada review
   useEffect(() => {
     if (!showForm && userList?.length && detail?.pics) {
       const names = (detail.pics || [])
@@ -397,9 +248,9 @@ const DetailWeeklyActivity = () => {
     }
   }, [showForm, userList, detail?.pics]);
 
+  // Prefill form
   useEffect(() => {
     if (showForm && detail) {
-      setTanggal(detail.date ? new Date(detail.date) : new Date());
       setStatus(detail.status || STATUS_OPTIONS[0].value);
       setLokasi(detail.location || '');
       setPIC(
@@ -410,46 +261,115 @@ const DetailWeeklyActivity = () => {
       setJudul(detail.title || '-');
       setJenis(detail.report_type || JENIS_REPORT_OPTIONS[0].value);
       setDeskripsi(detail.description || '');
-      setStartTime(detail.end_time ? new Date() : new Date());
-      setStartTimeZone('WIB');
-      setEndTime(detail.end_time ? new Date() : new Date());
-      setEndTimeZone('WIB');
 
-      if (detail.documents && Array.isArray(detail.documents)) {
+      // Dokumen: masukkan sebagai server file (id = directus_files_id)
+      if (Array.isArray(detail.documents)) {
         setMedia(
           detail.documents.map(doc => ({
             id: doc.directus_files_id,
-            uri: doc.directus_files_id,
+            uri: doc.directus_files_id, // server id (akan dirender via BASE_URL/assets/{id})
+            name: doc?.filename_download || doc?.title || 'Dokumen',
             isServerFile: true,
           })),
         );
       } else {
         setMedia([]);
       }
+
+      // Prefill date range bila ada
+      if (detail.date_start && detail.date_end) {
+        setDateRange({
+          start: new Date(detail.date_start),
+          end: new Date(detail.date_end),
+        });
+      }
     }
   }, [showForm, detail]);
 
+  // ====== FILE HANDLING: Hanya PDF / PPT ======
+  const handleAddDocument = async () => {
+    try {
+      const res = await DocumentPicker.pickSingle({
+        type: [
+          DocumentPicker.types.pdf,
+          // Android mimes
+          'application/vnd.ms-powerpoint',
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          // (Optional) iOS UTIs fallback (tidak fatal jika tak dikenal)
+          'com.microsoft.powerpoint.ppt',
+          'org.openxmlformats.presentationml.presentation',
+        ],
+        copyTo: 'cachesDirectory',
+      });
+
+      const file = {
+        id: String(Date.now()),
+        uri: res.fileCopyUri || res.uri,
+        name: res.name,
+        type: res.type,
+      };
+
+      if (!isAllowedDoc(file)) {
+        Alert.alert('Format tidak didukung', 'Hanya boleh PDF atau PPT/PPTX.');
+        return;
+      }
+
+      setMedia(prev => [...prev, file]);
+    } catch (e: any) {
+      if (!DocumentPicker.isCancel(e)) {
+        Alert.alert('Gagal memilih dokumen', e?.message || 'Unknown error');
+      }
+    }
+  };
+
+  const handleRemoveMedia = (idx: number) =>
+    setMedia(media.filter((_, i) => i !== idx));
+
   const handleSubmit = async () => {
+    // Validasi basic
+    if (!dateRange.end) {
+      Alert.alert(
+        'Validasi',
+        'Pilih tanggal selesai (range 7 hari akan otomatis).',
+      );
+      return;
+    }
+    if (!media.length) {
+      Alert.alert('Validasi', 'Minimal unggah 1 dokumen (PDF/PPT).');
+      return;
+    }
+
     setLoadingSubmit(true);
     try {
-      const uploadedIds = [];
+      const uploadedIds: string[] = [];
       for (const file of media) {
         if (!file.isServerFile) {
+          // pastikan mime
+          const mime =
+            (file.type &&
+              (file.type === 'application/pdf' ||
+                PPT_MIMES.includes(file.type))) ||
+            isPdfByNameOrMime(file)
+              ? file.type ||
+                (isPdfByNameOrMime(file) ? 'application/pdf' : PPT_MIMES[1])
+              : PPT_MIMES[1];
+
           const id = await uploadFileDirectus({
             uri: file.uri,
-            name: file.name || 'photo.jpg',
-            type:
-              file.type ||
-              (file.isFile ? 'application/octet-stream' : 'image/jpeg'),
+            name: file.name || 'Lampiran.pdf',
+            type: mime as string,
           });
+
           await updateFileMetaDirectus([id], {
-            filename_download: file.name || 'Lampiran_Weekly_Activity.jpg',
+            filename_download: file.name || 'Lampiran.pdf',
           });
+
           uploadedIds.push(id);
         } else {
           uploadedIds.push(file.id);
         }
       }
+
       const documents = uploadedIds.map(id => ({directus_files_id: id}));
       const autoTitle = autoGenerateTitle(dateRange.start);
 
@@ -466,13 +386,12 @@ const DetailWeeklyActivity = () => {
           : null,
       };
 
-      console.log('POST WEEKLY BODY:', JSON.stringify(body, null, 2));
       await createWeeklyActivity(body);
 
       Alert.alert('Sukses', 'Berhasil create data weekly activity', [
         {text: 'OK', onPress: () => navigation.goBack()},
       ]);
-    } catch (err) {
+    } catch (err: any) {
       Alert.alert('Error', err?.message || 'Unknown error');
     } finally {
       setLoadingSubmit(false);
@@ -629,31 +548,55 @@ const DetailWeeklyActivity = () => {
                 multiline
               />
 
-              {/* ======= Lampiran ======= */}
-              <Text style={styles.inputLabel}>Lampiran</Text>
+              {/* ======= Lampiran: PDF / PPT saja ======= */}
+              <Text style={styles.inputLabel}>Lampiran (PDF/PPT saja)</Text>
               <View style={styles.mediaBox}>
-                <Text style={styles.mediaLabel}>Media</Text>
+                <Text style={styles.mediaLabel}>Dokumen</Text>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={{alignItems: 'center'}}>
                   {media.map((item, idx) => (
                     <View key={item.id} style={styles.mediaItemWrap}>
-                      {item.isFile ? (
-                        <TouchableOpacity
-                          onPress={() => Linking.openURL(item.uri)}
-                          style={styles.mediaThumb}>
-                          <Text>📎</Text>
-                          <Text numberOfLines={1} style={{fontSize: 11}}>
-                            {item.name}
-                          </Text>
-                        </TouchableOpacity>
-                      ) : (
-                        <Image
-                          source={{uri: item.uri}}
-                          style={styles.mediaThumb}
-                        />
-                      )}
+                      {/* Kartu kecil dokumen */}
+                      <TouchableOpacity
+                        onPress={async () => {
+                          // Jika server file → buka URL directus
+                          const url = item.isServerFile
+                            ? `${BASE_URL}/assets/${item.uri}?download`
+                            : item.uri;
+                          try {
+                            await Linking.openURL(url);
+                          } catch {
+                            Alert.alert('Gagal membuka dokumen');
+                          }
+                        }}
+                        style={[
+                          styles.mediaThumb,
+                          {
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: 6,
+                          },
+                        ]}>
+                        <Text style={{fontSize: 18}}>📄</Text>
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            fontSize: 11,
+                            marginTop: 2,
+                            textAlign: 'center',
+                            width: 46,
+                          }}>
+                          {item.name ||
+                            (isPdfByNameOrMime(item)
+                              ? 'Dokumen.pdf'
+                              : isPptByNameOrMime(item)
+                              ? 'Dokumen.pptx'
+                              : 'Dokumen')}
+                        </Text>
+                      </TouchableOpacity>
+
                       <TouchableOpacity
                         style={styles.mediaRemoveBtn}
                         onPress={() => handleRemoveMedia(idx)}>
@@ -663,23 +606,16 @@ const DetailWeeklyActivity = () => {
                       </TouchableOpacity>
                     </View>
                   ))}
+
                   <TouchableOpacity
                     style={styles.mediaAddBtn}
-                    onPress={handleAddMedia}>
+                    onPress={handleAddDocument}>
                     <Text style={{color: '#D22C32', fontWeight: '500'}}>
                       Tambah
                     </Text>
                   </TouchableOpacity>
                 </ScrollView>
               </View>
-
-              <UploadPickerModal
-                visible={modalVisible}
-                onClose={() => setModalVisible(false)}
-                onCamera={handleCamera}
-                onFile={handleFile}
-                onDocument={handleDocument}
-              />
             </ScrollView>
 
             {/* Bottom Button */}
@@ -724,6 +660,7 @@ const DetailWeeklyActivity = () => {
                 {detail?.title || '-'}
               </Text>
 
+              {/* Dokumen list */}
               {Array.isArray(detail?.documents) &&
                 detail.documents.length > 0 && (
                   <View style={{marginHorizontal: 18, marginTop: 10}}>
@@ -732,30 +669,11 @@ const DetailWeeklyActivity = () => {
                       showsHorizontalScrollIndicator={false}>
                       {detail.documents.map((doc, idx) => {
                         const fileId = doc.directus_files_id;
+                        // Kita treat hanya PDF/PPT; PDF → WebView, PPT → kartu + tombol buka
                         const isPdf =
-                          typeof fileId === 'string' && fileId.endsWith('.pdf');
-                        if (!isPdf && !assetUrls[idx]) {
-                          return (
-                            <View
-                              key={fileId}
-                              style={{
-                                width: width * 0.92,
-                                height: width * 0.92 * 0.7,
-                                marginRight: 16,
-                                borderWidth: 1,
-                                borderColor: '#e1e1e1',
-                                borderRadius: 8,
-                                overflow: 'hidden',
-                                backgroundColor: '#f4f4f4',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}>
-                              <Text style={{color: '#d22c32', fontSize: 15}}>
-                                File tidak bisa ditampilkan
-                              </Text>
-                            </View>
-                          );
-                        }
+                          typeof fileId === 'string' &&
+                          fileId.toLowerCase().endsWith('.pdf');
+
                         return (
                           <View
                             key={fileId}
@@ -791,14 +709,43 @@ const DetailWeeklyActivity = () => {
                                 )}
                               />
                             ) : (
-                              <Image
-                                source={{uri: assetUrls[idx]}}
+                              <View
                                 style={{
-                                  width: '100%',
-                                  height: '100%',
-                                  resizeMode: 'contain',
-                                }}
-                              />
+                                  flex: 1,
+                                  padding: 16,
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}>
+                                <Text style={{fontSize: 48, marginBottom: 8}}>
+                                  📄
+                                </Text>
+                                <Text
+                                  style={{
+                                    fontSize: 14,
+                                    fontWeight: '600',
+                                    marginBottom: 6,
+                                  }}
+                                  numberOfLines={2}>
+                                  {doc?.filename_download || 'Dokumen PPT/PPTX'}
+                                </Text>
+                                <TouchableOpacity
+                                  onPress={() =>
+                                    Linking.openURL(
+                                      `${BASE_URL}/assets/${fileId}?download`,
+                                    )
+                                  }
+                                  style={{
+                                    backgroundColor: '#D22C32',
+                                    paddingVertical: 10,
+                                    paddingHorizontal: 16,
+                                    borderRadius: 8,
+                                  }}>
+                                  <Text
+                                    style={{color: '#fff', fontWeight: '600'}}>
+                                    Buka / Unduh
+                                  </Text>
+                                </TouchableOpacity>
+                              </View>
                             )}
                           </View>
                         );
@@ -907,21 +854,6 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     marginBottom: 18,
   },
-  uploadBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1.2,
-    borderColor: '#D2D2D2',
-    borderRadius: 7,
-    backgroundColor: '#fff',
-    padding: 18,
-    marginBottom: 22,
-    minHeight: 55,
-  },
-  uploadText: {fontSize: 17, color: '#A4A4A4', fontWeight: '500'},
-  uploadIcon: {width: 28, height: 28, tintColor: '#B7B7B7'},
-
   bottomBtnGroup: {
     position: 'absolute',
     left: 0,
@@ -951,7 +883,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelText: {color: '#D22C32', fontSize: 18, fontWeight: '600'},
-
   inputText: {fontSize: 16, color: '#181818'},
   inputLabel: {
     fontSize: 14,
@@ -960,29 +891,6 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     marginTop: 4,
   },
-  input: {
-    borderWidth: 1.2,
-    borderColor: '#D2D2D2',
-    borderRadius: 7,
-    fontSize: 16,
-    color: '#181818',
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    marginBottom: 11,
-    backgroundColor: '#fff',
-  },
-
-  pickerWrapper: {
-    borderWidth: 1.2,
-    borderColor: '#D2D2D2',
-    borderRadius: 7,
-    overflow: 'hidden',
-    backgroundColor: '#fff',
-    marginBottom: 11,
-    width: '100%',
-  },
-  picker: {height: 52, width: '100%'},
-
   mediaBox: {
     borderWidth: 1.5,
     borderColor: '#E54449',
@@ -1030,128 +938,6 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     backgroundColor: '#FAF4F4',
     borderStyle: 'dashed',
-  },
-});
-
-const styles1 = StyleSheet.create({
-  titleText: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#23262F',
-    marginLeft: 18,
-    marginTop: 6,
-    marginBottom: 6,
-  },
-  imageWrap: {
-    width: width - 24,
-    height: (width - 24) / IMAGE_ASPECT,
-    marginHorizontal: 12,
-    borderRadius: 18,
-    overflow: 'hidden',
-    marginBottom: 3,
-    backgroundColor: '#EEE',
-    position: 'relative',
-  },
-  headerImage: {width: '100%', height: '100%', borderRadius: 18},
-  imgOverlayLeft: {
-    position: 'absolute',
-    left: 12,
-    bottom: 12,
-    backgroundColor: 'rgba(0,0,0,0.39)',
-    borderRadius: 9,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    maxWidth: '53%',
-  },
-  imgOverlayRight: {
-    position: 'absolute',
-    right: 12,
-    bottom: 12,
-    backgroundColor: 'rgba(0,0,0,0.39)',
-    borderRadius: 9,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    maxWidth: '38%',
-    alignItems: 'flex-end',
-  },
-  overlayText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-    marginBottom: 1,
-  },
-  overlaySubText: {color: '#fff', fontSize: 13, opacity: 0.89},
-  overlayTextRight: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-    textAlign: 'right',
-    marginBottom: 1,
-  },
-  overlaySubTextRight: {
-    color: '#fff',
-    fontSize: 13,
-    opacity: 0.89,
-    textAlign: 'right',
-  },
-  thumbBox: {
-    width: 113,
-    height: 80,
-    marginRight: 12,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: '#EEE',
-    position: 'relative',
-  },
-  smallImage: {width: '100%', height: '100%'},
-  detailCard: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    margin: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginTop: 8,
-    marginBottom: 10,
-    elevation: 1,
-    shadowColor: '#222',
-    shadowOpacity: 0.07,
-    shadowRadius: 3,
-    shadowOffset: {width: 0, height: 1},
-  },
-  fieldRow: {
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-    borderBottomColor: '#E2E2E2',
-    borderBottomWidth: 1,
-    paddingVertical: 10,
-  },
-  fieldLabel: {color: '#787878', fontSize: 14, flex: 1},
-  fieldValue: {fontSize: 14, color: '#363636', flex: 1, textAlign: 'right'},
-  fieldLink: {
-    fontSize: 14,
-    color: '#1976D2',
-    flex: 1,
-    textAlign: 'right',
-    textDecorationLine: 'underline',
-  },
-  btnEdit: {
-    borderWidth: 2,
-    borderColor: '#D22C32',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    paddingVertical: 16,
-    alignItems: 'center',
-    width: '90%',
-    alignSelf: 'center',
-    marginTop: 20,
-    marginBottom: 30,
-    elevation: 1,
-  },
-  btnEditText: {
-    color: '#D22C32',
-    fontWeight: '700',
-    fontSize: 18,
-    letterSpacing: 0.1,
   },
 });
 

@@ -461,7 +461,7 @@ const DetailCuti = () => {
             </View>
 
             {/* Note */}
-            <Text style={styles.label}>New Note</Text>
+            <Text style={styles.label}>Alasan Cuti</Text>
             <TextInput
               style={styles.textArea}
               value={note}
@@ -554,8 +554,8 @@ const DetailCuti = () => {
                 </View>
               </View>
               <View style={reviewStyles.fieldWrap}>
-                <Text style={reviewStyles.label}>Alasan Penolakan</Text>
-                <Text style={reviewStyles.value}>{data?.reason || ''}</Text>
+                <Text style={reviewStyles.label}>Alasan Approver</Text>
+                <Text style={reviewStyles.value}>{data?.reason_approver || '-'}</Text>
               </View>
             </View>
 

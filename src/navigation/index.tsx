@@ -74,6 +74,7 @@ function MainTabs() {
   const [activeTab, setActiveTab] = useState('home');
   const [openedDrawer, setOpenedDrawer] = useState(null);
   const {activeMenu, setActiveMenu} = useFeatureStore();
+  
   const handleTabPress = (type: any, navigation: any) => {
     if (activeTab === type) {
       // Sudah di tab ini, buka drawer
@@ -181,12 +182,18 @@ function MainTabs() {
             tabPress: e => {
               handleTabPress('attendance', navigation);
             },
-            focus: () => {
-              setActiveTab('attendance');
-              // ⬇️ pastikan menu default-nya 'absen' setiap kali tab ini fokus
-              setActiveMenu('absen');
-            },
+            focus: () => setActiveTab('attendance'),
           })}
+          // listeners={({navigation}) => ({
+          //   tabPress: e => {
+          //     handleTabPress('attendance', navigation);
+          //   },
+          //   focus: () => {
+          //     setActiveTab('attendance');
+          //     // ⬇️ pastikan menu default-nya 'absen' setiap kali tab ini fokus
+          //     setActiveMenu('absen');
+          //   },
+          // })}
         />
         <Tab.Screen
           name="liveTeam"
